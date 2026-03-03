@@ -1,5 +1,6 @@
 package Model;
 
+import javafx.scene.shape.SVGPath;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,7 +34,7 @@ public class Country {
     // פוליגון – צורה גיאוגרפית
     // צורת הטריטוריה כפוליגון (OOP – הנתונים שייכים לאובייקט)
     @Setter
-    private Polygon shape;
+    private SVGPath shape;
 
     // יבשת
     // הפנייה ליבשת (back-reference)

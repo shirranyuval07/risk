@@ -14,7 +14,7 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Polygon;
+import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
@@ -31,7 +31,7 @@ public class MapPane extends Pane {
     private final Group mapGroup = new Group();
 
     // מילונים לשמירת הגישה לאובייקטים הגרפיים שלנו כדי שנוכל לעדכן אותם
-    private final Map<Country, Polygon> countryPolygons = new HashMap<>();
+    private final Map<Country, SVGPath> countryPolygons = new HashMap<>();
     private final Map<Country, Text> armyTexts = new HashMap<>();
     private final Map<Country, Circle> armyDisks = new HashMap<>();
 
@@ -80,7 +80,7 @@ public class MapPane extends Pane {
 
         for (Country c : board.getCountries()) {
             // א. יצירת הפוליגון (המדינה עצמה)
-            Polygon poly = c.getShape();
+            SVGPath poly = c.getShape();
             poly.setStroke(Color.rgb(15, 15, 15));
             poly.setStrokeWidth(2.0);
             poly.setEffect(dropShadow);
@@ -144,7 +144,7 @@ public class MapPane extends Pane {
     // הפונקציה החשובה ביותר: מעדכנת את הצבעים והמספרים בכל תור
     public void refreshMap() {
         for (Country c : board.getCountries()) {
-            Polygon poly = countryPolygons.get(c);
+            SVGPath poly = countryPolygons.get(c);
             Circle disk = armyDisks.get(c);
             Text text = armyTexts.get(c);
 

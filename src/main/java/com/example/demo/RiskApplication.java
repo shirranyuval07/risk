@@ -25,10 +25,13 @@ public class RiskApplication extends Application {
         // שים לב לשימוש ב-Color.rgb של JavaFX
         Player human = new Player("Yuval", Color.rgb(50, 150, 230), false);
         Player aiBot = new Player("Terminator Bot", Color.rgb(225, 60, 60), true);
+        Player aiBot2 = new Player("Terminator Bot 2", Color.rgb(225, 60, 225), true);
         aiBot.setStrategy(new GreedyAI());
+        aiBot2.setStrategy(new GreedyAI());
 
-        game.addPlayer(human);
+        //game.addPlayer(human);
         game.addPlayer(aiBot);
+        game.addPlayer(aiBot2);
 
         // Setup אוטומטי של כל העולם!
         game.startGame();
