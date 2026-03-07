@@ -1,5 +1,7 @@
 package Model;
 
+import Model.States.DraftState;
+import Model.States.GameState;
 import lombok.Getter;
 
 import java.util.*;
@@ -11,8 +13,12 @@ public class RiskGame {
     @Getter
     private final List<Player> players;
     private int currentPlayerIndex;
+
+    // *** השינוי המרכזי: שימוש במכונת מצבים במקום ב-Enum ***
     @Getter
-    private Phase currentPhase;
+    private GameState currentState;
+
+    @Getter
     private final Dice dice;
     private final List<GameObserver> observers; // רשימת מאזינים לעדכון התצוגה
 
@@ -20,9 +26,14 @@ public class RiskGame {
         this.board = new Board();
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
-        this.currentPhase = Phase.DRAFT;
         this.dice = new Dice();
         this.observers = new ArrayList<>();
+    }
+
+    // הגדרת המצב הנוכחי של המשחק
+    public void setCurrentState(GameState state) {
+        this.currentState = state;
+        notifyObservers();
     }
 
     // --- ניהול שחקנים ושלבים ---
@@ -38,7 +49,6 @@ public class RiskGame {
     }
 
     public void initializeSetup() {
-        // חלוקה אוטומטית של כל המדינות במפה בין השחקנים
         List<Country> allCountries = new ArrayList<>(board.getCountries());
         Collections.shuffle(allCountries);
 
@@ -46,129 +56,64 @@ public class RiskGame {
             Player p = players.get(i % players.size());
             Country c = allCountries.get(i);
             p.addCountry(c);
-            c.addArmies(1); // חייל ראשון לכל מדינה כבושה
+            c.addArmies(1);
         }
 
-        // הגדרת חיילי SETUP התחלתיים להצבה (לפי חוקי ריסק)
-        int setupArmies = (players.size() == 2) ? 40 : 35; // דוגמה ל-2 או 3 שחקנים
+        int setupArmies = (players.size() == 2) ? 40 : 35;
         for (Player p : players) {
             p.setDraftArmies(setupArmies - p.getOwnedCountries().size());
         }
     }
 
-    public void nextPhase() {
-        // מניעת מעבר שלב אם לא הוצבו כל החיילים בשלב ה-DRAFT
-        if (currentPhase == Phase.DRAFT && getCurrentPlayer().getDraftArmies() > 0) {
-            return;
-        }
-
-        switch (currentPhase) {
-            case DRAFT:
-                currentPhase = Phase.ATTACK;
-                break;
-            case ATTACK:
-                currentPhase = Phase.FORTIFY;
-                break;
-            case FORTIFY:
-                currentPhase = Phase.DRAFT;
-                nextTurn();
-                break;
-        }
-        notifyObservers();
-    }
-
-    private void nextTurn() {
+    public void nextTurn() {
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         startTurn();
     }
 
     private void startTurn() {
         Player p = getCurrentPlayer();
-        // חישוב תגבורת: כמות מדינות חלקי 3 (מינימום 3) + בונוס יבשות
         int reinforcement = Math.max(3, p.getOwnedCountries().size() / 3);
         reinforcement += board.calculateContinentBonus(p);
 
         p.setDraftArmies(reinforcement);
         System.out.println("It's " + p.getName() + "'s turn. Reinforcements: " + reinforcement);
+
+        // בתחילת התור, המערכת נכנסת אוטומטית למצב הצבת הכוחות (DRAFT)
+        setCurrentState(new DraftState(this));
     }
 
-    // --- לוגיקת פעולות (Draft, Attack, Fortify) ---
+    // --- האצלת הפעולות (Delegation) למכונת המצבים בסיבוכיות O(1) ---
 
     public boolean placeArmy(Country country) {
-        if (currentPhase != Phase.DRAFT || country.getOwner() != getCurrentPlayer()) return false;
-        if (getCurrentPlayer().getDraftArmies() <= 0) return false;
-
-        country.addArmies(1);
-        getCurrentPlayer().decreaseDraftArmies();
-        notifyObservers();
-        return true;
+        return currentState.placeArmy(country);
     }
 
     public String attack(Country attacker, Country defender) {
-        // ולידציות בסיסיות
-        if (currentPhase != Phase.ATTACK) return "Wrong phase!";
-        if (attacker.getOwner() != getCurrentPlayer()) return "Not your country!";
-        if (defender.getOwner() == getCurrentPlayer()) return "Can't attack yourself!";
-        if (!attacker.getNeighbors().contains(defender)) return "Not a neighbor!";
-        if (attacker.getArmies() <= 1) return "Need more than 1 army to attack!";
-
-        // הטלת קוביות (עד 3 לתוקף, עד 2 למגן)
-        int aDiceCount = Math.min(3, attacker.getArmies() - 1);
-        int dDiceCount = Math.min(2, defender.getArmies());
-
-        Integer[] aRolls = dice.roll(aDiceCount);
-        Integer[] dRolls = dice.roll(dDiceCount);
-
-        // השוואת קוביות (חוקי ריסק: משווים את התוצאות הכי גבוהות)
-        int comparisons = Math.min(aDiceCount, dDiceCount);
-        int aLoss = 0, dLoss = 0;
-
-        for (int i = 0; i < comparisons; i++) {
-            if (aRolls[i] > dRolls[i]) dLoss++;
-            else aLoss++;
-        }
-
-        attacker.removeArmies(aLoss);
-        defender.removeArmies(dLoss);
-
-        String result = String.format("Attack Result: Attacker lost %d, Defender lost %d", aLoss, dLoss);
-
-        // בדיקת כיבוש
-        if (defender.getArmies() == 0) {
-            result += " | COUNTRY CONQUERED!";
-            handleConquest(attacker, defender, aDiceCount);
-        }
-
-        notifyObservers();
-        return result;
+        return currentState.attack(attacker, defender);
     }
 
-    private void handleConquest(Country attacker, Country defender, int moveAmount) {
+    public String fortify(Country from, Country to, int amount) {
+        return currentState.fortify(from, to, amount);
+    }
+
+    public void nextPhase() {
+        currentState.nextPhase();
+    }
+
+    // --- פונקציות עזר עבור מחלקות המצב (States) ---
+
+    public void handleConquest(Country attacker, Country defender, int moveAmount) {
         Player oldOwner = defender.getOwner();
         Player newOwner = attacker.getOwner();
 
         oldOwner.removeCountry(defender);
         newOwner.addCountry(defender);
 
-        // העברת חיילים מינימלית (לפי כמות הקוביות שהוטלו)
         attacker.removeArmies(moveAmount);
         defender.addArmies(moveAmount);
     }
 
-    public String fortify(Country from, Country to, int amount) {
-        if (currentPhase != Phase.FORTIFY) return "Wrong phase!";
-        if (from.getOwner() != getCurrentPlayer() || to.getOwner() != getCurrentPlayer()) return "Must own both!";
-        if (!from.getNeighbors().contains(to)) return "Countries must be neighbors!";
-        if (from.getArmies() - amount < 1) return "Must leave at least 1 army!";
-
-        from.removeArmies(amount);
-        to.addArmies(amount);
-
-        notifyObservers();
-        return "Moved " + amount + " armies successfully.";
-    }
-
-    // --- מנגנון ה-Observer (לעדכון התצוגה) ---
+    // --- מנגנון ה-Observer (לעדכון התצוגה, חלק מ-MVC) ---
     public interface GameObserver {
         void onGameUpdate();
     }
@@ -177,7 +122,7 @@ public class RiskGame {
         observers.add(observer);
     }
 
-    private void notifyObservers() {
+    public void notifyObservers() {
         for (GameObserver obs : observers) {
             obs.onGameUpdate();
         }

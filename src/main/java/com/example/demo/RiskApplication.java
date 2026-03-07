@@ -7,6 +7,7 @@ import Model.RiskGame;
 import View.GameRoot; // שים לב: אנחנו משתמשים ב-GameRoot של JavaFX עכשיו!
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color; // שימוש ב-Color של JavaFX
 import javafx.stage.Stage;
 
@@ -48,7 +49,12 @@ public class RiskApplication extends Application {
 
         // הגדרת הסצנה (התוכן) בתוך ה-Stage (החלון)
         Scene scene = new Scene(root, 1200, 800);
-
+        try {
+            Image icon = new Image("map_background.png");
+            primaryStage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.out.println("Icon image not found");
+        }
         primaryStage.setTitle("⚔ Risk: Global Conquest 2026 ⚔");
         primaryStage.setScene(scene);
         primaryStage.setMaximized(true); // תופס את כל המסך

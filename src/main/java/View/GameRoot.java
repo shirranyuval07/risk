@@ -7,10 +7,12 @@ import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
+import lombok.Getter;
 
 /**
  * רכיב התצוגה הראשי המכיל את המפה ואת פאנל השליטה התחתון.
  */
+@Getter
 public class GameRoot extends BorderPane {
 
     private final MapPane mapPane;
@@ -30,11 +32,4 @@ public class GameRoot extends BorderPane {
         setBottom(controlPane);
     }
 
-    public MapPane getMapPane() {
-        return mapPane;
-    }
-
-    public ControlPane getControlPane() {
-        return controlPane;
-    }
 }

@@ -1,34 +1,40 @@
 package Model;
 
+import java.util.*;
+
 public class GreedyAI implements BotStrategy {
 
     @Override
     public void executeTurn(Player player, RiskGame game) {
         System.out.println("--- AI Turn Started: " + player.getName() + " ---");
 
-        // שלב 1: DRAFT (המשחק כרגע בשלב הזה אוטומטית כשהתור מתחיל)
+        // שלב 1: DRAFT (הבוט מתחיל במצב DraftState)
         chooseReinforcement(player, game);
 
-        // *** התיקון הקריטי: הבוט מקדם את המשחק לשלב ההתקפה ***
+        // מעבר למצב AttackState
         game.nextPhase();
 
         // שלב 2: ATTACK
         chooseAttack(player, game);
 
-        // *** התיקון הקריטי: הבוט מקדם את המשחק לשלב הביצור ***
+        // מעבר למצב FortifyState
         game.nextPhase();
 
         // שלב 3: FORTIFY
         chooseFortify(player, game);
 
+        // *** התיקון הקריטי לארכיטקטורה החדשה ***
+        // מעבר שלב מתוך FortifyState גורם בפועל לסיום התור והעברתו לשחקן הבא!
+        game.nextPhase();
+
         System.out.println("--- AI Turn Ended ---");
-        // כשהפונקציה תסתיים, מחלקת Player תקדם את התור אוטומטית חזרה אליך
     }
 
     private void chooseReinforcement(Player player, RiskGame game) {
         Country mostThreatened = null;
         int maxEnemies = -1;
 
+        // חיפוש חמדן פשוט - המדינה המאוימת ביותר
         for (Country c : player.getOwnedCountries()) {
             int enemyCount = countEnemyNeighbors(c, player);
             if (enemyCount > maxEnemies) {
@@ -38,7 +44,6 @@ public class GreedyAI implements BotStrategy {
         }
 
         if (mostThreatened != null) {
-            // הבוט עכשיו משתמש בפונקציה החוקית של המשחק כדי להציב חיילים
             int startArmies = player.getDraftArmies();
             while (player.getDraftArmies() > 0) {
                 game.placeArmy(mostThreatened);
@@ -51,42 +56,56 @@ public class GreedyAI implements BotStrategy {
         boolean keepAttacking = true;
 
         while (keepAttacking) {
-            Country bestAttacker = null;
-            Country bestTarget = null;
-            int bestScore = -999;
+            // שימוש בתור עדיפויות כדי לשלוף את ההתקפה עם התוחלת הגבוהה ביותר בזמן O(log E)
+            PriorityQueue<AttackMove> attackQueue = new PriorityQueue<>(
+                    (m1, m2) -> Double.compare(m2.heuristicScore, m1.heuristicScore) // Max-Heap
+            );
 
+            // בניית מרחב המצבים המיידי (State Space) עבור ההתקפות האפשריות
             for (Country myCountry : player.getOwnedCountries()) {
                 if (myCountry.getArmies() > 1) {
                     for (Country neighbor : myCountry.getNeighbors()) {
                         if (neighbor.getOwner() != player) {
-                            int score = myCountry.getArmies() - neighbor.getArmies();
-                            // מחפש יתרון של לפחות 2 חיילים
-                            if (score > bestScore && score >= 2) {
-                                bestScore = score;
-                                bestAttacker = myCountry;
-                                bestTarget = neighbor;
+                            double score = calculateHeuristic(myCountry, neighbor, player);
+                            if (score > 0) { // תנאי סף לביצוע התקפה
+                                attackQueue.add(new AttackMove(myCountry, neighbor, score));
                             }
                         }
                     }
                 }
             }
 
-            if (bestAttacker != null && bestTarget != null) {
-                System.out.println("AI attacking " + bestTarget.getName() + " from " + bestAttacker.getName());
-                String result = game.attack(bestAttacker, bestTarget);
+            if (!attackQueue.isEmpty()) {
+                AttackMove bestMove = attackQueue.poll(); // שליפת ההתקפה הטובה ביותר
+                System.out.println("AI attacking " + bestMove.target.getName() + " from " + bestMove.source.getName() + " (Score: " + bestMove.heuristicScore + ")");
+                String result = game.attack(bestMove.source, bestMove.target);
                 System.out.println("AI Attack Result: " + result);
             } else {
-                keepAttacking = false;
+                keepAttacking = false; // אין יותר מהלכים רווחיים
             }
         }
     }
 
+    /**
+     * פונקציית תועלת המחשבת את הציון ההיוריסטי של ההתקפה.
+     * הערה: יש להתאים את המשקולות (Weights) בהתאם לנוסחה במסמך הפרויקט שלך.
+     */
+    private double calculateHeuristic(Country attacker, Country defender, Player player) {
+        double P_win = attacker.getArmies() - defender.getArmies(); // יתרון מספרי בסיסי
+        double V_bonus = 0; // ניתן להוסיף לוגיקה לבדיקה האם המדינה משלימה יבשת
+        double S_strategic = countEnemyNeighbors(defender, player) * -0.5; // כמה המדינה מאוימת
+
+        double totalScore = (P_win * 1.5) + (V_bonus * 2.0) + (S_strategic * 1.0);
+
+        // מחזיר ציון רק אם יש יתרון סביר ( לפחות 2 חיילים יותר)
+        return (P_win >= 2) ? totalScore : -1;
+    }
+
     private void chooseFortify(Player player, RiskGame game) {
         Country safeCountry = null;
-        Country borderCountry = null;
 
+        // מציאת עורף - מדינה בטוחה עם עודף חיילים
         for (Country c : player.getOwnedCountries()) {
-            // מחפש מדינה פנימית שאין לה שכנים עוינים ויש בה יותר מלוחם אחד
             if (c.getArmies() > 1 && countEnemyNeighbors(c, player) == 0) {
                 safeCountry = c;
                 break;
@@ -94,22 +113,47 @@ public class GreedyAI implements BotStrategy {
         }
 
         if (safeCountry != null) {
-            for (Country neighbor : safeCountry.getNeighbors()) {
-                // מוצא שכן על הגבול כדי להעביר אליו כוחות
-                if (neighbor.getOwner() == player && countEnemyNeighbors(neighbor, player) > 0) {
-                    borderCountry = neighbor;
-                    break;
-                }
-            }
-        }
+            // הפעלת אלגוריתם BFS למציאת מדינת חזית המקושרת לעורף בסיבוכיות O(V+E)
+            Country borderCountry = findConnectedBorderUsingBFS(safeCountry, player);
 
-        if (safeCountry != null && borderCountry != null) {
-            int armiesToMove = safeCountry.getArmies() - 1;
-            String result = game.fortify(safeCountry, borderCountry, armiesToMove);
-            System.out.println("AI Fortify: " + result);
+            if (borderCountry != null) {
+                int armiesToMove = safeCountry.getArmies() - 1;
+                String result = game.fortify(safeCountry, borderCountry, armiesToMove);
+                System.out.println("AI Fortify: Moved " + armiesToMove + " armies to " + borderCountry.getName());
+            }
         }
     }
 
+    /**
+     * אלגוריתם סריקת גרף (BFS) לאיתור מדינת חזית המחוברת ברצף מדינות שבשליטת השחקן.
+     */
+    private Country findConnectedBorderUsingBFS(Country start, Player player) {
+        Queue<Country> queue = new LinkedList<>();
+        Set<Country> visited = new HashSet<>();
+
+        queue.add(start);
+        visited.add(start);
+
+        while (!queue.isEmpty()) {
+            Country current = queue.poll();
+
+            // אם מצאנו מדינה עם לפחות אויב אחד, זו חזית, ואפשר לתגבר אותה
+            if (countEnemyNeighbors(current, player) > 0) {
+                return current;
+            }
+
+            for (Country neighbor : current.getNeighbors()) {
+                // מתקדמים רק דרך מדינות שהן בבעלות השחקן (נתיב חוקי להעברת כוחות)
+                if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                }
+            }
+        }
+        return null; // לא נמצא נתיב לחזית
+    }
+
+    // פונקציית עזר קיימת
     private int countEnemyNeighbors(Country c, Player me) {
         int count = 0;
         for (Country neighbor : c.getNeighbors()) {
@@ -118,5 +162,18 @@ public class GreedyAI implements BotStrategy {
             }
         }
         return count;
+    }
+
+    // מחלקת עזר פנימית לייצוג מהלך התקפה בתוך תור העדיפויות
+    private class AttackMove {
+        Country source;
+        Country target;
+        double heuristicScore;
+
+        public AttackMove(Country source, Country target, double heuristicScore) {
+            this.source = source;
+            this.target = target;
+            this.heuristicScore = heuristicScore;
+        }
     }
 }

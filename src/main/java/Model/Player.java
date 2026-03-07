@@ -23,7 +23,7 @@ public class Player {
     @Getter
     private int draftArmies;
 
-    // --- חדש: אסטרטגיה עבור שחקן מחשב ---
+    // --- אסטרטגיה עבור שחקן מחשב ---
     @Setter
     private BotStrategy strategy;
 
@@ -55,7 +55,7 @@ public class Player {
         }
     }
 
-    // --- חדש: פונקציה להסרת מדינה כאשר שחקן אחר כובש אותה ---
+    // ---  פונקציה להסרת מדינה כאשר שחקן אחר כובש אותה ---
     public void removeCountry(Country c) {
         ownedCountries.remove(c);
     }
