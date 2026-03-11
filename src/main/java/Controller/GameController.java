@@ -1,6 +1,7 @@
 package Controller;
 
 import Model.*; // ייבוא כל מחלקות המודל כולל המצבים (DraftState, AttackState וכו')
+import Model.Records.BattleResult;
 import Model.States.DraftState;
 import Model.States.GameState;
 import Model.States.AttackState;
@@ -12,6 +13,7 @@ import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
 
 import java.util.Optional;
+import java.util.Set;
 
 public class GameController {
     private final RiskGame gameModel;
@@ -70,33 +72,59 @@ public class GameController {
     }
 
     private void handleAttackAction(Country clickedCountry) {
-        if (sourceCountry == null) {
-            if (canAttackFrom(clickedCountry)) {
+        if (sourceCountry == null)
+        {
+
+            if (canAttackFrom(clickedCountry))
+            {
                 setSelection(clickedCountry, "Select target for " + clickedCountry.getName());
+                Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
+                if(!targets.isEmpty())
+                    gameView.getMapPane().highlightTargets(targets);
+                else
+                    gameView.getControlPane().setMessage("No valid targets to attack from here!");
             }
-        } else {
-            if (clickedCountry.equals(sourceCountry)) {
+        }
+        else
+        {
+            if (clickedCountry.equals(sourceCountry))
                 clearSelection();
-            } else {
+            else
+            {
                 // המודל יעביר את הבקשה ל-AttackState
-                String result = gameModel.attack(sourceCountry, clickedCountry);
-                gameView.getControlPane().setMessage(result);
+                BattleResult result = gameModel.attack(sourceCountry, clickedCountry);
+                if (result != null)
+                {
+                    View.BattleResultDialog.show(result);
+                    String statusMsg = result.conquered() ? "Territory Conquered!" : "Attack completed.";
+                    gameView.getControlPane().setMessage(statusMsg);
+                }
+                else
+                    gameView.getControlPane().setMessage("Attack failed or invalid.");
                 clearSelection();
             }
         }
     }
 
     private void handleFortifyAction(Country clickedCountry) {
-        if (sourceCountry == null) {
-            if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()) && clickedCountry.getArmies() > 1) {
+        if (sourceCountry == null)
+        {
+            if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()) && clickedCountry.getArmies() > 1)
+            {
                 setSelection(clickedCountry, "Move from " + clickedCountry.getName() + ". Select target.");
+                Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
+                if(!targets.isEmpty())
+                    gameView.getMapPane().highlightTargets(targets);
+                else
+                    gameView.getControlPane().setMessage("No valid targets to attack from here!");
             }
-        } else {
-            if (clickedCountry.equals(sourceCountry)) {
+        }
+        else
+        {
+            if (clickedCountry.equals(sourceCountry))
                 clearSelection();
-            } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
+            else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()))
                 executeFortifyMove(clickedCountry);
-            }
         }
     }
 
@@ -160,6 +188,7 @@ public class GameController {
     private void clearSelection() {
         sourceCountry = null;
         gameView.getMapPane().setSelectedCountry(null);
+        gameView.getMapPane().clearHighlights();
     }
 
     private boolean canAttackFrom(Country c) {

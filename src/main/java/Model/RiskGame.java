@@ -1,5 +1,6 @@
 package Model;
 
+import Model.Records.BattleResult;
 import Model.States.DraftState;
 import Model.States.GameState;
 import lombok.Getter;
@@ -14,7 +15,7 @@ public class RiskGame {
     private final List<Player> players;
     private int currentPlayerIndex;
 
-    // *** השינוי המרכזי: שימוש במכונת מצבים במקום ב-Enum ***
+    // *** שימוש במכונת מצבים במקום ב-Enum ***
     @Getter
     private GameState currentState;
 
@@ -22,7 +23,8 @@ public class RiskGame {
     private final Dice dice;
     private final List<GameObserver> observers; // רשימת מאזינים לעדכון התצוגה
 
-    public RiskGame() {
+    public RiskGame()
+    {
         this.board = new Board();
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
@@ -31,7 +33,8 @@ public class RiskGame {
     }
 
     // הגדרת המצב הנוכחי של המשחק
-    public void setCurrentState(GameState state) {
+    public void setCurrentState(GameState state)
+    {
         this.currentState = state;
         notifyObservers();
     }
@@ -41,14 +44,16 @@ public class RiskGame {
         players.add(p);
     }
 
-    public void startGame() {
+    public void startGame()
+    {
         if (players.isEmpty()) return;
         initializeSetup();
         startTurn();
         notifyObservers();
     }
 
-    public void initializeSetup() {
+    public void initializeSetup()
+    {
         List<Country> allCountries = new ArrayList<>(board.getCountries());
         Collections.shuffle(allCountries);
 
@@ -70,7 +75,8 @@ public class RiskGame {
         startTurn();
     }
 
-    private void startTurn() {
+    private void startTurn()
+    {
         Player p = getCurrentPlayer();
         int reinforcement = Math.max(3, p.getOwnedCountries().size() / 3);
         reinforcement += board.calculateContinentBonus(p);
@@ -84,11 +90,13 @@ public class RiskGame {
 
     // --- האצלת הפעולות (Delegation) למכונת המצבים בסיבוכיות O(1) ---
 
-    public boolean placeArmy(Country country) {
+    public boolean placeArmy(Country country)
+    {
         return currentState.placeArmy(country);
     }
 
-    public String attack(Country attacker, Country defender) {
+    public BattleResult attack(Country attacker, Country defender)
+    {
         return currentState.attack(attacker, defender);
     }
 
@@ -102,7 +110,8 @@ public class RiskGame {
 
     // --- פונקציות עזר עבור מחלקות המצב (States) ---
 
-    public void handleConquest(Country attacker, Country defender, int moveAmount) {
+    public void handleConquest(Country attacker, Country defender, int moveAmount)
+    {
         Player oldOwner = defender.getOwner();
         Player newOwner = attacker.getOwner();
 
@@ -114,7 +123,8 @@ public class RiskGame {
     }
 
     // --- מנגנון ה-Observer (לעדכון התצוגה, חלק מ-MVC) ---
-    public interface GameObserver {
+    public interface GameObserver
+    {
         void onGameUpdate();
     }
 
@@ -122,8 +132,10 @@ public class RiskGame {
         observers.add(observer);
     }
 
-    public void notifyObservers() {
-        for (GameObserver obs : observers) {
+    public void notifyObservers()
+    {
+        for (GameObserver obs : observers)
+        {
             obs.onGameUpdate();
         }
     }

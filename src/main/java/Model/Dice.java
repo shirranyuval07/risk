@@ -12,7 +12,8 @@ public class Dice {
     }
 
     // מחזיר מערך של תוצאות ממויינות מהגבוה לנמוך (קריטי לחוקי ריסק)
-    public Integer[] roll(int numberOfDice) {
+    public Integer[] roll(int numberOfDice)
+    {
         Integer[] results = new Integer[numberOfDice];
         for (int i = 0; i < numberOfDice; i++) {
             results[i] = random.nextInt(6) + 1; // 1 to 6

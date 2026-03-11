@@ -2,11 +2,14 @@ package Model.States;
 
 import Model.Country;
 import Model.Player;
+import Model.Records.BattleResult;
 import Model.RiskGame;
+
+import java.util.*;
 
 public class AttackState implements GameState {
 
-    private RiskGame game;
+    private final RiskGame game;
 
     public AttackState(RiskGame game) {
         this.game = game;
@@ -18,16 +21,16 @@ public class AttackState implements GameState {
     }
 
     @Override
-    public String attack(Country attacker, Country defender) {
+    public BattleResult attack(Country attacker, Country defender) {
         Player currentPlayer = game.getCurrentPlayer();
 
         // ולידציות של שלב ההתקפה
-        if (attacker.getOwner() != currentPlayer) return "Not your country!";
-        if (defender.getOwner() == currentPlayer) return "Can't attack yourself!";
+        if (attacker.getOwner() != currentPlayer) return null; //"Not your country!"
+        if (defender.getOwner() == currentPlayer) return null; //"Can't attack yourself!"
 
         // שליפת השכנים היא גישה לרשימת השכנויות בגרף בסיבוכיות (O(k
-        if (!attacker.getNeighbors().contains(defender)) return "Not a neighbor!";
-        if (attacker.getArmies() <= 1) return "Need more than 1 army to attack!";
+        if (!attacker.getNeighbors().contains(defender)) return null; //"Not a neighbor!"
+        if (attacker.getArmies() <= 1) return null; //"Need more than 1 army to attack!"
 
         // הטלת קוביות (עד 3 לתוקף, עד 2 למגן)
         int aDiceCount = Math.min(3, attacker.getArmies() - 1);
@@ -40,6 +43,9 @@ public class AttackState implements GameState {
         int comparisons = Math.min(aDiceCount, dDiceCount);
         int aLoss = 0, dLoss = 0;
 
+        Arrays.sort(aRolls, Collections.reverseOrder());
+        Arrays.sort(dRolls, Collections.reverseOrder());
+
         for (int i = 0; i < comparisons; i++) {
             if (aRolls[i] > dRolls[i]) dLoss++;
             else aLoss++;
@@ -51,13 +57,16 @@ public class AttackState implements GameState {
         String result = String.format("Attack Result: Attacker lost %d, Defender lost %d", aLoss, dLoss);
 
         // בדיקת כיבוש - הפעלת מתודת העזר ממחלקת הניהול
+        boolean isConquered = false;
         if (defender.getArmies() == 0) {
             result += " | COUNTRY CONQUERED!";
             game.handleConquest(attacker, defender, aDiceCount);
+            isConquered = true;
         }
-
+        System.out.printf(result + "\n");
         game.notifyObservers();
-        return result;
+
+        return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered);
     }
 
     @Override
@@ -69,6 +78,17 @@ public class AttackState implements GameState {
     public void nextPhase() {
         // מעבר לשלב הביצור
         game.setCurrentState(new FortifyState(game));
+    }
+
+    @Override
+    public Set<Country> getValidTargets(Country source) {
+        Set<Country> enemyCountries = new HashSet<Country>();
+        for(Country c : source.getNeighbors())
+        {
+            if(c.getOwner() != game.getCurrentPlayer())
+                enemyCountries.add(c);
+        }
+        return enemyCountries;
     }
 
     @Override

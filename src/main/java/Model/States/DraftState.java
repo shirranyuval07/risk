@@ -2,7 +2,11 @@ package Model.States;
 
 import Model.Country;
 import Model.Player;
+import Model.Records.BattleResult;
 import Model.RiskGame;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class DraftState implements GameState
 {
@@ -28,8 +32,8 @@ public class DraftState implements GameState
         return true;
     }
     @Override
-    public String attack(Country attacker, Country defender) {
-        return "Wrong phase! You are currently in the Draft phase.";
+    public BattleResult attack(Country attacker, Country defender) {
+        return null; //"Wrong phase! You are currently in the Draft phase."
     }
 
     @Override
@@ -47,6 +51,11 @@ public class DraftState implements GameState
         // מעבר אקטיבי לשלב הבא! המערכת מחליפה את המצב הפנימי שלה
         game.setCurrentState(new AttackState(game));
         game.notifyObservers();
+    }
+
+    @Override
+    public Set<Country> getValidTargets(Country source) {
+        return new HashSet<>();
     }
 
     @Override

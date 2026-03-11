@@ -2,7 +2,10 @@ package Model.States;
 
 import Model.Country;
 import Model.Player;
+import Model.Records.BattleResult;
 import Model.RiskGame;
+
+import java.util.*;
 
 public class FortifyState implements GameState {
 
@@ -18,8 +21,8 @@ public class FortifyState implements GameState {
     }
 
     @Override
-    public String attack(Country attacker, Country defender) {
-        return "Wrong phase! You are currently in the Fortify phase.";
+    public BattleResult attack(Country attacker, Country defender) {
+        return null; //"Wrong phase! You are currently in the Fortify phase."
     }
 
     @Override
@@ -42,6 +45,29 @@ public class FortifyState implements GameState {
         // סיום התור! אנו קוראים לפונקציה של RiskGame שתעביר לשחקן הבא.
         // הפונקציה nextTurn() במחלקת RiskGame כבר דואגת לאתחל את השלב הבא ל-DraftState.
         game.nextTurn();
+    }
+
+    @Override
+    //gets the valid targets for fortifying using BFS.
+    public Set<Country> getValidTargets(Country source) {
+        Queue<Country> queue = new LinkedList<>();
+        HashSet<Country> visited = new HashSet<>();
+        queue.add(source);
+        visited.add(source);
+        while (!queue.isEmpty())
+        {
+            Country current = queue.poll();
+            for(Country neighbor : current.getNeighbors())
+            {
+                if(neighbor.getOwner() == game.getCurrentPlayer() && !visited.contains(neighbor))
+                {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                }
+            }
+        }
+        visited.remove(source);
+        return visited;
     }
 
     @Override

@@ -28,7 +28,8 @@ public class Board {
     // מפה זמנית לשמירת המחרוזות הגאומטריות שיישלפו מקובץ ה-SVG
     private final Map<String, String> rawSvgData = new HashMap<>();
 
-    public Board() {
+    public Board()
+    {
         loadSvgData();
         initializeFullWorld();
     }
@@ -36,7 +37,8 @@ public class Board {
     // ================================================================
     // קריאת קובץ ה-SVG מתיקיית Resources
     // ================================================================
-    private void loadSvgData() {
+    private void loadSvgData()
+    {
         try {
             // שים לב: וודא שהקובץ Risk_board.svg נמצא בתיקיית src/main/resources
             InputStream is = getClass().getResourceAsStream("/Risk_board.svg");
@@ -66,7 +68,8 @@ public class Board {
         }
     }
 
-    private void initializeFullWorld() {
+    private void initializeFullWorld()
+    {
         Continent na = new Continent("North America", 5, Color.rgb(65, 135, 210));
         Continent sa = new Continent("South America", 2, Color.rgb(46, 170, 80));
         Continent eu = new Continent("Europe", 5, Color.rgb(140, 80, 190));
@@ -130,7 +133,8 @@ public class Board {
         adjustContinent(continents.get(5), 0.85, 35, -20);   // אוסטרליה
     }
 
-    private void adjustContinent(Continent cont, double scale, int offsetX, int offsetY) {
+    private void adjustContinent(Continent cont, double scale, int offsetX, int offsetY)
+    {
         double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE;
         double minY = Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
 
@@ -166,7 +170,8 @@ public class Board {
     // ================================================================
     // בניית יבשות לפי ה-ID מתוך קובץ ה-SVG
     // ================================================================
-    private void buildNorthAmerica(Continent na) {
+    private void buildNorthAmerica(Continent na)
+    {
         addC(na, 1, "Alaska", "alaska");
         addC(na, 2, "NW Territory", "northwest_territory");
         addC(na, 3, "Greenland", "greenland");
@@ -178,14 +183,16 @@ public class Board {
         addC(na, 9, "Central America", "central_america");
     }
 
-    private void buildSouthAmerica(Continent sa) {
+    private void buildSouthAmerica(Continent sa)
+    {
         addC(sa, 10, "Venezuela", "venezuela");
         addC(sa, 11, "Peru", "peru");
         addC(sa, 12, "Brazil", "brazil");
         addC(sa, 13, "Argentina", "argentina");
     }
 
-    private void buildEurope(Continent eu) {
+    private void buildEurope(Continent eu)
+    {
         addC(eu, 14, "Iceland", "iceland");
         addC(eu, 15, "Scandinavia", "scandinavia");
         addC(eu, 16, "Ukraine", "ukraine");
@@ -195,7 +202,8 @@ public class Board {
         addC(eu, 20, "S. Europe", "southern_europe");
     }
 
-    private void buildAfrica(Continent af) {
+    private void buildAfrica(Continent af)
+    {
         addC(af, 21, "North Africa", "north_africa");
         addC(af, 22, "Egypt", "egypt");
         addC(af, 23, "East Africa", "east_africa");
@@ -204,7 +212,8 @@ public class Board {
         addC(af, 26, "Madagascar", "madagascar");
     }
 
-    private void buildAsia(Continent as) {
+    private void buildAsia(Continent as)
+    {
         addC(as, 27, "Ural", "ural");
         addC(as, 28, "Siberia", "siberia");
         addC(as, 29, "Yakutsk", "yakursk"); // שים לב: השארתי את שגיאת הכתיב התואמת ל-SVG (yakursk)
@@ -219,14 +228,16 @@ public class Board {
         addC(as, 38, "SE Asia", "siam"); // ב-SVG המקורי זה נקרא siam
     }
 
-    private void buildAustralia(Continent au) {
+    private void buildAustralia(Continent au)
+    {
         addC(au, 39, "Indonesia", "indonesia");
         addC(au, 40, "New Guinea", "new_guinea");
         addC(au, 41, "W. Australia", "western_australia");
         addC(au, 42, "E. Australia", "eastern_australia");
     }
 
-    private void buildAllConnections() {
+    private void buildAllConnections()
+    {
         connect(1, 2); connect(1, 4); connect(1, 30); connect(2, 3); connect(2, 4);
         connect(2, 5); connect(3, 6); connect(3, 14); connect(4, 5); connect(4, 7);
         connect(5, 6); connect(5, 7); connect(5, 8); connect(6, 8); connect(7, 8);
@@ -257,7 +268,8 @@ public class Board {
     }
 
     // הפונקציה ששולפת את המחרוזת ומייצרת מדינה עם SVGPath
-    private void addC(Continent cont, int id, String name, String svgId) {
+    private void addC(Continent cont, int id, String name, String svgId)
+    {
         String pathString = rawSvgData.get(svgId);
         if (pathString == null) {
             System.err.println("Warning: Could not find path for " + svgId + " in SVG file.");
@@ -280,7 +292,8 @@ public class Board {
         cont.addCountry(c);
     }
 
-    private void connect(int a, int b) {
+    private void connect(int a, int b)
+    {
         Country c1 = countries.get(a), c2 = countries.get(b);
         if (c1 != null && c2 != null) {
             c1.addNeighbor(c2);
@@ -288,7 +301,8 @@ public class Board {
         }
     }
 
-    public int calculateContinentBonus(Player p) {
+    public int calculateContinentBonus(Player p)
+    {
         int t = 0;
         for (Continent c : continents)
             if (c.isOwnedBy(p))

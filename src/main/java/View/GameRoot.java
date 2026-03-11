@@ -13,21 +13,23 @@ import lombok.Getter;
  * רכיב התצוגה הראשי המכיל את המפה ואת פאנל השליטה התחתון.
  */
 @Getter
-public class GameRoot extends BorderPane {
+public class GameRoot extends BorderPane
+{
 
     private final MapPane mapPane;
     private final ControlPane controlPane; // גרסת ה-JavaFX של ControlPanel
 
-    public GameRoot(RiskGame game) {
-        // הגדרת צבע רקע כהה לכל המסך (כמו שהיה לך ב-Swing)
+    public GameRoot(RiskGame game)
+    {
+        // הגדרת צבע רקע כהה לכל המסך
         BackgroundFill bgFill = new BackgroundFill(Color.rgb(8, 16, 35), CornerRadii.EMPTY, Insets.EMPTY);
         setBackground(new Background(bgFill));
 
         // אתחול הרכיבים
         this.mapPane = new MapPane(game.getBoard());
-        this.controlPane = new ControlPane(); // ניצור את זה בשלב הבא
+        this.controlPane = new ControlPane();
 
-        // סידור הרכיבים על המסך (מקביל ל-BorderLayout)
+        // סידור הרכיבים על המסך
         setCenter(mapPane);
         setBottom(controlPane);
     }

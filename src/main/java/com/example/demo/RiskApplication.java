@@ -1,7 +1,7 @@
 package com.example.demo;
 
 import Controller.GameController;
-import Model.GreedyAI;
+import Model.AIAgent.GreedyAI;
 import Model.Player;
 import Model.RiskGame;
 import View.GameRoot; // שים לב: אנחנו משתמשים ב-GameRoot של JavaFX עכשיו!
@@ -30,7 +30,7 @@ public class RiskApplication extends Application {
         aiBot.setStrategy(new GreedyAI());
         aiBot2.setStrategy(new GreedyAI());
 
-        //game.addPlayer(human);
+        game.addPlayer(human);
         game.addPlayer(aiBot);
         game.addPlayer(aiBot2);
 
