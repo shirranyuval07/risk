@@ -71,7 +71,25 @@ public class RiskGame {
     }
 
     public void nextTurn() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        // 1. קודם כל: בדיקת ניצחון! נספור כמה שחקנים פעילים נשארו
+        long activePlayersCount = players.stream()
+                .filter(p -> !p.getOwnedCountries().isEmpty())
+                .count();
+
+        // אם נשאר רק שחקן אחד עם מדינות, המשחק נגמר והוא המנצח
+        if (activePlayersCount <= 1) {
+            System.out.println("Game Over! We have a winner!");
+            // TODO: כאן תוכל לקרוא לפונקציה שמציגה את מסך הניצחון ב-JavaFX
+            return;
+        }
+
+        // 2. קידום התור לשחקן הבא שעדיין בחיים
+        do {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            // הלולאה תמשיך לקדם את האינדקס כל עוד השחקן הבא הוא ללא מדינות (מודח)
+        } while (players.get(currentPlayerIndex).getOwnedCountries().isEmpty());
+
+        // 3. כעת מובטח שהאינדקס מצביע על שחקן פעיל שיש לו מדינות
         startTurn();
     }
 

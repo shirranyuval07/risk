@@ -115,4 +115,18 @@ public class AIGraphAnalyzer
 
         return articulationPoints;
     }
+    /**
+     * פונקציית מעטפת הבודקת האם מדינה ספציפית מהווה צוואר בקבוק (Articulation Point) עבור הבעלים שלה.
+     * הפונקציה משתמשת באלגוריתם Tarjan/DFS הקיים במחלקה.
+     */
+    public boolean isArticulationPoint(Country c)
+    {
+        if (c.getOwner() == null) return false;
+
+        // מציאת כל צווארי הבקבוק של השחקן שמחזיק במדינה (לרוב זה יהיה היריב שאנחנו שוקלים לתקוף)
+        Set<Country> bottlenecks = findArticulationPoints(c.getOwner());
+
+        // בדיקה האם המדינה הספציפית (היעד שלנו) נמצאת בסט התוצאות ב-O(1)
+        return bottlenecks.contains(c);
+    }
 }
