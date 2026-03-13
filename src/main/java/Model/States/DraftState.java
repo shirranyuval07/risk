@@ -4,10 +4,12 @@ import Model.Country;
 import Model.Player;
 import Model.Records.BattleResult;
 import Model.RiskGame;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@Slf4j
 public class DraftState implements GameState
 {
     private final RiskGame game;
@@ -16,24 +18,24 @@ public class DraftState implements GameState
     {
         this.game = game;
     }
+
     @Override
     public boolean placeArmy(Country country) {
         Player currentPlayer = game.getCurrentPlayer();
 
-        // שליפת הבעלים מתבצעת בזמן O(1) בהנחה והגישה לנתונים יעילה
         if (country.getOwner() != currentPlayer) return false;
         if (currentPlayer.getDraftArmies() <= 0) return false;
 
         country.addArmies(1);
         currentPlayer.decreaseDraftArmies();
 
-        // עדכון תצוגה באמצעות מנגנון ה-Observer
         game.notifyObservers();
         return true;
     }
+
     @Override
     public BattleResult attack(Country attacker, Country defender) {
-        return null; //"Wrong phase! You are currently in the Draft phase."
+        return null;
     }
 
     @Override
@@ -44,11 +46,10 @@ public class DraftState implements GameState
     @Override
     public void nextPhase() {
         if (game.getCurrentPlayer().getDraftArmies() > 0) {
-            System.out.println("Cannot advance: You must place all draft armies.");
+            log.warn("Cannot advance: You must place all draft armies.");
             return;
         }
 
-        // מעבר אקטיבי לשלב הבא! המערכת מחליפה את המצב הפנימי שלה
         game.setCurrentState(new AttackState(game));
         game.notifyObservers();
     }

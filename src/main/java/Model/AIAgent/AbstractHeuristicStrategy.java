@@ -1,6 +1,7 @@
 package Model.AIAgent;
 
 import Model.*;
+import Model.AIAgent.Strategies.HeuristicStrategy;
 
 import java.util.Set;
 

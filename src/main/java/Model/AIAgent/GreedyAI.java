@@ -1,11 +1,12 @@
 package Model.AIAgent;
 
 import Model.*;
+import Model.AIAgent.Strategies.HeuristicStrategy;
 import Model.Records.AttackMove;
 import Model.Records.BattleResult;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
-
+@Slf4j
 public class GreedyAI implements BotStrategy {
 
     private final AIGraphAnalyzer graphAnalyzer = new AIGraphAnalyzer();
@@ -23,13 +24,12 @@ public class GreedyAI implements BotStrategy {
     // ═══════════════════════════════════════════════════════════════════════════
 
     @Override
-    public void executeTurn(Player player, RiskGame game)
-    {
+    public void executeTurn(Player player, RiskGame game) {
         if (player.getOwnedCountries().isEmpty()) {
             return;
         }
-        // הדפסה חכמה שתראה לך בדיוק איזה סוג בוט משחק עכשיו!
-        System.out.println("--- AI Turn Started: " + player.getName() + " [" + strategy.getClass().getSimpleName() + "] ---");
+
+        log.info("--- AI Turn Started: {} [{}] ---", player.getName(), strategy.getClass().getSimpleName());
 
         chooseReinforcement(player, game);
         game.nextPhase();
@@ -40,11 +40,11 @@ public class GreedyAI implements BotStrategy {
         chooseFortify(player, game);
         game.nextPhase();
 
-        System.out.println("--- AI Turn Ended ---");
+        log.info("--- AI Turn Ended ---");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  שלב 1 – DRAFT (ללא שינוי)
+    //  שלב 1 – DRAFT
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseReinforcement(Player player, RiskGame game) {
@@ -55,8 +55,7 @@ public class GreedyAI implements BotStrategy {
         while (player.getDraftArmies() > 0)
             game.placeArmy(mostThreatened);
 
-        System.out.printf("[AI DRAFT] Placed %d armies on: %s%n",
-                startArmies, mostThreatened.getName());
+        log.debug("[AI DRAFT] Placed {} armies on: {}", startArmies, mostThreatened.getName());
     }
 
     private Country findMostThreatenedCountry(Player player) {
@@ -75,7 +74,7 @@ public class GreedyAI implements BotStrategy {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  שלב 2 – ATTACK (מעודכן לשימוש באסטרטגיה)
+    //  שלב 2 – ATTACK
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseAttack(Player player, RiskGame game) {
@@ -118,13 +117,13 @@ public class GreedyAI implements BotStrategy {
     }
 
     private boolean performAttack(AttackMove move, RiskGame game) {
-        System.out.printf("[AI ATTACK] %s (%d) → %s (%d) | Score: %.2f%n",
+        log.info("[AI ATTACK] {} ({}) → {} ({}) | Score: {}",
                 move.source().getName(), move.source().getArmies(),
                 move.target().getName(), move.target().getArmies(),
-                move.heuristicScore());
+                String.format("%.2f", move.heuristicScore()));
 
         BattleResult result = game.attack(move.source(), move.target());
-        System.out.println("[AI RESULT] " + result);
+        log.info("[AI RESULT] {}", result);
 
         return result.conquered();
     }
@@ -139,7 +138,7 @@ public class GreedyAI implements BotStrategy {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  שלב 3 – FORTIFY (ללא שינוי)
+    //  שלב 3 – FORTIFY
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseFortify(Player player, RiskGame game) {
@@ -151,7 +150,8 @@ public class GreedyAI implements BotStrategy {
 
         int armiesToMove = safeCountry.getArmies() - 1;
         game.fortify(safeCountry, borderCountry, armiesToMove);
-        System.out.printf("[AI FORTIFY] Moved %d armies from %s → %s%n",
+
+        log.debug("[AI FORTIFY] Moved {} armies from {} → {}",
                 armiesToMove, safeCountry.getName(), borderCountry.getName());
     }
 

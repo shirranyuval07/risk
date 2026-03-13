@@ -1,59 +1,63 @@
 package com.example.demo;
 
 import Controller.GameController;
-import Model.AIAgent.BalancedStrategy;
-import Model.AIAgent.DefensiveStrategy;
+import Model.AIAgent.Strategies.BalancedStrategy;
+import Model.AIAgent.Strategies.DefensiveStrategy;
 import Model.AIAgent.GreedyAI;
-import Model.AIAgent.OffensiveStrategy;
+import Model.AIAgent.Strategies.OffensiveStrategy;
 import Model.Player;
 import Model.RiskGame;
-import View.GameRoot; // שים לב: אנחנו משתמשים ב-GameRoot של JavaFX עכשיו!
+import View.GameRoot;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
-import javafx.scene.paint.Color; // שימוש ב-Color של JavaFX
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.example.demo", "Model"})
 public class RiskApplication extends Application {
 
     private RiskGame game;
+    private ConfigurableApplicationContext springContext;
 
-    // שלב 1 במחזור החיים של JavaFX: אתחול הלוגיקה מאחורי הקלעים
     @Override
     public void init() {
+        // 1. Boot up the Spring Framework!
+        springContext = SpringApplication.run(RiskApplication.class);
+
         game = new RiskGame();
 
-        // שים לב לשימוש ב-Color.rgb של JavaFX
-        Player human = new Player("Yuval", Color.rgb(50, 150, 230), false);
+        // Player human = new Player("Yuval", Color.rgb(50, 150, 230), false);
+
         Player aiBot = new Player("Terminator Bot Defense", Color.rgb(225, 60, 60), true);
         Player aiBot2 = new Player("Terminator Bot Offense", Color.rgb(225, 60, 225), true);
         Player aiBot3 = new Player("Terminator Bot Balanced", Color.rgb(225, 143, 60), true);
-        aiBot.setStrategy(new GreedyAI(new DefensiveStrategy()));
-        aiBot2.setStrategy(new GreedyAI(new OffensiveStrategy()));
-        aiBot3.setStrategy(new GreedyAI(new BalancedStrategy()));
 
-        //game.addPlayer(human);
+
+
+        BalancedStrategy balancedStrategy = springContext.getBean(BalancedStrategy.class);
+        DefensiveStrategy defensiveStrategy = springContext.getBean((DefensiveStrategy.class));
+        OffensiveStrategy offensiveStrategy = springContext.getBean(OffensiveStrategy.class);
+        aiBot3.setStrategy(new GreedyAI(balancedStrategy));
+        aiBot.setStrategy(new GreedyAI(defensiveStrategy));
+        aiBot2.setStrategy(new GreedyAI(offensiveStrategy));
+
         game.addPlayer(aiBot);
         game.addPlayer(aiBot2);
         game.addPlayer(aiBot3);
 
-        // Setup אוטומטי של כל העולם!
         game.startGame();
     }
 
-    // שלב 2: בניית הממשק הגרפי והצגתו
     @Override
     public void start(Stage primaryStage) {
-        // יצירת החלון הראשי (מחליף את GameFrame הישן)
         GameRoot root = new GameRoot(game);
-
-        // יצירת הקונטרולר (נעדכן אותו בהמשך שיתאים ל-JavaFX)
         new GameController(game, root);
 
-        // הגדרת הסצנה (התוכן) בתוך ה-Stage (החלון)
         Scene scene = new Scene(root, 1200, 800);
         try {
             Image icon = new Image("map_background.png");
@@ -61,14 +65,18 @@ public class RiskApplication extends Application {
         } catch (Exception e) {
             System.out.println("Icon image not found");
         }
+
         primaryStage.setTitle("⚔ Risk: Global Conquest 2026 ⚔");
         primaryStage.setScene(scene);
-        primaryStage.setMaximized(true); // תופס את כל המסך
+        primaryStage.setMaximized(true);
         primaryStage.show();
     }
 
-    public static void main(String[] args) {
-        // שורת הקסם של JavaFX: מפעילה את האפליקציה במקום Spring Boot רגיל
-        launch(args);
+    // 3. Gracefully shut down Spring when the game closes
+    @Override
+    public void stop() {
+        if (springContext != null) {
+            springContext.close();
+        }
     }
 }

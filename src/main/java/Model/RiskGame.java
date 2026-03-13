@@ -4,24 +4,24 @@ import Model.Records.BattleResult;
 import Model.States.DraftState;
 import Model.States.GameState;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
+@Slf4j
 public class RiskGame {
-    // --- Getters ---
     @Getter
     private final Board board;
     @Getter
     private final List<Player> players;
     private int currentPlayerIndex;
 
-    // *** שימוש במכונת מצבים במקום ב-Enum ***
     @Getter
     private GameState currentState;
 
     @Getter
     private final Dice dice;
-    private final List<GameObserver> observers; // רשימת מאזינים לעדכון התצוגה
+    private final List<GameObserver> observers;
 
     public RiskGame()
     {
@@ -32,14 +32,12 @@ public class RiskGame {
         this.observers = new ArrayList<>();
     }
 
-    // הגדרת המצב הנוכחי של המשחק
     public void setCurrentState(GameState state)
     {
         this.currentState = state;
         notifyObservers();
     }
 
-    // --- ניהול שחקנים ושלבים ---
     public void addPlayer(Player p) {
         players.add(p);
     }
@@ -71,25 +69,19 @@ public class RiskGame {
     }
 
     public void nextTurn() {
-        // 1. קודם כל: בדיקת ניצחון! נספור כמה שחקנים פעילים נשארו
         long activePlayersCount = players.stream()
                 .filter(p -> !p.getOwnedCountries().isEmpty())
                 .count();
 
-        // אם נשאר רק שחקן אחד עם מדינות, המשחק נגמר והוא המנצח
         if (activePlayersCount <= 1) {
-            System.out.println("Game Over! We have a winner!");
-            // TODO: כאן תוכל לקרוא לפונקציה שמציגה את מסך הניצחון ב-JavaFX
+            log.info("Game Over! We have a winner!");
             return;
         }
 
-        // 2. קידום התור לשחקן הבא שעדיין בחיים
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-            // הלולאה תמשיך לקדם את האינדקס כל עוד השחקן הבא הוא ללא מדינות (מודח)
         } while (players.get(currentPlayerIndex).getOwnedCountries().isEmpty());
 
-        // 3. כעת מובטח שהאינדקס מצביע על שחקן פעיל שיש לו מדינות
         startTurn();
     }
 
@@ -100,13 +92,10 @@ public class RiskGame {
         reinforcement += board.calculateContinentBonus(p);
 
         p.setDraftArmies(reinforcement);
-        System.out.println("It's " + p.getName() + "'s turn. Reinforcements: " + reinforcement);
+        log.info("It's {}'s turn. Reinforcements: {}", p.getName(), reinforcement);
 
-        // בתחילת התור, המערכת נכנסת אוטומטית למצב הצבת הכוחות (DRAFT)
         setCurrentState(new DraftState(this));
     }
-
-    // --- האצלת הפעולות (Delegation) למכונת המצבים בסיבוכיות O(1) ---
 
     public boolean placeArmy(Country country)
     {
@@ -126,8 +115,6 @@ public class RiskGame {
         currentState.nextPhase();
     }
 
-    // --- פונקציות עזר עבור מחלקות המצב (States) ---
-
     public void handleConquest(Country attacker, Country defender, int moveAmount)
     {
         Player oldOwner = defender.getOwner();
@@ -140,7 +127,6 @@ public class RiskGame {
         defender.addArmies(moveAmount);
     }
 
-    // --- מנגנון ה-Observer (לעדכון התצוגה, חלק מ-MVC) ---
     public interface GameObserver
     {
         void onGameUpdate();

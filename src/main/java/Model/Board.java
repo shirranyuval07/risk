@@ -1,6 +1,7 @@
 package Model;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.transform.Scale;
@@ -16,16 +17,12 @@ import org.w3c.dom.NodeList;
 import java.io.InputStream;
 import java.util.*;
 
-/**
- * לוח המשחק – 42 טריטוריות עם צורות אורגניות מתוך קובץ SVG.
- * Canvas: 1060×700.
- */
+@Slf4j
 public class Board {
     private final Map<Integer, Country> countries = new HashMap<>();
     @Getter
     private final List<Continent> continents = new ArrayList<>();
 
-    // מפה זמנית לשמירת המחרוזות הגאומטריות שיישלפו מקובץ ה-SVG
     private final Map<String, String> rawSvgData = new HashMap<>();
 
     public Board()
@@ -34,14 +31,9 @@ public class Board {
         initializeFullWorld();
     }
 
-    // ================================================================
-    // קריאת קובץ ה-SVG מתיקיית Resources
-    // ================================================================
     private void loadSvgData()
     {
-        try {
-            // שים לב: וודא שהקובץ Risk_board.svg נמצא בתיקיית src/main/resources
-            InputStream is = getClass().getResourceAsStream("/Risk_board.svg");
+        try (InputStream is = getClass().getResourceAsStream("/Risk_board.svg")){
             if (is == null) {
                 throw new RuntimeException("Cannot find Risk_board.svg in Resources folder!");
             }
@@ -63,8 +55,7 @@ public class Board {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error loading SVG Data:");
-            e.printStackTrace();
+            log.error("Error loading SVG Data", e);
         }
     }
 
@@ -86,51 +77,40 @@ public class Board {
         buildAustralia(au);
         buildAllConnections();
 
-        applyContinentAdjustments(); // מסדר את היבשות למקומן
+        applyContinentAdjustments();
 
-        applyGlobalScale(1.35, -250, -150); //פקטור הגדלה
+        applyGlobalScale(1.35, -250, -150);
     }
-    // ================================================================
-    // זום גלובלי למפה כולה
-    // ================================================================
-    // ================================================================
-    // אלגוריתם להגדלת כל המפה ומיקום מדויק של כפתורי הצבא
-    // ================================================================
+
     private void applyGlobalScale(double scale, double offsetX, double offsetY) {
         for (Country c : countries.values()) {
             SVGPath p = (SVGPath) c.getShape();
 
-            // 1. הגדלה והזזה של הפוליגון עצמו (הצורה הוויזואלית)
-            Scale scaleTransform = new Scale(scale, scale, 0, 0); // הגדלה מנקודת ה-0,0
-            Translate translateTransform = new Translate(offsetX, offsetY); // הזזה למרכז המסך
+            Scale scaleTransform = new Scale(scale, scale, 0, 0);
+            Translate translateTransform = new Translate(offsetX, offsetY);
 
             p.getTransforms().clear();
             p.getTransforms().addAll(translateTransform, scaleTransform);
 
-            // 2. חישוב המרכז המקורי של המדינה (לפני ההגדלה)
             Bounds localBounds = p.getBoundsInLocal();
             double originalCenterX = localBounds.getMinX() + (localBounds.getWidth() / 2.0);
             double originalCenterY = localBounds.getMinY() + (localBounds.getHeight() / 2.0);
 
-            // 3. החלת אותה מתמטיקה בדיוק על נקודת המרכז כדי שהדיסקית תזוז עם ההגדלה
             int newCx = (int) ((originalCenterX * scale) + offsetX);
             int newCy = (int) ((originalCenterY * scale) + offsetY);
 
-            // עדכון המיקום הסופי באובייקט המדינה
             c.setX(newCx);
             c.setY(newCy);
         }
     }
-    // ================================================================
-    // אלגוריתם להקטנת יבשות והזזתן (מותאם כעת ל-SVGPath)
-    // ================================================================
+
     private void applyContinentAdjustments() {
-        adjustContinent(continents.get(0), 0.82, -40, -30); // צפון אמריקה
-        adjustContinent(continents.get(1), 0.85, -40, -45);  // דרום אמריקה
-        adjustContinent(continents.get(2), 0.85, 0, -5);     // אירופה
-        adjustContinent(continents.get(3), 0.85, 15, -35);   // אפריקה
-        adjustContinent(continents.get(4), 0.85, -35, -20);  // אסיה
-        adjustContinent(continents.get(5), 0.85, 35, -20);   // אוסטרליה
+        adjustContinent(continents.get(0), 0.82, -40, -30);
+        adjustContinent(continents.get(1), 0.85, -40, -45);
+        adjustContinent(continents.get(2), 0.85, 0, -5);
+        adjustContinent(continents.get(3), 0.85, 15, -35);
+        adjustContinent(continents.get(4), 0.85, -35, -20);
+        adjustContinent(continents.get(5), 0.85, 35, -20);
     }
 
     private void adjustContinent(Continent cont, double scale, int offsetX, int offsetY)
@@ -138,9 +118,8 @@ public class Board {
         double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE;
         double minY = Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
 
-        // מציאת גבולות היבשת כולה
         for (Country c : cont.getCountries()) {
-            SVGPath p = (SVGPath) c.getShape(); // השתמש ב-SVGPath ולא ב-Polygon
+            SVGPath p = (SVGPath) c.getShape();
             Bounds b = p.getBoundsInLocal();
             if (b.getMinX() < minX) minX = b.getMinX();
             if (b.getMaxX() > maxX) maxX = b.getMaxX();
@@ -154,12 +133,10 @@ public class Board {
         for (Country c : cont.getCountries()) {
             SVGPath p = (SVGPath) c.getShape();
 
-            // שימוש בטרנספורמציות מובנות של JavaFX
             Scale scaleTransform = new Scale(scale, scale, centerX, centerY);
             Translate translateTransform = new Translate(offsetX, offsetY);
             p.getTransforms().addAll(translateTransform, scaleTransform);
 
-            // עדכון המיקום של כפתור הצבא (הדיסקית)
             int newCx = (int)(centerX + (c.getX() - centerX) * scale) + offsetX;
             int newCy = (int)(centerY + (c.getY() - centerY) * scale) + offsetY;
             c.setX(newCx);
@@ -167,9 +144,6 @@ public class Board {
         }
     }
 
-    // ================================================================
-    // בניית יבשות לפי ה-ID מתוך קובץ ה-SVG
-    // ================================================================
     private void buildNorthAmerica(Continent na)
     {
         addC(na, 1, "Alaska", "alaska");
@@ -216,7 +190,7 @@ public class Board {
     {
         addC(as, 27, "Ural", "ural");
         addC(as, 28, "Siberia", "siberia");
-        addC(as, 29, "Yakutsk", "yakursk"); // שים לב: השארתי את שגיאת הכתיב התואמת ל-SVG (yakursk)
+        addC(as, 29, "Yakutsk", "yakursk");
         addC(as, 30, "Kamchatka", "kamchatka");
         addC(as, 31, "Irkutsk", "irkutsk");
         addC(as, 32, "Mongolia", "mongolia");
@@ -225,7 +199,7 @@ public class Board {
         addC(as, 35, "China", "china");
         addC(as, 36, "Middle East", "middle_east");
         addC(as, 37, "India", "india");
-        addC(as, 38, "SE Asia", "siam"); // ב-SVG המקורי זה נקרא siam
+        addC(as, 38, "SE Asia", "siam");
     }
 
     private void buildAustralia(Continent au)
@@ -267,19 +241,17 @@ public class Board {
         connect(41, 42);
     }
 
-    // הפונקציה ששולפת את המחרוזת ומייצרת מדינה עם SVGPath
     private void addC(Continent cont, int id, String name, String svgId)
     {
         String pathString = rawSvgData.get(svgId);
         if (pathString == null) {
-            System.err.println("Warning: Could not find path for " + svgId + " in SVG file.");
+            log.warn("Could not find path for {} in SVG file.", svgId);
             pathString = "";
         }
 
         SVGPath shape = new SVGPath();
         shape.setContent(pathString);
 
-        // מציאת אמצע הצורה (בשביל מיקום הדיסקית של החיילים)
         Bounds bounds = shape.getBoundsInLocal();
         int centerX = (int) (bounds.getMinX() + bounds.getWidth() / 2);
         int centerY = (int) (bounds.getMinY() + bounds.getHeight() / 2);

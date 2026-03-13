@@ -4,9 +4,11 @@ import Model.Country;
 import Model.Player;
 import Model.Records.BattleResult;
 import Model.RiskGame;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
+@Slf4j
 public class AttackState implements GameState {
 
     private final RiskGame game;
@@ -17,29 +19,25 @@ public class AttackState implements GameState {
 
     @Override
     public boolean placeArmy(Country country) {
-        return false; // לא חוקי בשלב זה
+        return false;
     }
 
     @Override
     public BattleResult attack(Country attacker, Country defender) {
         Player currentPlayer = game.getCurrentPlayer();
 
-        // ולידציות של שלב ההתקפה
-        if (attacker.getOwner() != currentPlayer) return null; //"Not your country!"
-        if (defender.getOwner() == currentPlayer) return null; //"Can't attack yourself!"
+        if (attacker.getOwner() != currentPlayer) return null;
+        if (defender.getOwner() == currentPlayer) return null;
 
-        // שליפת השכנים היא גישה לרשימת השכנויות בגרף בסיבוכיות (O(k
-        if (!attacker.getNeighbors().contains(defender)) return null; //"Not a neighbor!"
-        if (attacker.getArmies() <= 1) return null; //"Need more than 1 army to attack!"
+        if (!attacker.getNeighbors().contains(defender)) return null;
+        if (attacker.getArmies() <= 1) return null;
 
-        // הטלת קוביות (עד 3 לתוקף, עד 2 למגן)
         int aDiceCount = Math.min(3, attacker.getArmies() - 1);
         int dDiceCount = Math.min(2, defender.getArmies());
 
         Integer[] aRolls = game.getDice().roll(aDiceCount);
         Integer[] dRolls = game.getDice().roll(dDiceCount);
 
-        // השוואת קוביות (חוקי ריסק: משווים את התוצאות הגבוהות ביותר)
         int comparisons = Math.min(aDiceCount, dDiceCount);
         int aLoss = 0, dLoss = 0;
 
@@ -56,14 +54,14 @@ public class AttackState implements GameState {
 
         String result = String.format("Attack Result: Attacker lost %d, Defender lost %d", aLoss, dLoss);
 
-        // בדיקת כיבוש - הפעלת מתודת העזר ממחלקת הניהול
         boolean isConquered = false;
         if (defender.getArmies() == 0) {
             result += " | COUNTRY CONQUERED!";
             game.handleConquest(attacker, defender, aDiceCount);
             isConquered = true;
         }
-        System.out.printf(result + "\n");
+
+        log.info(result);
         game.notifyObservers();
 
         return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered);
@@ -76,7 +74,6 @@ public class AttackState implements GameState {
 
     @Override
     public void nextPhase() {
-        // מעבר לשלב הביצור
         game.setCurrentState(new FortifyState(game));
     }
 
