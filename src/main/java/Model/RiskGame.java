@@ -23,6 +23,10 @@ public class RiskGame {
     private final Dice dice;
     private final List<GameObserver> observers;
 
+    @Getter
+    private boolean gameOver = false;
+
+
     public RiskGame()
     {
         this.board = new Board();
@@ -74,7 +78,9 @@ public class RiskGame {
                 .count();
 
         if (activePlayersCount <= 1) {
+            this.gameOver = true; // סימון שהמשחק נגמר
             log.info("Game Over! We have a winner!");
+            notifyObservers(); // קריטי! זה מה שמעדכן את מפת המסך בפעם האחרונה
             return;
         }
 

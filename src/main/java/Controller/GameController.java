@@ -165,11 +165,21 @@ public class GameController {
 
     // הפעלת הבוט
     private void checkAndExecuteAITurn() {
+        // 1. קודם כל, אם המשחק נגמר - תעצור הכל ותכתוב מי ניצח!
+        if (gameModel.isGameOver()) {
+            Player winner = gameModel.getCurrentPlayer(); // השחקן האחרון שנשאר
+            gameView.getControlPane().setMessage("🏆 GAME OVER! Winner: " + winner.getName() + " 🏆");
+            return; // השורה הזו שוברת את הלולאה האינסופית
+        }
+
         if (isCurrentPlayerAI()) {
             PauseTransition pause = new PauseTransition(Duration.seconds(1));
             pause.setOnFinished(e -> {
+
+                // 2. הגנת ביטחון במקרה שהמשחק נגמר תוך כדי ההשהייה
+                if (gameModel.isGameOver()) return;
+
                 if (isCurrentPlayerAI()) {
-                    // הבוט (ששדרגנו קודם) פועל ומקדם את מכונת המצבים בעצמו
                     gameModel.getCurrentPlayer().playTurn(gameModel);
                     clearSelection();
                     checkAndExecuteAITurn();

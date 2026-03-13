@@ -33,8 +33,8 @@ public class RiskApplication extends Application {
 
         // Player human = new Player("Yuval", Color.rgb(50, 150, 230), false);
 
-        Player aiBot = new Player("Terminator Bot Defense", Color.rgb(225, 60, 60), true);
-        Player aiBot2 = new Player("Terminator Bot Offense", Color.rgb(225, 60, 225), true);
+        Player aiBot = new Player("Terminator Bot Defense", Color.rgb(0, 85, 225), true);
+        Player aiBot2 = new Player("Terminator Bot Offense", Color.rgb(225, 60, 60), true);
         Player aiBot3 = new Player("Terminator Bot Balanced", Color.rgb(225, 143, 60), true);
 
 

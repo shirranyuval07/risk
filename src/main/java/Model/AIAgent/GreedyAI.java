@@ -6,6 +6,10 @@ import Model.Records.AttackMove;
 import Model.Records.BattleResult;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 @Slf4j
 public class GreedyAI implements BotStrategy {
 
@@ -48,14 +52,73 @@ public class GreedyAI implements BotStrategy {
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseReinforcement(Player player, RiskGame game) {
+        Map<Country, Double> threatScores = new HashMap<>();
+        double totalThreat = 0.0;
+
+        // 1. Find our critical bottlenecks ONCE before the loop to save CPU time
+        Set<Country> myBottlenecks = graphAnalyzer.findArticulationPoints(player);
+
+        // 2. Score the borders
+        for (Country country : player.getOwnedCountries()) {
+            int enemyStrength = 0;
+            for (Country neighbor : country.getNeighbors()) {
+                if (neighbor.getOwner() != player) {
+                    enemyStrength += neighbor.getArmies();
+                }
+            }
+
+            if (enemyStrength > 0) {
+                // Base threat: Enemy forces divided by our current defense
+                double score = (double) enemyStrength / Math.max(country.getArmies(), 1);
+
+                // STRATEGIC OVERRIDE: If this border is an articulation point,
+                // losing it splits our empire. Double its reinforcement priority!
+                if (myBottlenecks.contains(country)) {
+                    score *= 2.0;
+                }
+
+                threatScores.put(country, score);
+                totalThreat += score;
+            }
+        }
+
+        int totalDraftArmies = player.getDraftArmies();
+
+        // Edge case: If there are no direct threats (e.g., we own the whole map), use the old fallback
+        if (totalThreat == 0) {
+            Country fallback = findMostThreatenedCountry(player);
+            if (fallback != null) {
+                while (player.getDraftArmies() > 0) {
+                    game.placeArmy(fallback);
+                }
+            }
+            return;
+        }
+
+        // 3. Distribute armies proportionally using Math.floor
+        for (Map.Entry<Country, Double> entry : threatScores.entrySet()) {
+            Country country = entry.getKey();
+            double percentageOfThreat = entry.getValue() / totalThreat;
+
+            // Calculate how many armies this specific border deserves
+            int armiesForThisCountry = (int) Math.floor(percentageOfThreat * totalDraftArmies);
+
+            for (int i = 0; i < armiesForThisCountry; i++) {
+                if (player.getDraftArmies() > 0) {
+                    game.placeArmy(country);
+                }
+            }
+        }
+
+        // 4. Clean up remainders
+        // Because Math.floor rounds down, we might have 1 or 2 armies left over.
+        // Dump the remaining change on the absolute most threatened country.
         Country mostThreatened = findMostThreatenedCountry(player);
-        if (mostThreatened == null) return;
-
-        int startArmies = player.getDraftArmies();
-        while (player.getDraftArmies() > 0)
+        while (player.getDraftArmies() > 0 && mostThreatened != null) {
             game.placeArmy(mostThreatened);
+        }
 
-        log.debug("[AI DRAFT] Placed {} armies on: {}", startArmies, mostThreatened.getName());
+        log.debug("[AI DRAFT] Smart distributed {} armies across borders.", totalDraftArmies);
     }
 
     private Country findMostThreatenedCountry(Player player) {
@@ -83,13 +146,21 @@ public class GreedyAI implements BotStrategy {
         while (!attackQueue.isEmpty()) {
             AttackMove best = attackQueue.poll();
 
+            // אם ההתקפה כבר לא חוקית עוד לפני שהתחלנו, דלג עליה
             if (!isMoveStillValid(best, player))
                 continue;
 
-            boolean conquered = performAttack(best, game);
+            boolean conquered = false;
 
-            if (conquered)
+            //  המשך לתקוף את אותו היעד כל עוד היתרון שלנו נשמר ולא כבשנו!
+            while (isMoveStillValid(best, player) && !conquered) {
+                conquered = performAttack(best, game);
+            }
+
+            // אם בסופו של דבר כבשנו את המדינה, מפת המשחק השתנתה משמעותית, אז נבנה את התור מחדש
+            if (conquered) {
                 attackQueue = buildAttackQueue(player);
+            }
         }
     }
 
