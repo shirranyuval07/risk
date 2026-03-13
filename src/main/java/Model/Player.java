@@ -42,7 +42,7 @@ public class Player {
 
             // 2. קידום שלבי המשחק באופן אוטומטי כדי להעביר את התור לשחקן הבא
             // הבוט סיים, אז אנחנו מריצים את nextPhase עד שהתור עובר
-            while(game.getCurrentPlayer() == this) {
+            while(game.getCurrentPlayer() == this && !game.isGameOver()) {
                 game.nextPhase();
             }
         }

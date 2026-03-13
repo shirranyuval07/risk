@@ -31,7 +31,7 @@ public class RiskApplication extends Application {
 
         game = new RiskGame();
 
-        // Player human = new Player("Yuval", Color.rgb(50, 150, 230), false);
+        Player human = new Player("Aba", Color.rgb(255, 255, 255), false);
 
         Player aiBot = new Player("Terminator Bot Defense", Color.rgb(0, 85, 225), true);
         Player aiBot2 = new Player("Terminator Bot Offense", Color.rgb(225, 60, 60), true);
@@ -49,7 +49,7 @@ public class RiskApplication extends Application {
         game.addPlayer(aiBot);
         game.addPlayer(aiBot2);
         game.addPlayer(aiBot3);
-
+        game.addPlayer(human);
         game.startGame();
     }
 
