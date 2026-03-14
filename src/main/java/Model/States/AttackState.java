@@ -53,18 +53,19 @@ public class AttackState implements GameState {
         defender.removeArmies(dLoss);
 
         String result = String.format("Attack Result: Attacker lost %d, Defender lost %d", aLoss, dLoss);
-
+        int minMove = aDiceCount; // המינימום הוא כמות הקוביות שהתוקף הטיל
+        int maxMove = attacker.getArmies() - 1; // המקסימום הוא כל החיילים פחות 1
         boolean isConquered = false;
         if (defender.getArmies() == 0) {
             result += " | COUNTRY CONQUERED!";
-            game.handleConquest(attacker, defender, aDiceCount);
+            //game.handleConquest(attacker, defender, aDiceCount);
             isConquered = true;
         }
 
         log.info(result);
         game.notifyObservers();
 
-        return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered);
+        return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered,minMove,maxMove);
     }
 
     @Override

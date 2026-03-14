@@ -8,5 +8,5 @@ public interface HeuristicStrategy {
     double calculateHeuristic(Country source, Country target, Player player, AIGraphAnalyzer analyzer);
     double getAttackThreshold();
     double getMinArmyAdvantage();
-
+    int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove);
 }

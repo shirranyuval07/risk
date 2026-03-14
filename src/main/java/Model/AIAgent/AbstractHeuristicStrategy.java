@@ -3,6 +3,8 @@ package Model.AIAgent;
 import Model.*;
 import Model.AIAgent.Strategies.HeuristicStrategy;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
@@ -22,8 +24,7 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
     protected final double attackThreshold;
     protected final double minArmyAdvantage;
 
-
-
+    private final Map<HeuristicRule, Double> dynamicRules = new HashMap<>();
 
     public AbstractHeuristicStrategy(
             double wWin, double wCont, double wStrat, double wCost,
@@ -40,61 +41,44 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
         this.attackThreshold = threshold;
         this.minArmyAdvantage = minAdv;
     }
-
+    protected void addRule(HeuristicRule rule, double weight) {
+        dynamicRules.put(rule, weight);
+    }
     @Override
     public double calculateHeuristic(Country source, Country target, Player player, AIGraphAnalyzer analyzer) {
 
-        // 1. חישוב הרווח הפוטנציאלי (תועלת)
+        // 1. הלוגיקה המקורית והבסיסית שלך (נשארת ללא שינוי)
         double pWin = estimateWinProbability(source.getArmies(), target.getArmies());
-        double vBonus = calculateContinentValue(target, player);
         double sStrat = calculateStrategicValue(target, analyzer);
-
-        // 2. חישוב המחיר והסיכון (עלות) - עכשיו משתמש ביחס בין התוקף למגן!
         double cCost = estimateExpectedLoss(target.getArmies(), source.getArmies());
 
-        // עונש הגנתי אם התקיפה תשאיר את העורף שלנו חשוף
         if (isSourceExposedAfterAttack(source, target, player)) {
             cCost *= this.exposurePenaltyMultiplier;
         }
 
-        // 3. שקלול סופי לפי ה"אופי" של הבוט
-        return (weightWinProb * pWin) + (weightContinentBonus * vBonus)
+        double baseScore = (weightWinProb * pWin)
                 + (weightStrategicValue * sStrat) - (weightExpectedCasualties * cCost);
+
+        // 2. הפעלת מנוע החוקים הדינמי (OCP Pattern)
+        double dynamicScore = 0;
+        for (Map.Entry<HeuristicRule, Double> entry : dynamicRules.entrySet()) {
+            HeuristicRule rule = entry.getKey();
+            Double weight = entry.getValue();
+
+            dynamicScore += rule.evaluate(source, target, player, analyzer) * weight;
+        }
+
+        // 3. החזרת הציון הכולל
+        return baseScore + dynamicScore;
     }
     // ═══════════════════════════════════════════════════════════════════════════
     //  פונקציות העזר (הועברו מ-HeuristicEvaluator)
     // ═══════════════════════════════════════════════════════════════════════════
 
     private double estimateWinProbability(int attackerArmies, int defenderArmies) {
-        double ratio = (double)(attackerArmies - 1) / Math.max(defenderArmies, 1);
-        double prob  = 0.5 + (ratio - 1.0) * 0.2;
+        double ratio = (double) (attackerArmies - 1) / Math.max(defenderArmies, 1);
+        double prob = 0.5 + (ratio - 1.0) * 0.2;
         return Math.max(0.1, Math.min(0.95, prob));
-    }
-
-    private double calculateContinentValue(Country target, Player player) {
-        double vBonus = 0;
-        Continent continent = target.getContinent();
-        if (wouldCompleteMyContinent(player, continent, target)) {
-            vBonus += continent.getBonusValue();
-        }
-
-        Player targetOwner = target.getOwner();
-        if (targetOwner != null && ownsContinent(targetOwner, continent)) {
-            vBonus += continent.getBonusValue() * 0.8;
-        }
-        return vBonus;
-    }
-
-    private boolean ownsContinent(Player player, Continent continent) {
-        return continent.getCountries().stream().allMatch(c -> c.getOwner() == player);
-    }
-
-    private boolean wouldCompleteMyContinent(Player player, Continent continent, Country target) {
-        for (Country c : continent.getCountries()) {
-            if (c == target) continue;
-            if (c.getOwner() != player) return false;
-        }
-        return true;
     }
 
     private double calculateStrategicValue(Country target, AIGraphAnalyzer analyzer) {
@@ -131,8 +115,33 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
     }
 
     @Override
-    public double getAttackThreshold() { return this.attackThreshold; }
+    public double getAttackThreshold() {
+        return this.attackThreshold;
+    }
 
     @Override
-    public double getMinArmyAdvantage() { return this.minArmyAdvantage; }
+    public double getMinArmyAdvantage() {
+        return this.minArmyAdvantage;
+    }
+    @Override
+    public int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove) {
+        // בודקים האם למדינת המקור שממנה יצאנו נשארו שכנים עוינים (מלבד זו שכרגע כבשנו)
+        boolean isSourceNowSafe = true;
+        for (Country neighbor : source.getNeighbors()) {
+            if (neighbor != target && neighbor.getOwner() != source.getOwner()) {
+                isSourceNowSafe = false;
+                break;
+            }
+        }
+
+        if (isSourceNowSafe) {
+            // "אסטרטגיית קליפה" - המרכז בטוח! מעבירים את המקסימום האפשרי קדימה.
+            return maxMove;
+        } else {
+            // אם המקור עדיין בסכנה, הבוט יעביר את המינימום שהוא חייב, או חצי מהכוח
+            // כדי להשאיר שם הגנה, תוך הקפדה על חוקי המינימום/מקסימום.
+            int halfForce = source.getArmies() / 2;
+            return Math.max(minMove, Math.min(maxMove, halfForce));
+        }
+    }
 }

@@ -133,6 +133,7 @@ public class RiskGame {
         defender.addArmies(moveAmount);
     }
 
+
     public interface GameObserver
     {
         void onGameUpdate();

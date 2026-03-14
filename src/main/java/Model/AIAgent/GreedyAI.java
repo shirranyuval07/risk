@@ -4,6 +4,7 @@ import Model.*;
 import Model.AIAgent.Strategies.HeuristicStrategy;
 import Model.Records.AttackMove;
 import Model.Records.BattleResult;
+import Model.Records.FortifyMove;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -52,13 +53,39 @@ public class GreedyAI implements BotStrategy {
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseReinforcement(Player player, RiskGame game) {
+        // --- תיקון: פיצול התנהגות גיוס לפי אופי הבוט ---
+        // נשתמש בסף ההתקפה כדי להבין אם הבוט התקפי (סף נמוך) או הגנתי
+        boolean isAggressive = strategy.getAttackThreshold() < 0.5;
+
+        if (isAggressive) {
+            // התנהגות התקפית: יצירת "ראש חץ"
+            AttackMove bestPotentialAttack = null;
+            for (Country source : player.getOwnedCountries()) {
+                for (Country target : source.getNeighbors()) {
+                    if (target.getOwner() != player) {
+                        double score = strategy.calculateHeuristic(source, target, player, graphAnalyzer);
+                        if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore()) {
+                            bestPotentialAttack = new AttackMove(source, target, score);
+                        }
+                    }
+                }
+            }
+
+            // זורקים את כל התגבורת על נקודת הפריצה הזו כדי לדרוס את היבשת!
+            if (bestPotentialAttack != null) {
+                while (player.getDraftArmies() > 0) {
+                    game.placeArmy(bestPotentialAttack.source());
+                }
+                log.info("[AI DRAFT] Offensive Spearhead: Dumped all armies on {}", bestPotentialAttack.source().getName());
+                return; // מסיימים את הגיוס
+            }
+        }
+
+        // --- ההתנהגות ההגנתית המקורית (פיזור פרופורציונלי לפי איומים) ---
         Map<Country, Double> threatScores = new HashMap<>();
         double totalThreat = 0.0;
-
-        // 1. Find our critical bottlenecks ONCE before the loop to save CPU time
         Set<Country> myBottlenecks = graphAnalyzer.findArticulationPoints(player);
 
-        // 2. Score the borders
         for (Country country : player.getOwnedCountries()) {
             int enemyStrength = 0;
             for (Country neighbor : country.getNeighbors()) {
@@ -68,57 +95,33 @@ public class GreedyAI implements BotStrategy {
             }
 
             if (enemyStrength > 0) {
-                // Base threat: Enemy forces divided by our current defense
                 double score = (double) enemyStrength / Math.max(country.getArmies(), 1);
-
-                // STRATEGIC OVERRIDE: If this border is an articulation point,
-                // losing it splits our empire. Double its reinforcement priority!
-                if (myBottlenecks.contains(country)) {
-                    score *= 2.0;
-                }
-
+                if (myBottlenecks.contains(country)) score *= 2.0;
                 threatScores.put(country, score);
                 totalThreat += score;
             }
         }
 
         int totalDraftArmies = player.getDraftArmies();
-
-        // Edge case: If there are no direct threats (e.g., we own the whole map), use the old fallback
         if (totalThreat == 0) {
             Country fallback = findMostThreatenedCountry(player);
             if (fallback != null) {
-                while (player.getDraftArmies() > 0) {
-                    game.placeArmy(fallback);
-                }
+                while (player.getDraftArmies() > 0) game.placeArmy(fallback);
             }
             return;
         }
 
-        // 3. Distribute armies proportionally using Math.floor
         for (Map.Entry<Country, Double> entry : threatScores.entrySet()) {
-            Country country = entry.getKey();
-            double percentageOfThreat = entry.getValue() / totalThreat;
-
-            // Calculate how many armies this specific border deserves
-            int armiesForThisCountry = (int) Math.floor(percentageOfThreat * totalDraftArmies);
-
+            int armiesForThisCountry = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
             for (int i = 0; i < armiesForThisCountry; i++) {
-                if (player.getDraftArmies() > 0) {
-                    game.placeArmy(country);
-                }
+                if (player.getDraftArmies() > 0) game.placeArmy(entry.getKey());
             }
         }
 
-        // 4. Clean up remainders
-        // Because Math.floor rounds down, we might have 1 or 2 armies left over.
-        // Dump the remaining change on the absolute most threatened country.
         Country mostThreatened = findMostThreatenedCountry(player);
         while (player.getDraftArmies() > 0 && mostThreatened != null) {
             game.placeArmy(mostThreatened);
         }
-
-        log.debug("[AI DRAFT] Smart distributed {} armies across borders.", totalDraftArmies);
     }
 
     private Country findMostThreatenedCountry(Player player) {
@@ -194,8 +197,19 @@ public class GreedyAI implements BotStrategy {
                 String.format("%.2f", move.heuristicScore()));
 
         BattleResult result = game.attack(move.source(), move.target());
+        if (result != null && result.conquered())
+        {
+            int amountToMove = this.strategy.getTroopsToMoveAfterConquest(
+                    move.source(),
+                    move.target(),
+                    result.minMove(),
+                    result.maxMove()
+            );
+            game.handleConquest(move.source(), move.target(), amountToMove);
+        }
         log.info("[AI RESULT] {}", result);
 
+        assert result != null;
         return result.conquered();
     }
 
@@ -213,17 +227,17 @@ public class GreedyAI implements BotStrategy {
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseFortify(Player player, RiskGame game) {
-        Country safeCountry = findSafeRearCountry(player);
-        if (safeCountry == null) return;
+        FortifyMove smartMove = graphAnalyzer.calculateBestFortify(player);
 
-        Country borderCountry = graphAnalyzer.findConnectedBorderUsingBFS(safeCountry, player);
-        if (borderCountry == null) return;
+        if (smartMove != null) {
+            // 2. מבצעים את המהלך מול לוגיקת המשחק
+            game.fortify(smartMove.source(), smartMove.target(), smartMove.armiesToMove());
 
-        int armiesToMove = safeCountry.getArmies() - 1;
-        game.fortify(safeCountry, borderCountry, armiesToMove);
-
-        log.debug("[AI FORTIFY] Moved {} armies from {} → {}",
-                armiesToMove, safeCountry.getName(), borderCountry.getName());
+            log.info("[AI FORTIFY] Moved {} armies from {} (Trapped) to {} (Border)",
+                    smartMove.armiesToMove(), smartMove.source().getName(), smartMove.target().getName());
+        } else {
+            log.info("[AI FORTIFY] No trapped armies to move. Skipping fortify.");
+        }
     }
 
     private Country findSafeRearCountry(Player player) {

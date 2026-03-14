@@ -96,14 +96,43 @@ public class GameController {
                 if (result != null)
                 {
                     View.BattleResultDialog.show(result);
-                    String statusMsg = result.conquered() ? "Territory Conquered!" : "Attack completed.";
-                    gameView.getControlPane().setMessage(statusMsg);
+
+                    if (result.conquered())
+                    {
+                        int amountToMove = getAmountToMove(clickedCountry, result);
+                        gameModel.handleConquest(sourceCountry, clickedCountry, amountToMove);
+
+                        gameView.getControlPane().setMessage("Territory Conquered!");
+                    } else
+                    {
+                        gameView.getControlPane().setMessage("Attack completed.");
+                    }
                 }
                 else
                     gameView.getControlPane().setMessage("Attack failed or invalid.");
+
                 clearSelection();
             }
         }
+    }
+
+    private static int getAmountToMove(Country clickedCountry, BattleResult result) {
+        java.util.List<Integer> choices = new java.util.ArrayList<>();
+        for (int i = result.minMove(); i <= result.maxMove(); i++) {
+            choices.add(i);
+        }
+
+        // הצגת חלון בחירה למשתמש
+        javafx.scene.control.ChoiceDialog<Integer> dialog =
+                new javafx.scene.control.ChoiceDialog<>(result.maxMove(), choices);
+        dialog.setTitle("Victory!");
+        dialog.setHeaderText("You conquered " + clickedCountry.getName());
+        dialog.setContentText("Choose how many armies to move:");
+
+        Optional<Integer> chosenAmount = dialog.showAndWait();
+
+        // ביצוע ההעברה בפועל דרך המודל עם הכמות שנבחרה (או המקסימום אם השחקן סגר את החלון)
+        return chosenAmount.orElse(result.maxMove());
     }
 
     private void handleFortifyAction(Country clickedCountry) {

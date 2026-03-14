@@ -2,6 +2,7 @@ package Model.AIAgent;
 
 import Model.Country;
 import Model.Player;
+import Model.Records.FortifyMove;
 
 import java.util.*;
 
@@ -119,14 +120,102 @@ public class AIGraphAnalyzer
      * פונקציית מעטפת הבודקת האם מדינה ספציפית מהווה צוואר בקבוק (Articulation Point) עבור הבעלים שלה.
      * הפונקציה משתמשת באלגוריתם Tarjan/DFS הקיים במחלקה.
      */
-    public boolean isArticulationPoint(Country c)
-    {
-        if (c.getOwner() == null) return false;
+    public FortifyMove calculateBestFortify(Player player) {
+        Country bestSource = null;
+        Country bestTarget = null;
+        int maxArmiesToMove = 0;
 
-        // מציאת כל צווארי הבקבוק של השחקן שמחזיק במדינה (לרוב זה יהיה היריב שאנחנו שוקלים לתקוף)
-        Set<Country> bottlenecks = findArticulationPoints(c.getOwner());
+        // --- שלב א': איתור מדינות כלואות לחלוטין בעורף (הקוד המקורי שלך) ---
+        for (Country source : player.getOwnedCountries()) {
+            if (source.getArmies() <= 1) continue;
 
-        // בדיקה האם המדינה הספציפית (היעד שלנו) נמצאת בסט התוצאות ב-O(1)
-        return bottlenecks.contains(c);
+            boolean isTrapped = true;
+            for (Country neighbor : source.getNeighbors()) {
+                if (neighbor.getOwner() != player) {
+                    isTrapped = false;
+                    break;
+                }
+            }
+
+            if (isTrapped && source.getArmies() > maxArmiesToMove) {
+                Country closestBorder = findConnectedBorderUsingBFS(source, player);
+                if (closestBorder != null) {
+                    bestSource = source;
+                    bestTarget = closestBorder;
+                    maxArmiesToMove = source.getArmies();
+                }
+            }
+        }
+
+        if (bestSource != null && bestTarget != null) {
+            return new FortifyMove(bestSource, bestTarget, bestSource.getArmies() - 1);
+        }
+
+        // --- שלב ב' (חדש!): ביצור גבולות. העברה מחזית בטוחה לחזית מסוכנת ---
+        Country safestBorder = null;
+        Country mostDangerousBorder = null;
+        double lowestThreatRatio = Double.MAX_VALUE;
+        double highestThreatRatio = -1.0;
+
+        for (Country c : player.getOwnedCountries()) {
+            int enemyForces = 0;
+            for (Country n : c.getNeighbors()) {
+                if (n.getOwner() != player) enemyForces += n.getArmies();
+            }
+
+            if (enemyForces > 0) { // זו מדינת חזית (גבול)
+                double threatRatio = (double) enemyForces / Math.max(c.getArmies(), 1);
+
+                // מחפשים חזית יציבה עם עודף חיילים כדי לקחת ממנה
+                if (threatRatio < lowestThreatRatio && c.getArmies() >= 3) {
+                    lowestThreatRatio = threatRatio;
+                    safestBorder = c;
+                }
+
+                // מחפשים את החזית הכי מאוימת שזקוקה לעזרה
+                if (threatRatio > highestThreatRatio) {
+                    highestThreatRatio = threatRatio;
+                    mostDangerousBorder = c;
+                }
+            }
+        }
+
+        // אם מצאנו חזית בטוחה וחזית מסוכנת, נבדוק עם BFS אם הן מחוברות ברצף
+        if (safestBorder != null && mostDangerousBorder != null && safestBorder != mostDangerousBorder) {
+            if (isConnectedBFS(safestBorder, mostDangerousBorder, player)) {
+                // מעבירים חיילים, אבל משאירים 2 חיילים כמשמר מינימלי על הגבול הבטוח
+                int armiesToMove = safestBorder.getArmies() - 2;
+                if (armiesToMove > 0) {
+                    return new FortifyMove(safestBorder, mostDangerousBorder, armiesToMove);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * פונקציית עזר חדשה: סריקת BFS לבדיקה האם קיים נתיב ידידותי בין שתי מדינות
+     */
+    private boolean isConnectedBFS(Country start, Country target, Player player) {
+        Queue<Country> queue = new LinkedList<>();
+        Set<Country> visited = new HashSet<>();
+
+        queue.add(start);
+        visited.add(start);
+
+        while (!queue.isEmpty()) {
+            Country current = queue.poll();
+            if (current == target) return true; // הגענו ליעד!
+
+            for (Country neighbor : current.getNeighbors()) {
+                if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                }
+            }
+        }
+        return false; // אין מסלול בטוח
     }
 }
+

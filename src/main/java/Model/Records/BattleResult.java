@@ -4,5 +4,7 @@ public record BattleResult(Integer[] attackerRolls, // מערך קוביות ה�
         Integer[] defenderRolls, // מערך קוביות המגן (עד 2)
         int attackerLosses,      // כמות האבדות לתוקף
         int defenderLosses,      // כמות האבדות למגן
-        boolean conquered)  // האם הטריטוריה נכבשה?
+        boolean conquered,
+                           int minMove,
+                           int maxMove)  // האם הטריטוריה נכבשה?
 {}
