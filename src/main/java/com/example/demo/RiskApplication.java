@@ -49,7 +49,7 @@ public class RiskApplication extends Application {
         game.addPlayer(aiBot);
         game.addPlayer(aiBot2);
         game.addPlayer(aiBot3);
-        //game.addPlayer(human);
+        game.addPlayer(human);
         game.startGame();
     }
 

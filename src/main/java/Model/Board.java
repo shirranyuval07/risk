@@ -212,32 +212,54 @@ public class Board {
 
     private void buildAllConnections()
     {
-        connect(1, 2); connect(1, 4); connect(1, 30); connect(2, 3); connect(2, 4);
-        connect(2, 5); connect(3, 6); connect(3, 14); connect(4, 5); connect(4, 7);
-        connect(5, 6); connect(5, 7); connect(5, 8); connect(6, 8); connect(7, 8);
-        connect(7, 9); connect(8, 9); connect(9, 10);
+        // North America
+        connect(1, 2); connect(1, 4); connect(1, 30);
+        connect(2, 3); connect(2, 4); connect(2, 5);
+        connect(3, 5); connect(3, 6); connect(3, 14); // תוקן: התווסף חיבור 3-5 (Greenland - Ontario)
+        connect(4, 5); connect(4, 7);
+        connect(5, 6); connect(5, 7); connect(5, 8);
+        connect(6, 8);
+        connect(7, 8); connect(7, 9);
+        connect(8, 9);
+        connect(9, 10);
 
-        connect(10, 11); connect(10, 12); connect(11, 12); connect(11, 13);
+        // South America
+        connect(10, 11); connect(10, 12);
+        connect(11, 12); connect(11, 13);
         connect(12, 13); connect(12, 21);
 
-        connect(14, 15); connect(14, 17); connect(15, 16); connect(15, 17);
-        connect(15, 19); connect(16, 19); connect(16, 20); connect(16, 27);
-        connect(16, 34); connect(16, 36); connect(17, 18); connect(17, 19);
-        connect(18, 19); connect(18, 20); connect(18, 21); connect(19, 20);
+        // Europe
+        connect(14, 15); connect(14, 17);
+        connect(15, 16); connect(15, 17); connect(15, 19);
+        connect(16, 19); connect(16, 20); connect(16, 27); connect(16, 34); connect(16, 36);
+        connect(17, 18); connect(17, 19);
+        connect(18, 19); connect(18, 20); connect(18, 21);
+        connect(19, 20);
         connect(20, 21); connect(20, 22); connect(20, 36);
 
-        connect(21, 22); connect(21, 23); connect(21, 24); connect(22, 23);
-        connect(22, 36); connect(23, 24); connect(23, 25); connect(23, 26);
-        connect(23, 36); connect(24, 25); connect(25, 26);
+        // Africa
+        connect(21, 22); connect(21, 23); connect(21, 24);
+        connect(22, 23); connect(22, 36);
+        connect(23, 24); connect(23, 25); connect(23, 26); connect(23, 36);
+        connect(24, 25);
+        connect(25, 26);
 
-        connect(27, 28); connect(27, 31); connect(27, 34); connect(28, 29);
-        connect(28, 31); connect(29, 30); connect(29, 31); connect(30, 31);
-        connect(30, 32); connect(30, 33); connect(31, 32); connect(32, 33);
-        connect(32, 35); connect(34, 35); connect(34, 36); connect(34, 37);
-        connect(35, 37); connect(35, 38); connect(36, 37); connect(37, 38);
+        // Asia
+        connect(27, 28); connect(27, 34); connect(27, 35); // תוקן: הוסר 27-31 (Ural-Irkutsk) והתווסף 27-35 (Ural-China)
+        connect(28, 29); connect(28, 31); connect(28, 32); connect(28, 35); // תוקן: התווספו 28-32, 28-35 (Siberia to Mongolia & China)
+        connect(29, 30); connect(29, 31);
+        connect(30, 31); connect(30, 32); connect(30, 33);
+        connect(31, 32);
+        connect(32, 33); connect(32, 35);
+        connect(34, 35); connect(34, 36); connect(34, 37);
+        connect(35, 37); connect(35, 38);
+        connect(36, 37);
+        connect(37, 38);
         connect(38, 39);
 
-        connect(39, 40); connect(39, 41); connect(40, 41); connect(40, 42);
+        // Australia
+        connect(39, 40); connect(39, 41);
+        connect(40, 41); connect(40, 42);
         connect(41, 42);
     }
 
