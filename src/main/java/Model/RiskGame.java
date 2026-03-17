@@ -24,7 +24,7 @@ public class RiskGame {
 
     @Getter
     private final Dice dice;
-    private final List<GameObserver> observers;
+
 
     @Getter
     private boolean gameOver = false;
@@ -34,7 +34,6 @@ public class RiskGame {
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
         this.dice = new Dice();
-        this.observers = new ArrayList<>();
     }
 
     // --- PROPERTY GETTERS ---
@@ -44,7 +43,7 @@ public class RiskGame {
     public GameState getCurrentState() { return currentState.get(); }
     public void setCurrentState(GameState state) {
         this.currentState.set(state);
-        notifyObservers(); // We keep this temporarily until Step 4!
+
     }
 
     public void addPlayer(Player p) {
@@ -55,7 +54,6 @@ public class RiskGame {
         if (players.isEmpty()) return;
         initializeSetup();
         startTurn();
-        notifyObservers();
     }
 
     public void initializeSetup() {
@@ -83,7 +81,6 @@ public class RiskGame {
         if (activePlayersCount <= 1) {
             this.gameOver = true;
             log.info("Game Over! We have a winner!");
-            notifyObservers();
             return;
         }
 
@@ -132,21 +129,6 @@ public class RiskGame {
 
         attacker.removeArmies(moveAmount);
         defender.addArmies(moveAmount);
-    }
-
-    // Temporary Observer pattern (will be deleted in Step 4)
-    public interface GameObserver {
-        void onGameUpdate();
-    }
-
-    public void addObserver(GameObserver observer) {
-        observers.add(observer);
-    }
-
-    public void notifyObservers() {
-        for (GameObserver obs : observers) {
-            obs.onGameUpdate();
-        }
     }
 
     public Player getCurrentPlayer() {

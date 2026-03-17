@@ -36,7 +36,6 @@ public class FortifyState implements GameState {
         from.removeArmies(amount);
         to.addArmies(amount);
 
-        game.notifyObservers();
         return "Moved " + amount + " armies successfully.";
     }
 

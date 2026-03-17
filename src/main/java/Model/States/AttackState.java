@@ -62,7 +62,6 @@ public class AttackState implements GameState {
         }
 
         log.info(result);
-        game.notifyObservers();
 
         return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered,minMove,maxMove);
     }

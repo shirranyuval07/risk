@@ -24,12 +24,8 @@ public class GameController {
         this.gameModel = model;
         this.gameView = view;
 
-        // רישום הקונטרולר כמאזין למודל (Observer Pattern)
-        this.gameModel.addObserver(this::updateGameView);
-
         initializeListeners();
         checkAndExecuteAITurn();
-        updateGameView();
     }
 
     private void initializeListeners() {
@@ -238,9 +234,4 @@ public class GameController {
         return gameModel.getCurrentPlayer() != null && gameModel.getCurrentPlayer().isAI();
     }
 
-    private void updateGameView() {
-        Player p = gameModel.getCurrentPlayer();
-        if (p == null) return;
-        gameView.getMapPane().refreshMap();
-    }
 }

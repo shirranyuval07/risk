@@ -29,7 +29,6 @@ public class DraftState implements GameState
         country.addArmies(1);
         currentPlayer.decreaseDraftArmies();
 
-        game.notifyObservers();
         return true;
     }
 
@@ -51,7 +50,6 @@ public class DraftState implements GameState
         }
 
         game.setCurrentState(new AttackState(game));
-        game.notifyObservers();
     }
 
     @Override
