@@ -23,10 +23,11 @@ public class OffensiveStrategy extends AbstractHeuristicStrategy {
             @Value("${ai.offensive.continent-break-multiplier}") double continentBreakMultiplier,
             @Value("${ai.offensive.bonus-focus}") double bonusFocus,
             @Value("${ai.offensive.progress-focus}") double progressFocus,
-            @Value("${ai.offensive.resistance-avoidance}") double resistanceAvoidance) {
+            @Value("${ai.offensive.resistance-avoidance}") double resistanceAvoidance,
+            @Value("${ai.offensive.setup-stacking-weight}") double setupWeight) {
 
         super(weightWin, weightCont, weightStrat, weightCas,
-                artBonus, casMult, expPenalty, attackThresh, minAdv);
+                artBonus, casMult, expPenalty, attackThresh, minAdv,setupWeight);
         this.addRule(new FutureThreatRule(), weightFutureThreat);
         this.addRule(new ContinentProgressRule(continentBreakMultiplier,bonusFocus,progressFocus,resistanceAvoidance), weightCont);
     }

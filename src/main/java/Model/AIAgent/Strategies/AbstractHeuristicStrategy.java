@@ -3,6 +3,7 @@ package Model.AIAgent.Strategies;
 import Model.*;
 import Model.AIAgent.AIGraphAnalyzer;
 import Model.AIAgent.Rules.HeuristicRule;
+import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,8 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
     protected final double casualtiesMultiplier;      // מחליף את ה-0.6
     protected final double exposurePenaltyMultiplier; // מחליף את ה-1.5 (עונש חשיפת עורף)
 
+    protected final double setupStackingWeight;
+
     // ספים (Thresholds)
     protected final double attackThreshold;
     protected final double minArmyAdvantage;
@@ -30,7 +33,7 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
     public AbstractHeuristicStrategy(
             double wWin, double wCont, double wStrat, double wCost,
             double artBonus, double casMult, double exposurePenalty,
-            double threshold, double minAdv) {
+            double threshold, double minAdv,double setupStackingWeight) {
 
         this.weightWinProb = wWin;
         this.weightContinentBonus = wCont;
@@ -41,6 +44,7 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
         this.exposurePenaltyMultiplier = exposurePenalty;
         this.attackThreshold = threshold;
         this.minArmyAdvantage = minAdv;
+        this.setupStackingWeight = setupStackingWeight;
     }
     protected void addRule(HeuristicRule rule, double weight) {
         dynamicRules.put(rule, weight);
@@ -144,5 +148,9 @@ public abstract class AbstractHeuristicStrategy implements HeuristicStrategy {
             int halfForce = source.getArmies() / 2;
             return Math.max(minMove, Math.min(maxMove, halfForce));
         }
+    }
+    @Override
+    public double getSetupStackingWeight() {
+        return this.setupStackingWeight;
     }
 }

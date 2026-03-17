@@ -1,7 +1,9 @@
 package Model.AIAgent;
 
 import Model.*;
+import Model.AIAgent.Strategies.DefensiveStrategy;
 import Model.AIAgent.Strategies.HeuristicStrategy;
+import Model.AIAgent.Strategies.OffensiveStrategy;
 import Model.Records.AttackMove;
 import Model.Records.BattleResult;
 import Model.Records.FortifyMove;
@@ -47,6 +49,33 @@ public class GreedyAI implements BotStrategy {
         game.nextPhase();
 
         log.info("--- AI Turn Ended ---");
+    }
+
+    @Override
+    public Country findSetUpCountry(Player player, RiskGame game)
+    {
+        double stackingWeight = strategy.getSetupStackingWeight(); // for balanced
+        Country bestCountry = null;
+        double bestScore = -1;
+        for(Country country : player.getOwnedCountries())
+        {
+            int currentEnemyCount = 0;
+            for(Country neighbor : country.getNeighbors())
+            {
+                if(neighbor.getOwner() != player)
+                    currentEnemyCount += neighbor.getArmies();
+            }
+            if (currentEnemyCount > 0) {
+                double score = currentEnemyCount + (country.getArmies() * stackingWeight);
+                if (score > bestScore) {
+                    bestCountry = country;
+                    bestScore = score;
+                }
+            }
+        }
+        if(bestCountry == null)
+            return player.getOwnedCountries().getFirst();
+        return bestCountry;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

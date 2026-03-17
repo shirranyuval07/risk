@@ -20,14 +20,15 @@ public class BalancedStrategy extends AbstractHeuristicStrategy {
             @Value("${ai.balanced.exposure-penalty-multiplier}") double expPenalty,
             @Value("${ai.balanced.attack-threshold}") double attackThresh,
             @Value("${ai.balanced.min-army-advantage}") int minAdv,
-    @Value("${ai.balanced.weight-future-threat}") double weightFutureThreat,
+            @Value("${ai.balanced.weight-future-threat}") double weightFutureThreat,
             @Value("${ai.balanced.continent-break-multiplier}") double continentBreakMultiplier,
             @Value("${ai.balanced.bonus-focus}") double bonusFocus,
             @Value("${ai.balanced.progress-focus}") double progressFocus,
-            @Value("${ai.balanced.resistance-avoidance}") double resistanceAvoidance) {
+            @Value("${ai.balanced.resistance-avoidance}") double resistanceAvoidance,
+            @Value("${ai.balanced.setup-stacking-weight}") double setupWeight) {
 
         super(weightWin, weightCont, weightStrat, weightCas,
-                artBonus, casMult, expPenalty, attackThresh, minAdv);
+                artBonus, casMult, expPenalty, attackThresh, minAdv,setupWeight);
         this.addRule(new FutureThreatRule(), weightFutureThreat);
         this.addRule(new ContinentProgressRule(continentBreakMultiplier,bonusFocus,progressFocus,resistanceAvoidance), weightCont);
     }

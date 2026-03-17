@@ -26,6 +26,7 @@ public class Player {
     @Getter
     private final IntegerProperty draftArmies = new SimpleIntegerProperty(0);
 
+
     public int getDraftArmies() { return draftArmies.get(); }
     public void setDraftArmies(int amount) { draftArmies.set(amount); }
     public IntegerProperty draftArmiesProperty() { return draftArmies; }
@@ -47,11 +48,18 @@ public class Player {
 
     public void playTurn(RiskGame game) {
         if (isAI && strategy != null) {
+
+            if (game.getCurrentState() instanceof Model.States.SetupState) {
+                Country c = strategy.findSetUpCountry(this,game);
+                    game.placeArmy(c);
+                return;
+            }
+
+            // --- Normal Game Phases ---
             // 1. הבוט מריץ את כל השלבים שלו (Draft, Attack, Fortify) לפי האסטרטגיה
             strategy.executeTurn(this, game);
 
             // 2. קידום שלבי המשחק באופן אוטומטי כדי להעביר את התור לשחקן הבא
-            // הבוט סיים, אז אנחנו מריצים את nextPhase עד שהתור עובר
             while(game.getCurrentPlayer() == this && !game.isGameOver()) {
                 game.nextPhase();
             }

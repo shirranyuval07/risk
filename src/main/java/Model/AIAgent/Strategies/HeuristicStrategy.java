@@ -9,4 +9,5 @@ public interface HeuristicStrategy {
     double getAttackThreshold();
     double getMinArmyAdvantage();
     int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove);
+    double getSetupStackingWeight();
 }

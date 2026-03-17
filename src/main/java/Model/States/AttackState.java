@@ -53,7 +53,7 @@ public class AttackState implements GameState {
         defender.removeArmies(dLoss);
 
         String result = String.format("Attack Result: Attacker lost %d, Defender lost %d", aLoss, dLoss);
-        int minMove = 1; // המינימום הוא כמות הקוביות שהתוקף הטיל
+        int minMove = aDiceCount; // המינימום הוא כמות הקוביות שהתוקף הטיל
         int maxMove = attacker.getArmies() - 1; // המקסימום הוא כל החיילים פחות 1
         boolean isConquered = false;
         if (defender.getArmies() == 0) {
@@ -62,7 +62,6 @@ public class AttackState implements GameState {
         }
 
         log.info(result);
-
         return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered,minMove,maxMove);
     }
 

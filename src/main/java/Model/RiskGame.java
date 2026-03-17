@@ -3,6 +3,7 @@ package Model;
 import Model.Records.BattleResult;
 import Model.States.DraftState;
 import Model.States.GameState;
+import Model.States.SetupState;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import lombok.Getter;
@@ -53,7 +54,11 @@ public class RiskGame {
     public void startGame() {
         if (players.isEmpty()) return;
         initializeSetup();
-        startTurn();
+
+        // Start in the Setup Phase instead of a normal turn
+        currentPlayerIndex = 0;
+        currentPlayerProperty.set(players.getFirst());
+        setCurrentState(new SetupState(this));
     }
 
     public void initializeSetup() {
@@ -67,8 +72,10 @@ public class RiskGame {
             c.addArmies(1);
         }
 
-        int setupArmies = (players.size() == 2) ? 40 : 35;
-        for (Player p : players) {
+        int setupArmies = 50 - (players.size() * 5);
+
+        for (Player p : players)
+        {
             p.setDraftArmies(setupArmies - p.getOwnedCountries().size());
         }
     }
@@ -134,5 +141,14 @@ public class RiskGame {
     public Player getCurrentPlayer() {
         if (players.isEmpty()) return null;
         return players.get(currentPlayerIndex);
+    }
+
+    public void advanceSetupTurn() {
+        // Cycle to the next player who still has setup armies left to place
+        do {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        } while (players.get(currentPlayerIndex).getDraftArmies() <= 0);
+
+        currentPlayerProperty.set(players.get(currentPlayerIndex));
     }
 }

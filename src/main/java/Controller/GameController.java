@@ -15,6 +15,9 @@ import javafx.util.Duration;
 import java.util.Optional;
 import java.util.Set;
 
+import Model.States.SetupState;
+import org.jspecify.annotations.NonNull;
+
 public class GameController {
     private final RiskGame gameModel;
     private final GameRoot gameView;
@@ -49,7 +52,15 @@ public class GameController {
         GameState currentState = gameModel.getCurrentState();
 
         // זיהוי פולימורפי של השלב הנוכחי וניתוב לפעולה המתאימה ב-Controller
-        if (currentState instanceof DraftState) {
+        if (currentState instanceof SetupState) {
+
+            if (gameModel.placeArmy(clickedCountry)) {
+                gameView.getControlPane().setMessage("Placed army on " + clickedCountry.getName());
+                checkAndExecuteAITurn(); // Kickstart the next player if it's an AI
+            } else {
+                gameView.getControlPane().setMessage("Cannot place army here!");
+            }
+        } else if (currentState instanceof DraftState) {
             handleDraftAction(clickedCountry);
         } else if (currentState instanceof AttackState) {
             handleAttackAction(clickedCountry);
@@ -198,20 +209,25 @@ public class GameController {
         }
 
         if (isCurrentPlayerAI()) {
-            PauseTransition pause = new PauseTransition(Duration.seconds(1));
-            pause.setOnFinished(e -> {
-
-                // 2. הגנת ביטחון במקרה שהמשחק נגמר תוך כדי ההשהייה
-                if (gameModel.isGameOver()) return;
-
-                if (isCurrentPlayerAI()) {
-                    gameModel.getCurrentPlayer().playTurn(gameModel);
-                    clearSelection();
-                    checkAndExecuteAITurn();
-                }
-            });
+            PauseTransition pause = getPauseTransition();
             pause.play();
         }
+    }
+
+    private @NonNull PauseTransition getPauseTransition() {
+        PauseTransition pause = (gameModel.getCurrentState() instanceof SetupState) ? new PauseTransition(Duration.seconds(0.05)):new PauseTransition(Duration.seconds(1));
+        pause.setOnFinished(e -> {
+
+            // 2. הגנת ביטחון במקרה שהמשחק נגמר תוך כדי ההשהייה
+            if (gameModel.isGameOver()) return;
+
+            if (isCurrentPlayerAI()) {
+                gameModel.getCurrentPlayer().playTurn(gameModel);
+                clearSelection();
+                checkAndExecuteAITurn();
+            }
+        });
+        return pause;
     }
 
     private void setSelection(Country c, String msg) {

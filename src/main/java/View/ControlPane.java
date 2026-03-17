@@ -66,6 +66,13 @@ public class ControlPane extends HBox {
                 phaseLabel.setText("Phase: " + newState.getPhaseName());
             }
         });
+        if (game.getCurrentPlayer() != null) {
+            playerLabel.setText("Player: " + game.getCurrentPlayer().getName());
+            armiesLabel.textProperty().bind(game.getCurrentPlayer().draftArmiesProperty().asString("Draft Armies: %d"));
+        }
+        if (game.getCurrentState() != null) {
+            phaseLabel.setText("Phase: " + game.getCurrentState().getPhaseName());
+        }
     }
 
     private Label createStyledLabel(String text) {

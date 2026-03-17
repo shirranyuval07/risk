@@ -30,12 +30,11 @@ public class FortifyState implements GameState {
         Player currentPlayer = game.getCurrentPlayer();
 
         if (from.getOwner() != currentPlayer || to.getOwner() != currentPlayer) return "Must own both!";
-        if (!from.getNeighbors().contains(to)) return "Countries must be neighbors!";
         if (from.getArmies() - amount < 1) return "Must leave at least 1 army behind!";
 
         from.removeArmies(amount);
         to.addArmies(amount);
-
+        nextPhase(); // Auto-end turn after one valid maneuver
         return "Moved " + amount + " armies successfully.";
     }
 
