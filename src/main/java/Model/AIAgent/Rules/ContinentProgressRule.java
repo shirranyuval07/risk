@@ -1,7 +1,6 @@
 package Model.AIAgent.Rules;
 
 import Model.AIAgent.AIGraphAnalyzer;
-import Model.AIAgent.HeuristicRule;
 import Model.Continent;
 import Model.Country;
 import Model.Player;

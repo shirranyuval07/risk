@@ -1,7 +1,8 @@
-package Model.AIAgent;
+package Model.AIAgent.Strategies;
 
 import Model.*;
-import Model.AIAgent.Strategies.HeuristicStrategy;
+import Model.AIAgent.AIGraphAnalyzer;
+import Model.AIAgent.Rules.HeuristicRule;
 
 import java.util.HashMap;
 import java.util.Map;

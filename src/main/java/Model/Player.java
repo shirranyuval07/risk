@@ -1,5 +1,8 @@
 package Model;
 
+import Model.AIAgent.BotStrategy;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,8 +24,15 @@ public class Player {
     private final List<Country> ownedCountries;
     @Setter
     @Getter
-    private int draftArmies;
+    private final IntegerProperty draftArmies = new SimpleIntegerProperty(0);
 
+    public int getDraftArmies() { return draftArmies.get(); }
+    public void setDraftArmies(int amount) { draftArmies.set(amount); }
+    public IntegerProperty draftArmiesProperty() { return draftArmies; }
+
+    public void decreaseDraftArmies() {
+        if (getDraftArmies() > 0) setDraftArmies(getDraftArmies() - 1);
+    }
     // --- אסטרטגיה עבור שחקן מחשב ---
     @Setter
     private BotStrategy strategy;
@@ -32,7 +42,7 @@ public class Player {
         this.color = color;
         this.isAI = isAI;
         this.ownedCountries = new ArrayList<>();
-        this.draftArmies = 0;
+        draftArmies.set(0);
     }
 
     public void playTurn(RiskGame game) {
@@ -60,7 +70,4 @@ public class Player {
         ownedCountries.remove(c);
     }
 
-    public void decreaseDraftArmies() {
-        if (draftArmies > 0) draftArmies--;
-    }
 }

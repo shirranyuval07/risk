@@ -1,5 +1,6 @@
-package Model.AIAgent;
+package Model.AIAgent.Rules;
 
+import Model.AIAgent.AIGraphAnalyzer;
 import Model.Country;
 import Model.Player;
 

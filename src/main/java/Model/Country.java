@@ -1,44 +1,43 @@
 package Model;
 
+
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.shape.SVGPath;
 import lombok.Getter;
 import lombok.Setter;
 
-import javafx.scene.shape.Polygon;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
- * מדינה (Territory) במשחק ריסק – צומת בגרף השכנויות.
- * כל מדינה מכילה: מזהה, שם, בעלים, צבאות, שכנים, מיקום על המפה,
- * צורת פוליגון לציור, והפנייה ליבשת שאליה שייכת.
+ * Country (Territory) in the Risk game.
+ * Uses JavaFX Properties so the UI can bind to data changes automatically.
  */
-@Getter
 public class Country {
-    // Getters & Setters
+    @Getter
     private final int id;
+    @Getter
     private final String name;
-    @Setter
-    private Player owner;
-    private int armies;
+
+    // --- Data Binding Properties ---
+    private final ObjectProperty<Player> owner = new SimpleObjectProperty<>(null);
+    private final IntegerProperty armies = new SimpleIntegerProperty(0);
+
+    @Getter
     private final List<Country> neighbors;
 
-    // מיקום מרכזי
-    // קואורדינטות מרכז לציור ולהתמצאות
-    @Setter
+    @Getter @Setter
     private int x;
-    @Setter
+    @Getter @Setter
     private int y;
 
-    // פוליגון – צורה גיאוגרפית
-    // צורת הטריטוריה כפוליגון (OOP – הנתונים שייכים לאובייקט)
-    @Setter
+    @Getter @Setter
     private SVGPath shape;
 
-    // יבשת
-    // הפנייה ליבשת (back-reference)
-    @Setter
+    @Getter @Setter
     private Continent continent;
 
     public Country(int id, String name, int x, int y) {
@@ -47,7 +46,6 @@ public class Country {
         this.x = x;
         this.y = y;
         this.neighbors = new ArrayList<>();
-        this.armies = 0;
     }
 
     public void addNeighbor(Country neighbor) {
@@ -56,7 +54,17 @@ public class Country {
         }
     }
 
-    public void addArmies(int amount) { this.armies += amount; }
-    public void removeArmies(int amount) { this.armies -= amount; }
+    // --- Property Getters & Setters ---
 
+    public Player getOwner() { return owner.get(); }
+    public void setOwner(Player newOwner) { owner.set(newOwner); }
+    public ObjectProperty<Player> ownerProperty() { return owner; }
+
+    public int getArmies() { return armies.get(); }
+    public void setArmies(int amount) { armies.set(amount); }
+    public IntegerProperty armiesProperty() { return armies; }
+
+    // Helper methods for game logic
+    public void addArmies(int amount) { this.armies.set(this.armies.get() + amount); }
+    public void removeArmies(int amount) { this.armies.set(this.armies.get() - amount); }
 }

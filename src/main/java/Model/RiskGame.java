@@ -3,6 +3,8 @@ package Model;
 import Model.Records.BattleResult;
 import Model.States.DraftState;
 import Model.States.GameState;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,8 +18,9 @@ public class RiskGame {
     private final List<Player> players;
     private int currentPlayerIndex;
 
-    @Getter
-    private GameState currentState;
+    // --- DATA BINDING PROPERTIES ---
+    private final ObjectProperty<GameState> currentState = new SimpleObjectProperty<>();
+    private final ObjectProperty<Player> currentPlayerProperty = new SimpleObjectProperty<>();
 
     @Getter
     private final Dice dice;
@@ -26,9 +29,7 @@ public class RiskGame {
     @Getter
     private boolean gameOver = false;
 
-
-    public RiskGame()
-    {
+    public RiskGame() {
         this.board = new Board();
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
@@ -36,26 +37,28 @@ public class RiskGame {
         this.observers = new ArrayList<>();
     }
 
-    public void setCurrentState(GameState state)
-    {
-        this.currentState = state;
-        notifyObservers();
+    // --- PROPERTY GETTERS ---
+    public ObjectProperty<GameState> currentStateProperty() { return currentState; }
+    public ObjectProperty<Player> currentPlayerProperty() { return currentPlayerProperty; }
+
+    public GameState getCurrentState() { return currentState.get(); }
+    public void setCurrentState(GameState state) {
+        this.currentState.set(state);
+        notifyObservers(); // We keep this temporarily until Step 4!
     }
 
     public void addPlayer(Player p) {
         players.add(p);
     }
 
-    public void startGame()
-    {
+    public void startGame() {
         if (players.isEmpty()) return;
         initializeSetup();
         startTurn();
         notifyObservers();
     }
 
-    public void initializeSetup()
-    {
+    public void initializeSetup() {
         List<Country> allCountries = new ArrayList<>(board.getCountries());
         Collections.shuffle(allCountries);
 
@@ -78,9 +81,9 @@ public class RiskGame {
                 .count();
 
         if (activePlayersCount <= 1) {
-            this.gameOver = true; // סימון שהמשחק נגמר
+            this.gameOver = true;
             log.info("Game Over! We have a winner!");
-            notifyObservers(); // קריטי! זה מה שמעדכן את מפת המסך בפעם האחרונה
+            notifyObservers();
             return;
         }
 
@@ -91,9 +94,10 @@ public class RiskGame {
         startTurn();
     }
 
-    private void startTurn()
-    {
+    private void startTurn() {
         Player p = getCurrentPlayer();
+        currentPlayerProperty.set(p); // MAGIC: This tells the UI the player changed!
+
         int reinforcement = Math.max(3, p.getOwnedCountries().size() / 3);
         reinforcement += board.calculateContinentBonus(p);
 
@@ -103,26 +107,23 @@ public class RiskGame {
         setCurrentState(new DraftState(this));
     }
 
-    public boolean placeArmy(Country country)
-    {
-        return currentState.placeArmy(country);
+    public boolean placeArmy(Country country) {
+        return getCurrentState().placeArmy(country);
     }
 
-    public BattleResult attack(Country attacker, Country defender)
-    {
-        return currentState.attack(attacker, defender);
+    public BattleResult attack(Country attacker, Country defender) {
+        return getCurrentState().attack(attacker, defender);
     }
 
     public String fortify(Country from, Country to, int amount) {
-        return currentState.fortify(from, to, amount);
+        return getCurrentState().fortify(from, to, amount);
     }
 
     public void nextPhase() {
-        currentState.nextPhase();
+        getCurrentState().nextPhase();
     }
 
-    public void handleConquest(Country attacker, Country defender, int moveAmount)
-    {
+    public void handleConquest(Country attacker, Country defender, int moveAmount) {
         Player oldOwner = defender.getOwner();
         Player newOwner = attacker.getOwner();
 
@@ -133,9 +134,8 @@ public class RiskGame {
         defender.addArmies(moveAmount);
     }
 
-
-    public interface GameObserver
-    {
+    // Temporary Observer pattern (will be deleted in Step 4)
+    public interface GameObserver {
         void onGameUpdate();
     }
 
@@ -143,13 +143,14 @@ public class RiskGame {
         observers.add(observer);
     }
 
-    public void notifyObservers()
-    {
-        for (GameObserver obs : observers)
-        {
+    public void notifyObservers() {
+        for (GameObserver obs : observers) {
             obs.onGameUpdate();
         }
     }
 
-    public Player getCurrentPlayer() { return players.get(currentPlayerIndex); }
+    public Player getCurrentPlayer() {
+        if (players.isEmpty()) return null;
+        return players.get(currentPlayerIndex);
+    }
 }

@@ -27,7 +27,7 @@ public class GameRoot extends BorderPane
 
         // אתחול הרכיבים
         this.mapPane = new MapPane(game.getBoard());
-        this.controlPane = new ControlPane();
+        this.controlPane = new ControlPane(game);
 
         // סידור הרכיבים על המסך
         setCenter(mapPane);

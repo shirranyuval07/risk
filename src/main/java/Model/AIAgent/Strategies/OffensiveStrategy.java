@@ -1,6 +1,5 @@
 package Model.AIAgent.Strategies;
 
-import Model.AIAgent.AbstractHeuristicStrategy;
 import Model.AIAgent.Rules.ContinentProgressRule;
 import Model.AIAgent.Rules.FutureThreatRule;
 import Model.Country;

@@ -241,11 +241,6 @@ public class GameController {
     private void updateGameView() {
         Player p = gameModel.getCurrentPlayer();
         if (p == null) return;
-
-        gameView.getControlPane().updateView(
-                p.getName(),
-                gameModel.getCurrentState().getPhaseName(), // משיכת שם השלב ממכונת המצבים
-                p.getDraftArmies());
         gameView.getMapPane().refreshMap();
     }
 }

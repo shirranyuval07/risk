@@ -75,7 +75,6 @@ public class MapPane extends Pane {
 
     public void refreshMap() {
         for (Map.Entry<Country, CountryView> entry : countryViews.entrySet()) {
-            entry.getValue().update();
             if (entry.getKey().equals(selectedCountry)) entry.getValue().setHighlight(Color.YELLOW, 4.0);
             else entry.getValue().setHighlight(Color.rgb(15, 15, 15), 2.0);
         }

@@ -5,6 +5,7 @@ import Model.AIAgent.Strategies.HeuristicStrategy;
 import Model.Records.AttackMove;
 import Model.Records.BattleResult;
 import Model.Records.FortifyMove;
+import Model.util.MaxPriorityQueue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
