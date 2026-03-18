@@ -41,7 +41,11 @@ public class MapPane extends Pane {
         setupScaling();
         initializeCountries();
     }
-
+    public void toggleNames(boolean show) {
+        for (CountryView cv : countryViews.values()) {
+            cv.getNameText().setVisible(show);
+        }
+    }
     private void setupBackground() {
         Stop[] stops = new Stop[]{new Stop(0, Color.rgb(50, 180, 225)), new Stop(1, Color.rgb(15, 125, 185))};
         LinearGradient oceanGradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);

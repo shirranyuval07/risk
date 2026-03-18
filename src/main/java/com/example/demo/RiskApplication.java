@@ -32,6 +32,8 @@ public class RiskApplication extends Application {
         game = new RiskGame();
 
         Player human = new Player("Aba", Color.rgb(255, 255, 255), false);
+        Player human2 = new Player("kovch", Color.rgb(255, 0, 255), false);
+        Player human3 = new Player("yuval", Color.rgb(0, 0, 255), false);
 
         Player aiBot = new Player("Terminator Bot Defense", Color.rgb(0, 85, 225), true);
         Player aiBot2 = new Player("Terminator Bot Offense", Color.rgb(225, 60, 60), true);
@@ -46,10 +48,12 @@ public class RiskApplication extends Application {
         aiBot.setStrategy(new GreedyAI(defensiveStrategy));
         aiBot2.setStrategy(new GreedyAI(offensiveStrategy));
 
-        game.addPlayer(aiBot);
-        game.addPlayer(aiBot2);
-        game.addPlayer(aiBot3);
+        //.addPlayer(aiBot);
+        //game.addPlayer(aiBot2);
+        //game.addPlayer(aiBot3);
         game.addPlayer(human);
+        game.addPlayer(human2);
+        game.addPlayer(human3);
         game.startGame();
     }
 

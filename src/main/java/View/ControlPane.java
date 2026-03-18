@@ -16,7 +16,7 @@ public class ControlPane extends HBox {
 
     @Getter private final Button btnNextPhase;
     @Getter private final Button btnCards;
-
+    @Getter private final Button btnToggleNames;
     private final Label messageLabel;
     private final Label playerLabel;
     private final Label phaseLabel;
@@ -42,9 +42,11 @@ public class ControlPane extends HBox {
         btnNextPhase.setStyle("-fx-background-color: #2eaa50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15;");
         btnCards.setStyle("-fx-background-color: #dc8c28; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15;");
 
-        getChildren().addAll(infoBox, messageLabel, btnNextPhase, btnCards);
+        btnToggleNames = new Button("👁 Show Names");
+        btnToggleNames.setStyle("-fx-background-color: #4a6a92; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15;");
 
-        // --- DATA BINDING MAGIC ---
+        getChildren().addAll(infoBox, messageLabel, btnToggleNames, btnNextPhase, btnCards);
+
         setupBindings(game);
     }
 
@@ -66,6 +68,7 @@ public class ControlPane extends HBox {
                 phaseLabel.setText("Phase: " + newState.getPhaseName());
             }
         });
+
         if (game.getCurrentPlayer() != null) {
             playerLabel.setText("Player: " + game.getCurrentPlayer().getName());
             armiesLabel.textProperty().bind(game.getCurrentPlayer().draftArmiesProperty().asString("Draft Armies: %d"));

@@ -18,6 +18,7 @@ public class CountryView {
     private final SVGPath shape;
     @Getter private final Circle armyDisk;
     @Getter private final Text armyText;
+    @Getter private final Text nameText; // משתנה השם החדש
 
     public CountryView(Country country, Group shapesLayer, Group symbolsLayer) {
         this.model = country;
@@ -30,8 +31,14 @@ public class CountryView {
         // 2. Create Disk & Text
         this.armyDisk = new Circle(country.getX(), country.getY(), 12);
         this.armyText = new Text(country.getX(), country.getY(), "0");
+
+        // יצירת טקסט השם - ממוקם 20 פיקסלים מעל מרכז המדינה (Y - 20)
+        this.nameText = new Text(country.getX(), country.getY() - 20, country.getName());
+
         setupSymbolEffects();
-        symbolsLayer.getChildren().addAll(armyDisk, armyText);
+
+        // חשוב! כאן אנחנו מוסיפים גם את העיגול, גם את החיילים וגם את השם לשכבה העליונה
+        symbolsLayer.getChildren().addAll(armyDisk, armyText, nameText);
 
         // 3. Connect Data Bindings!
         setupBindings();
@@ -53,28 +60,40 @@ public class CountryView {
         armyText.setFill(Color.WHITE);
         armyText.setTextOrigin(VPos.CENTER);
         armyText.setMouseTransparent(true);
+
+        // הגדרות עיצוב לשם המדינה כדי שיהיה מאוד בולט
+        nameText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        nameText.setFill(Color.WHITE);
+        nameText.setStroke(Color.BLACK); // קו מתאר שחור
+        nameText.setStrokeWidth(0.5);    // עובי קו המתאר
+        nameText.setTextOrigin(VPos.CENTER);
+        nameText.setEffect(new DropShadow(2.0, 1.0, 1.0, Color.rgb(0, 0, 0, 0.8)));
+        nameText.setMouseTransparent(true); // מונע מהטקסט לחסום לחיצות עכבר
+        nameText.setVisible(false);
     }
 
     private void setupBindings() {
-        // MAGIC LINE 1: The text automatically updates whenever the integer property changes!
+        // MAGIC LINE 1
         armyText.textProperty().bind(model.armiesProperty().asString());
 
-        // MAGIC LINE 2: Automatically re-center the text if it changes from 1 digit to 2 digits (e.g., 9 to 10)
+        // MAGIC LINE 2
         armyText.textProperty().addListener((obs, oldVal, newVal) -> {
             armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2);
         });
 
-        // MAGIC LINE 3: Automatically change colors the exact millisecond the territory changes owners
+        // MAGIC LINE 3
         model.ownerProperty().addListener((obs, oldOwner, newOwner) -> {
             updateColors();
         });
 
-        // Run once at startup to set the initial colors and text position
+        // עדכון ראשוני
         updateColors();
         armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2);
+
+        // מירכוז שם המדינה בדיוק מעל העיגול
+        nameText.setX(model.getX() - nameText.getLayoutBounds().getWidth() / 2);
     }
 
-    // This is now private! The rest of the game doesn't need to call it anymore.
     private void updateColors() {
         Color color = (model.getOwner() != null) ? model.getOwner().getColor() : model.getContinent().getColor().desaturate();
         shape.setFill(color);

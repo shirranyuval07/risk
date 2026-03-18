@@ -45,6 +45,17 @@ public class GameController {
             if (isCurrentPlayerAI()) return;
             handleNextPhaseRequest();
         });
+        // 3. טיפול בכפתור שמות המדינות
+        gameView.getControlPane().getBtnToggleNames().setOnAction(e -> {
+            javafx.scene.control.Button btn = gameView.getControlPane().getBtnToggleNames();
+            if (btn.getText().contains("Show")) {
+                btn.setText("👁 Hide Names");
+                gameView.getMapPane().toggleNames(true);
+            } else {
+                btn.setText("👁 Show Names");
+                gameView.getMapPane().toggleNames(false);
+            }
+        });
     }
 
     private void onCountrySelected(Country clickedCountry) {
