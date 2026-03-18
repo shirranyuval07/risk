@@ -12,11 +12,13 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.SVGPath;
+import javafx.scene.shape.Line;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+
 
 public class MapPane extends Pane {
     private final Board board;
@@ -25,6 +27,10 @@ public class MapPane extends Pane {
     // הגדרת השכבות
     private final Group shapesLayer = new Group();  // שכבת המדינות (למטה)
     private final Group symbolsLayer = new Group(); // שכבת הצבאות (למעלה)
+
+    private final Group routesLayer = new Group();
+    private final Group continentsLayer = new Group();
+
 
     private final Map<Country, CountryView> countryViews = new HashMap<>();
     private Consumer<Country> onCountryClickListener;
@@ -35,11 +41,59 @@ public class MapPane extends Pane {
         setupBackground();
 
         // הוספת השכבות לפי הסדר: קודם מדינות, אז סמלים
-        mapGroup.getChildren().addAll(shapesLayer, symbolsLayer);
+        mapGroup.getChildren().addAll(routesLayer, continentsLayer, shapesLayer, symbolsLayer);
         getChildren().add(mapGroup);
 
         setupScaling();
         initializeCountries();
+        initializeSeaRoutes();
+    }
+    private void initializeSeaRoutes() {
+        // רשימת צמדי מדינות המחוברות בנתיב ימי (לפי ה-ID שלהן ב-Board.json)
+        int[][] seaRoutes = {
+                {3, 14}, {14, 17}, {14, 15}, {17, 15}, {17, 18}, {17, 19}, // האוקיינוס האטלנטי והים הצפוני
+                {18, 21}, {20, 21}, {20, 22}, // הים התיכון (אירופה-אפריקה)
+                {12, 21}, // דרום האוקיינוס האטלנטי (ברזיל - צפון אפריקה)
+                {23, 26}, {25, 26}, // אזור מדגסקר
+                {36, 23}, // ים סוף (המזרח התיכון - מזרח אפריקה)
+                {33, 30}, {33, 32}, // אזור יפן
+                {38, 39}, {39, 40}, {39, 41}, {40, 42} // אינדונזיה ואוסטרליה
+        };
+
+        for (int[] route : seaRoutes) {
+            Country c1 = board.getCountry(route[0]);
+            Country c2 = board.getCountry(route[1]);
+
+            if (c1 != null && c2 != null) {
+                // מותח קו ממרכז מדינה א' למרכז מדינה ב'
+                Line line = new Line(c1.getX(), c1.getY(), c2.getX(), c2.getY());
+                styleSeaRoute(line);
+                routesLayer.getChildren().add(line);
+            }
+        }
+
+        // --- טיפול מיוחד באלסקה וקמצ'טקה (חיבור שעוקף את העולם) ---
+        Country alaska = board.getCountry(1);
+        Country kamchatka = board.getCountry(30);
+
+        if (alaska != null && kamchatka != null) {
+            // קו מאלסקה שמאלה אל מחוץ למסך
+            Line lineAlaska = new Line(alaska.getX(), alaska.getY(), alaska.getX() - 150, alaska.getY() + 20);
+            styleSeaRoute(lineAlaska);
+
+            // קו מקמצ'טקה ימינה אל מחוץ למסך
+            Line lineKamchatka = new Line(kamchatka.getX(), kamchatka.getY(), kamchatka.getX() + 150, kamchatka.getY() - 20);
+            styleSeaRoute(lineKamchatka);
+
+            routesLayer.getChildren().addAll(lineAlaska, lineKamchatka);
+        }
+    }
+
+    private void styleSeaRoute(Line line) {
+        line.setStroke(Color.WHITE); // צבע הקו
+        line.setStrokeWidth(2.5); // עובי
+        line.setOpacity(0.5); // חצי שקוף כדי שישתלב יפה עם מי האוקיינוס ולא יבלוט מדי
+        line.getStrokeDashArray().addAll(8d, 6d); // יצירת האפקט המקווקו (אורך קו: 8, אורך רווח: 6)
     }
     public void toggleNames(boolean show) {
         for (CountryView cv : countryViews.values()) {
