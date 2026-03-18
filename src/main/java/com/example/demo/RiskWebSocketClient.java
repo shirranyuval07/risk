@@ -28,11 +28,10 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     public void connect() {
         HttpClient client = HttpClient.newHttpClient();
         client.newWebSocketBuilder()
-                .buildAsync(URI.create("ws://localhost:8080/risk-ws"), this)
+                .buildAsync(URI.create("wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"), this)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
                     System.out.println("Client connected and ready for UI commands!");
-                    // מחקנו מפה את השליחה האוטומטית שהייתה קודם!
                 });
     }
 
