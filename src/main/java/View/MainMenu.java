@@ -170,15 +170,19 @@ public class MainMenu extends StackPane {
 
         lobbyBox.getChildren().addAll(title, subtitle, playerList, startMultiplayerBtn);
 
-        // מעדכנים את מאזין ההודעות כך שיטפל בהודעות בזמן שאנחנו בלובי
         networkClient.setOnMessageReceived(message -> {
-            if (message.type().equals("PLAYER_JOINED")) {
-                playerList.appendText("- " + message.sender() + " has joined!\n");
-            }
-            else if (message.type().equals("GAME_STARTED")) {
-                System.out.println("Server said to start the game!");
-                // בשלב הבא נעביר את כולם למסך המשחק עצמו דרך כאן
-            }
+            // Platform.runLater הוא קריטי - הוא אומר לג'אווה "תעדכני את המסך עכשיו"
+            javafx.application.Platform.runLater(() -> {
+                if (message.type().equals("PLAYER_JOINED")) {
+                    // אם השרת שלח הודעה שמישהו הצטרף, נוסיף אותו לרשימה הלבנה
+                    playerList.appendText("- " + message.content() + " has joined!\n");
+                    System.out.println("UI Updated: " + message.content() + " is now visible!");
+                }
+                else if (message.type().equals("GAME_STARTED")) {
+                    System.out.println("Server said to start the game!");
+                    // פה נכניס בהמשך את המעבר למפה
+                }
+            });
         });
 
         // הסתרת התפריט המקורי והצגת הלובי

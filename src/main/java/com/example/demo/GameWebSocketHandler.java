@@ -26,35 +26,37 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // 1. ממירים את הטקסט שהגיע (JSON) לאובייקט Java
         String payload = message.getPayload();
         GameMessage gameMsg = objectMapper.readValue(payload, GameMessage.class);
 
         System.out.println("Received action: " + gameMsg.type() + " from " + gameMsg.sender());
 
-        // 2. בודקים מה השחקן רוצה לעשות
         if ("CREATE_ROOM".equals(gameMsg.type())) {
             String newRoomId = roomManager.createRoom();
-            roomManager.joinRoom(newRoomId, session); // המארח ישר מצטרף לחדר שהוא יצר
+            roomManager.joinRoom(newRoomId, session);
 
-            // שולחים למארח חזרה את הקוד כדי שיוכל להגיד אותו לחברים
             GameMessage response = new GameMessage("ROOM_CREATED", newRoomId, "Server", "Your room is ready!");
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
 
         } else if ("JOIN_ROOM".equals(gameMsg.type())) {
+            // ניסיון הצטרפות
             boolean joined = roomManager.joinRoom(gameMsg.roomId(), session);
-            if (joined) {
-                // השורה החדשה להוסיף: שולחים לשחקן הודעה שהוא הצליח להיכנס
-                session.sendMessage(new TextMessage(objectMapper.writeValueAsString(new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", "Joined!"))));
 
-                // נודיע לכולם בחדר שמישהו חדש הגיע! (כבר יש לך את הקוד הזה)
-                GameMessage notice = new GameMessage("PLAYER_JOINED", gameMsg.roomId(), "Server", gameMsg.sender() + " has joined the room!");
+            if (joined) {
+                // 1. אישור הצלחה לשחקן שהצטרף
+                session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
+                        new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", "Joined!"))));
+
+                // 2. עדכון לכולם בחדר (כולל המארח) שמישהו חדש נכנס
+                // אנחנו שולחים את השם של מי שהצטרף ב-content
+                GameMessage notice = new GameMessage("PLAYER_JOINED", gameMsg.roomId(), "Server", gameMsg.sender());
                 roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(notice));
-            }
+
             } else {
-                // החדר לא קיים
+                // החדר באמת לא קיים
                 GameMessage error = new GameMessage("ERROR", "", "Server", "Room not found!");
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(error)));
             }
         }
     }
+}
