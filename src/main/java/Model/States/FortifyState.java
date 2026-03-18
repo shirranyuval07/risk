@@ -1,5 +1,6 @@
 package Model.States;
 
+import Model.Card;
 import Model.Country;
 import Model.Player;
 import Model.Records.BattleResult;
@@ -35,6 +36,10 @@ public class FortifyState implements GameState {
         from.removeArmies(amount);
         to.addArmies(amount);
         nextPhase(); // Auto-end turn after one valid maneuver
+        if (game.getCurrentPlayer().isConqueredThisTurn()) {
+            game.getCurrentPlayer().addCard(Card.getRandom());
+            game.getCurrentPlayer().setConqueredThisTurn(false); // איפוס לתור הבא
+        }
         return "Moved " + amount + " armies successfully.";
     }
 

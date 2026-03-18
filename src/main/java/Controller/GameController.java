@@ -6,6 +6,7 @@ import Model.States.DraftState;
 import Model.States.GameState;
 import Model.States.AttackState;
 import Model.States.FortifyState;
+import View.CardsDialog;
 import View.GameRoot;
 
 import javafx.animation.PauseTransition;
@@ -57,6 +58,12 @@ public class GameController {
                 btn.setText("👁 Show Names");
                 gameView.getMapPane().toggleNames(false);
             }
+        });
+        gameView.getControlPane().getBtnCards().setOnAction(e -> {
+            CardsDialog.show(gameModel.getCurrentPlayer(), () -> {
+                // מה קורה כשטרייד מצליח? מעדכנים את הסטטיסטיקות כדי לראות את החיילים!
+                gameView.getPlayerStatsPane().updateStats();
+            });
         });
     }
 

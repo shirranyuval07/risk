@@ -26,6 +26,9 @@ public class Player {
     @Getter
     private final IntegerProperty draftArmies = new SimpleIntegerProperty(0);
 
+    @Getter private final List<Card> cards = new ArrayList<>();
+    @Getter @Setter private boolean conqueredThisTurn = false; // דגל שיזכור אם הגיע לו קלף
+
 
     public int getDraftArmies() { return draftArmies.get(); }
     public void setDraftArmies(int amount) { draftArmies.set(amount); }
@@ -49,11 +52,22 @@ public class Player {
     public void playTurn(RiskGame game) {
         if (isAI && strategy != null) {
 
+            // טיפול בשלב ההתחלתי (Setup)
             if (game.getCurrentState() instanceof Model.States.SetupState) {
                 Country c = strategy.findSetUpCountry(this,game);
-                    game.placeArmy(c);
+                game.placeArmy(c);
                 return;
             }
+
+            // --- קסם הקלפים של הבוטים (לפני שהם מתחילים לחשוב איפה לתקוף!) ---
+            int tradeResult;
+            do {
+                tradeResult = tradeAnyValidSet(); // שימוש בפונקציה שבנינו להמרת קלפים
+                if (tradeResult > 0) {
+                    setDraftArmies(getDraftArmies() + tradeResult);
+                    System.out.println("🤖 AI " + getName() + " traded cards for " + tradeResult + " extra armies!");
+                }
+            } while (tradeResult > 0);
 
             // --- Normal Game Phases ---
             // 1. הבוט מריץ את כל השלבים שלו (Draft, Attack, Fortify) לפי האסטרטגיה
@@ -72,7 +86,34 @@ public class Player {
             c.setOwner(this);
         }
     }
+    public void addCard(Card card) {
+        cards.add(card);
+    }
 
+    // פונקציה חכמה שמוצאת את הסט הטוב ביותר וממירה אותו אוטומטית לצבאות!
+    public int tradeAnyValidSet() {
+        int inf = java.util.Collections.frequency(cards, Card.INFANTRY);
+        int cav = java.util.Collections.frequency(cards, Card.CAVALRY);
+        int art = java.util.Collections.frequency(cards, Card.ARTILLERY);
+
+        // קודם בודק אם יש אחד מכל סוג (הכי משתלם)
+        if (inf > 0 && cav > 0 && art > 0) {
+            cards.remove(Card.INFANTRY); cards.remove(Card.CAVALRY); cards.remove(Card.ARTILLERY);
+            return 10;
+        }
+        // אחר כך בודק אם יש 3 מאותו סוג
+        else if (art >= 3) {
+            for(int i=0; i<3; i++) cards.remove(Card.ARTILLERY);
+            return 8;
+        } else if (cav >= 3) {
+            for(int i=0; i<3; i++) cards.remove(Card.CAVALRY);
+            return 6;
+        } else if (inf >= 3) {
+            for(int i=0; i<3; i++) cards.remove(Card.INFANTRY);
+            return 4;
+        }
+        return 0; // אין סט חוקי
+    }
     // ---  פונקציה להסרת מדינה כאשר שחקן אחר כובש אותה ---
     public void removeCountry(Country c) {
         ownedCountries.remove(c);

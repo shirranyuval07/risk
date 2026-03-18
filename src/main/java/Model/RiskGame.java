@@ -91,6 +91,13 @@ public class RiskGame {
             return;
         }
 
+        Player endingPlayer = getCurrentPlayer();
+        if (endingPlayer != null && endingPlayer.isConqueredThisTurn()) {
+            endingPlayer.addCard(Card.getRandom()); // חלוקת קלף רנדומלי
+            endingPlayer.setConqueredThisTurn(false); // איפוס הדגל לקראת התור הבא שלו
+            log.info("{} received a bonus card for conquering a territory!", endingPlayer.getName());
+        }
+
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         } while (players.get(currentPlayerIndex).getOwnedCountries().isEmpty());
@@ -136,6 +143,7 @@ public class RiskGame {
 
         attacker.removeArmies(moveAmount);
         defender.addArmies(moveAmount);
+        newOwner.setConqueredThisTurn(true);
     }
 
     public Player getCurrentPlayer() {

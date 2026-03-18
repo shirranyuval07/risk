@@ -133,8 +133,33 @@ public class MapPane extends Pane {
 
     public void refreshMap() {
         for (Map.Entry<Country, CountryView> entry : countryViews.entrySet()) {
-            if (entry.getKey().equals(selectedCountry)) entry.getValue().setHighlight(Color.YELLOW, 4.0);
-            else entry.getValue().setHighlight(Color.rgb(15, 15, 15), 2.0);
+            Country country = entry.getKey();
+            CountryView view = entry.getValue();
+
+            // אם המדינה כרגע נבחרת על ידי השחקן
+            if (country.equals(selectedCountry)) {
+                view.setHighlight(Color.YELLOW, 4.0);
+            } else {
+                // בדיקה: האם המדינה באסיה וגובלת באירופה?
+                boolean isAsiaBorderingEurope = false;
+                if (country.getContinent() != null && "Asia".equals(country.getContinent().getName())) {
+                    for (Country neighbor : country.getNeighbors()) {
+                        if (neighbor.getContinent() != null && "Europe".equals(neighbor.getContinent().getName())) {
+                            isAsiaBorderingEurope = true;
+                            break;
+                        }
+                    }
+                }
+
+                // החלת העיצוב בהתאם לבדיקה
+                if (isAsiaBorderingEurope) {
+                    // מדינת תפר (אסיה שנוגעת באירופה) - קו עבה יותר ובולט
+                    view.setHighlight(Color.rgb(15, 15, 15, 0.85), 2.5);
+                } else {
+                    // מדינה רגילה - קו דק, חלש ועדין
+                    view.setHighlight(Color.rgb(15, 15, 15, 0.4), 1.0);
+                }
+            }
         }
     }
 
