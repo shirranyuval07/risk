@@ -38,12 +38,14 @@ public class GameController {
             if (clickedCountry != null) {
                 onCountrySelected(clickedCountry);
             }
+            gameView.getPlayerStatsPane().updateStats();
         });
 
         // 2. טיפול בכפתור מעבר שלב
         gameView.getControlPane().getBtnNextPhase().setOnAction(e -> {
             if (isCurrentPlayerAI()) return;
             handleNextPhaseRequest();
+            gameView.getPlayerStatsPane().updateStats();
         });
         // 3. טיפול בכפתור שמות המדינות
         gameView.getControlPane().getBtnToggleNames().setOnAction(e -> {
@@ -84,6 +86,7 @@ public class GameController {
         // ה-Controller קורא למודל, והמודל מעביר את הבקשה ל-DraftState
         if (gameModel.placeArmy(country)) {
             gameView.getControlPane().setMessage("Deployed 1 army to " + country.getName());
+            gameView.getPlayerStatsPane().updateStats();
         } else {
             gameView.getControlPane().setMessage("Cannot deploy here!");
         }
@@ -125,6 +128,7 @@ public class GameController {
                     {
                         gameView.getControlPane().setMessage("Attack completed.");
                     }
+                    gameView.getPlayerStatsPane().updateStats();
                 }
                 else
                     gameView.getControlPane().setMessage("Attack failed or invalid.");
@@ -222,7 +226,9 @@ public class GameController {
         if (isCurrentPlayerAI()) {
             PauseTransition pause = getPauseTransition();
             pause.play();
+            gameView.getPlayerStatsPane().updateStats();
         }
+
     }
 
     private @NonNull PauseTransition getPauseTransition() {
