@@ -7,6 +7,7 @@ import Model.States.SetupState;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -29,6 +30,9 @@ public class RiskGame {
 
     @Getter
     private boolean gameOver = false;
+
+    @Getter @Setter
+    private long gameSeed = 0;
 
     public RiskGame() {
         this.board = new Board();
@@ -63,7 +67,15 @@ public class RiskGame {
 
     public void initializeSetup() {
         List<Country> allCountries = new ArrayList<>(board.getCountries());
-        Collections.shuffle(allCountries);
+        if (gameSeed != 0)
+        {
+            Collections.shuffle(allCountries, new java.util.Random(gameSeed));
+        }
+        else
+        {
+            // אם לא (למשל במשחק מקומי), נערבב כרגיל
+            Collections.shuffle(allCountries);
+        }
 
         for (int i = 0; i < allCountries.size(); i++) {
             Player p = players.get(i % players.size());

@@ -22,6 +22,9 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     @Setter @Getter
     private String roomId;
 
+
+    @Setter @Getter
+    private long gameSeed = 0;
     // פונקציה שהמסך (UI) ישתמש בה כדי להגיד ללקוח מה לעשות עם התשובות
     // פה נשמור את הפעולה שהמסך מבקש שנעשה כשמגיעה הודעה
     @Setter

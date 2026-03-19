@@ -92,6 +92,9 @@ public class RiskApplication extends Application {
         }
 
         // התחלת הלוגיקה
+        if (networkClient != null) {
+            game.setGameSeed(networkClient.getGameSeed());
+        }
         game.startGame();
 
         // בניית הממשק של המפה והקונטרולר

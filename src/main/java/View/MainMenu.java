@@ -272,7 +272,9 @@ public class MainMenu extends StackPane {
         startMultiplayerBtn.setVisible(isHost); // מוסתר למי שאינו המארח
 
         startMultiplayerBtn.setOnAction(e -> {
-            networkClient.sendAction("START_GAME", roomCode, "Let's go!");
+            long randomSeed = new java.util.Random().nextLong();
+            networkClient.sendAction("START_GAME", roomCode, String.valueOf(randomSeed));
+
         });
 
         lobbyBox.getChildren().addAll(title, subtitle, playerList, startMultiplayerBtn);
@@ -291,6 +293,8 @@ public class MainMenu extends StackPane {
 
                         // שומרים את ה-ID של החדר כדי לדעת לאן לשלוח מהלכים
                         networkClient.setRoomId(message.roomId());
+
+                        networkClient.setGameSeed(Long.parseLong(message.content()));
 
                         List<PlayerSetup> players = new ArrayList<>();
                         players.add(new PlayerSetup("Online Player 1", Color.RED, "Human"));
