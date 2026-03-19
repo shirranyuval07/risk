@@ -35,7 +35,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
         HttpClient client = HttpClient.newHttpClient();
         client.newWebSocketBuilder()
                 .header("ngrok-skip-browser-warning", "true") // חובה: מונע את חסימת האזהרה של ngrok
-                .buildAsync(URI.create("\"wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"), this)
+                .buildAsync(URI.create("wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"), this)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
                     System.out.println("Client connected and ready for UI commands!");
