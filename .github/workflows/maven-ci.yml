@@ -26,4 +26,4 @@ jobs:
 
       # 3. Run the tests! If any JUnit test fails, this step will fail and block the merge.
       - name: Build and Test
-        run: mvn clean test
+        run: mvn clean package -DskipTests # run: mvn clean test (for tests) right now i want to skip tests

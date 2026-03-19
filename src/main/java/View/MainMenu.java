@@ -25,6 +25,7 @@ public class MainMenu extends StackPane {
 
     private final Consumer<List<PlayerSetup>> onStartGame;
     private final UserService userService;
+    private Entity.User currentUser = null;
 
     public MainMenu(Consumer<List<PlayerSetup>> onStartGame, UserService userService)
     {
@@ -212,7 +213,10 @@ public class MainMenu extends StackPane {
                     loginBtn.setVisible(false); loginBtn.setManaged(false);
                     signupBtn.setVisible(false); signupBtn.setManaged(false);
                     logoutBtn.setVisible(true); logoutBtn.setManaged(true);
-                } else {
+                    this.currentUser = loggedInUser;
+                }
+                else
+                {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid username or password!");
                     alert.show();
                 }
@@ -226,6 +230,7 @@ public class MainMenu extends StackPane {
             loginBtn.setVisible(true); loginBtn.setManaged(true);
             signupBtn.setVisible(true); signupBtn.setManaged(true);
             logoutBtn.setVisible(false); logoutBtn.setManaged(false);
+            this.currentUser = null;
         });
     }
 
