@@ -14,7 +14,8 @@ public class RiskWebSocketClient implements WebSocket.Listener {
 
     private WebSocket webSocket;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String playerName;
+    @Setter
+    private String playerName;
 
     // פונקציה שהמסך (UI) ישתמש בה כדי להגיד ללקוח מה לעשות עם התשובות
     // פה נשמור את הפעולה שהמסך מבקש שנעשה כשמגיעה הודעה

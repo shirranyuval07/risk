@@ -208,6 +208,10 @@ public class MainMenu extends StackPane {
                 if (loggedInUser != null) {
                     // התחברות מוצלחת!
                     userLabel.setText("Commander: " + loggedInUser.getUsername());
+                    networkClient.setPlayerName(loggedInUser.getUsername());
+
+                    PlayerRow player1 = playerRows.getFirst();
+                    player1.setName(loggedInUser.getUsername());
 
                     // מסתירים את ההתחברות ומציגים התנתקות
                     loginBtn.setVisible(false); loginBtn.setManaged(false);
@@ -227,6 +231,8 @@ public class MainMenu extends StackPane {
         logoutBtn.setOnAction(e -> {
             // מאפסים את הכל חזרה
             userLabel.setText("Welcome, Guest");
+            networkClient.setPlayerName("Guest");
+            playerRows.getFirst().setName("General 1");
             loginBtn.setVisible(true); loginBtn.setManaged(true);
             signupBtn.setVisible(true); signupBtn.setManaged(true);
             logoutBtn.setVisible(false); logoutBtn.setManaged(false);
@@ -247,7 +253,9 @@ public class MainMenu extends StackPane {
         subtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 20));
         subtitle.setTextFill(Color.LIGHTGRAY);
 
-        TextArea playerList = new TextArea("Players in room:\n- You\n");
+        // בודק אם מישהו מחובר, ואם כן מציג את שמו. אם לא, מציג Guest.
+        String myName = (currentUser != null) ? currentUser.getUsername() : "Guest";
+        TextArea playerList = new TextArea("Players in room:\n- You (" + myName + ")\n");
         playerList.setEditable(false);
         playerList.setMaxWidth(400);
         playerList.setPrefHeight(200);
@@ -334,5 +342,8 @@ public class MainMenu extends StackPane {
         public String getName() { return nameField.getText(); }
         public Color getColor() { return colorPicker.getValue(); }
         public String getType() { return typeBox.getValue(); }
+        public void setName(String newName) {
+            this.nameField.setText(newName);
+        }
     }
 }
