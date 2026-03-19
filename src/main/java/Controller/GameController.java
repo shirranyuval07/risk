@@ -53,6 +53,12 @@ public class GameController {
                     if ("NEXT_PHASE".equals(action)) {
                         executeNextPhaseLocal();
                     }
+                    else if ("SETUP_PLACE".equals(action)) {
+                        // מקבלים את ה-ID מההודעה, מוצאים את המדינה, ושמים עליה חייל
+                        int countryId = Integer.parseInt(parts[1]);
+                        Country c = gameModel.getBoard().getCountry(countryId);
+                        executeSetupLocal(c);
+                    }
                     else if ("DRAFT".equals(action)) {
                         int countryId = Integer.parseInt(parts[1]);
                         Country c = gameModel.getBoard().getCountry(countryId);
@@ -120,14 +126,10 @@ public class GameController {
         GameState currentState = gameModel.getCurrentState();
 
         if (currentState instanceof SetupState) {
-            // בשלב ה-Setup נשתמש כרגע בלוגיקה המקומית עד שנסנכרן גם אותו
-            if (gameModel.placeArmy(clickedCountry)) {
-                gameView.getControlPane().setMessage("Placed army on " + clickedCountry.getName());
-                checkAndExecuteAITurn();
-            } else {
-                gameView.getControlPane().setMessage("Cannot place army here!");
-            }
-        } else if (currentState instanceof DraftState) {
+            // קוראים לפונקציה החדשה במקום לעשות את הלוגיקה פה
+            handleSetupAction(clickedCountry);
+        }
+        else if (currentState instanceof DraftState) {
             handleDraftAction(clickedCountry);
         } else if (currentState instanceof AttackState) {
             handleAttackAction(clickedCountry);
@@ -135,6 +137,29 @@ public class GameController {
             handleFortifyAction(clickedCountry);
         }
     }
+// --- טיפול בהצבת חיילים בתחילת המשחק (SETUP) ---
+
+    private void handleSetupAction(Country country) {
+        if (isMultiplayer) {
+            // אם אנחנו ברשת, נשלח הודעה לשרת עם ה-ID של המדינה
+            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(), "SETUP_PLACE:" + country.getId());
+        } else {
+            executeSetupLocal(country);
+        }
+    }
+
+    private void executeSetupLocal(Country country) {
+        if (gameModel.placeArmy(country)) {
+            gameView.getControlPane().setMessage("Placed army on " + country.getName());
+            gameView.getPlayerStatsPane().updateStats();
+            checkAndExecuteAITurn();
+        }
+        else
+        {
+            gameView.getControlPane().setMessage("Cannot place army here!");
+        }
+    }
+
 
     // --- טיפול בהצבת חיילים (DRAFT) ---
 
