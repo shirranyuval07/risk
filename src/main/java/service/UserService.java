@@ -13,17 +13,27 @@ public class UserService {
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
-
-    public User getOrCreateUser(String username) {
-        // מחפשים אם המשתמש כבר קיים ב-MySQL
-        return userRepository.findByUsername(username)
-                .orElseGet(() -> {
-                    // אם לא נמצא - יוצרים משתמש חדש לגמרי
-                    User newUser = new User();
-                    newUser.setUsername(username);
-
-                    // שמירה ב-Database
-                    return userRepository.save(newUser);
-                });
+    public boolean signup(String username, String password)
+    {
+        if(userRepository.findByUsername(username).isPresent())
+            return false;
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(password);
+        userRepository.save(user);
+        return true;
+    }
+    public User login(String username, String password)
+    {
+        User user =  userRepository.findByUsername(username).orElse(null);
+        if(user != null && user.getPassword().equals(password))
+            return user;
+        return null;
+    }
+    public boolean signout(String username,String password)
+    {
+        if(userRepository.findByUsername(username).isEmpty())
+            return false;
+        return true;
     }
 }

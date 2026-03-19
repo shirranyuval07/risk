@@ -16,11 +16,16 @@ import javafx.stage.Stage;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import service.UserService;
 
 import java.util.List;
 
-@SpringBootApplication(scanBasePackages = {"com.example.demo", "Model"})
+@SpringBootApplication(scanBasePackages = {"com.example.demo", "Model", "service"})
+@EnableJpaRepositories(basePackages = "repository")
+@EntityScan(basePackages = "Entity")
 public class RiskApplication extends Application {
 
     private ConfigurableApplicationContext springContext;
@@ -53,8 +58,9 @@ public class RiskApplication extends Application {
     }
 
     private void showMainMenu() {
-        // העברת פונקציית הקולבאק: מה קורה כשלוחצים Start?
-        MainMenu mainMenu = new MainMenu(this::startGameWithConfig);
+        UserService userService = springContext.getBean(UserService.class);
+
+        MainMenu mainMenu = new MainMenu(this::startGameWithConfig,userService);
         Scene menuScene = new Scene(mainMenu, 1200, 800);
         primaryStage.setScene(menuScene);
     }

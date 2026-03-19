@@ -9,10 +9,13 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 // ייבוא הקליינט שלנו
 import com.example.demo.RiskWebSocketClient;
+import javafx.util.Pair;
+import service.UserService;
 
 public class MainMenu extends StackPane {
 
@@ -21,10 +24,12 @@ public class MainMenu extends StackPane {
     private final List<PlayerRow> playerRows = new ArrayList<>();
 
     private final Consumer<List<PlayerSetup>> onStartGame;
+    private final UserService userService;
 
-    public MainMenu(Consumer<List<PlayerSetup>> onStartGame)
+    public MainMenu(Consumer<List<PlayerSetup>> onStartGame, UserService userService)
     {
         this.onStartGame = onStartGame;
+        this.userService = userService;
         setBackground(new Background(new BackgroundFill(Color.rgb(8, 16, 35), CornerRadii.EMPTY, Insets.EMPTY)));
 
         // הקונטיינר המרכזי של התפריט
@@ -139,8 +144,89 @@ public class MainMenu extends StackPane {
         StackPane.setAlignment(btnRules, Pos.TOP_RIGHT);
         StackPane.setMargin(btnRules, new Insets(20));
 
+
+        VBox authBox = new VBox(15);
+
+        Label userLabel = new Label("Welcome, Guest");
+        userLabel.setTextFill(Color.WHITE);
+        userLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+
+        Button loginBtn = new Button("Login");
+        Button signupBtn = new Button("Sign Up");
+        Button logoutBtn = new Button("Logout");
+
+        logoutBtn.setVisible(false);
+        logoutBtn.setManaged(false); // הפקודה הזו דואגת שהכפתור גם לא יתפוס מקום ריק כשהוא מוסתר
+
+        authBox.getChildren().addAll(userLabel, loginBtn, signupBtn, logoutBtn);
+
+        // יישור התוכן בתוך ה-VBox לשמאל-למעלה
+        authBox.setAlignment(Pos.TOP_LEFT);
+
+        authBox.setMaxWidth(150);
+
+        // אומר ל-StackPane למקם את הקופסה שלנו בצד שמאל למעלה
+        StackPane.setAlignment(authBox, Pos.TOP_LEFT);
+        StackPane.setMargin(authBox, new Insets(20)); // נותן קצת מרווח מהקיר השמאלי
+
         // הוספת התפריט הראשי וכפתור החוקים לשכבות של ה-StackPane
-        getChildren().addAll(mainContent, btnRules);
+        getChildren().addAll(mainContent, btnRules, authBox);
+
+        // --- פעולת כפתור ההרשמה (Sign Up) ---
+        signupBtn.setOnAction(e -> {
+            Optional<Pair<String, String>> result = LoginDialog.show("Sign Up");
+
+            result.ifPresent(credentials -> {
+                String user = credentials.getKey();
+                String pass = credentials.getValue();
+
+                // כאן אנחנו קוראים לפונקציית signup שיצרת (או שתיצור) ב-UserService
+                boolean success = userService.signup(user, pass);
+
+                if (success) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Registration successful! You can now login.");
+                    alert.show();
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Username already exists!");
+                    alert.show();
+                }
+            });
+        });
+
+// --- פעולת כפתור ההתחברות (Login) ---
+        loginBtn.setOnAction(e -> {
+            Optional<Pair<String, String>> result = LoginDialog.show("Login");
+
+            result.ifPresent(credentials -> {
+                String user = credentials.getKey();
+                String pass = credentials.getValue();
+
+                // כאן אנחנו בודקים את המשתמש במסד הנתונים
+                Entity.User loggedInUser = userService.login(user, pass);
+
+                if (loggedInUser != null) {
+                    // התחברות מוצלחת!
+                    userLabel.setText("Commander: " + loggedInUser.getUsername());
+
+                    // מסתירים את ההתחברות ומציגים התנתקות
+                    loginBtn.setVisible(false); loginBtn.setManaged(false);
+                    signupBtn.setVisible(false); signupBtn.setManaged(false);
+                    logoutBtn.setVisible(true); logoutBtn.setManaged(true);
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid username or password!");
+                    alert.show();
+                }
+            });
+        });
+
+// --- פעולת כפתור ההתנתקות (Logout) ---
+        logoutBtn.setOnAction(e -> {
+            // מאפסים את הכל חזרה
+            userLabel.setText("Welcome, Guest");
+            loginBtn.setVisible(true); loginBtn.setManaged(true);
+            signupBtn.setVisible(true); signupBtn.setManaged(true);
+            logoutBtn.setVisible(false); logoutBtn.setManaged(false);
+        });
     }
 
     // --- פונקציית הלובי (Waiting Room) ---
