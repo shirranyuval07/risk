@@ -245,7 +245,12 @@ public class MainMenu extends StackPane {
     }
 
     // --- פונקציית הלובי (Waiting Room) ---
-    private void showLobby(String roomCode, boolean isHost, RiskWebSocketClient networkClient, VBox mainContent) {
+    private void showLobby(String roomCode, boolean isHost, RiskWebSocketClient networkClient, VBox mainContent)
+    {
+        String myName = (currentUser != null) ? currentUser.getUsername() : "Guest";
+        List<String> lobbyPlayers = new ArrayList<>();
+        lobbyPlayers.add(myName);
+
         VBox lobbyBox = new VBox(20);
         lobbyBox.setAlignment(Pos.CENTER);
 
@@ -258,7 +263,6 @@ public class MainMenu extends StackPane {
         subtitle.setTextFill(Color.LIGHTGRAY);
 
         // בודק אם מישהו מחובר, ואם כן מציג את שמו. אם לא, מציג Guest.
-        String myName = (currentUser != null) ? currentUser.getUsername() : "Guest";
         TextArea playerList = new TextArea("Players in room:\n- You (" + myName + ")\n");
         playerList.setEditable(false);
         playerList.setMaxWidth(400);
@@ -273,8 +277,11 @@ public class MainMenu extends StackPane {
 
         startMultiplayerBtn.setOnAction(e -> {
             long randomSeed = new java.util.Random().nextLong();
-            networkClient.sendAction("START_GAME", roomCode, String.valueOf(randomSeed));
 
+            // מחברים את ה-Seed ואת רשימת השחקנים (מופרדים בפסיק) למחרוזת אחת
+            String payload = randomSeed + ":" + String.join(",", lobbyPlayers);
+
+            networkClient.sendAction("START_GAME", roomCode, payload);
         });
 
         lobbyBox.getChildren().addAll(title, subtitle, playerList, startMultiplayerBtn);
@@ -284,23 +291,37 @@ public class MainMenu extends StackPane {
             javafx.application.Platform.runLater(() -> {
                 if (message.type().equals("PLAYER_JOINED")) {
                     // אם השרת שלח הודעה שמישהו הצטרף, נוסיף אותו לרשימה הלבנה
+                    lobbyPlayers.add(message.content());
                     playerList.appendText("- " + message.content() + " has joined!\n");
                     System.out.println("UI Updated: " + message.content() + " is now visible!");
                 }
                 else if (message.type().equals("GAME_STARTED")) {
                     javafx.application.Platform.runLater(() -> {
                         System.out.println("Starting the game map for everyone!");
-
-                        // שומרים את ה-ID של החדר כדי לדעת לאן לשלוח מהלכים
                         networkClient.setRoomId(message.roomId());
 
-                        networkClient.setGameSeed(Long.parseLong(message.content()));
+                        // מפצלים את ההודעה ל-2 חלקים: חלק 0 זה ה-Seed, חלק 1 זה השמות
+                        String[] parts = message.content().split(":");
+                        long seed = Long.parseLong(parts[0]);
+                        networkClient.setGameSeed(seed);
+
+                        // מפצלים את רשימת השמות למערך
+                        String[] playerNames = parts[1].split(",");
+
 
                         List<PlayerSetup> players = new ArrayList<>();
-                        players.add(new PlayerSetup("Online Player 1", Color.RED, "Human"));
-                        players.add(new PlayerSetup("Online Player 2", Color.BLUE, "Human"));
 
-                        // מעבירים את הצינור פנימה!
+                        // עוברים על כל השמות שהגיעו ומייצרים צבע דינמי
+                        for (int i = 0; i < playerNames.length; i++) {
+                            // חישוב המיקום של הצבע על הגלגל (בין 0 ל-360)
+                            double hue = i * (360.0 / playerNames.length);
+
+                            // יצירת הצבע: hue הוא הגוון, 0.85 זה עוצמת הצבע, 0.9 זה הבהירות
+                            Color dynamicColor = Color.hsb(hue, 0.85, 0.9);
+
+                            players.add(new PlayerSetup(playerNames[i], dynamicColor, "Human"));
+                        }
+
                         onStartGame.accept(players, networkClient);
                     });
                 }

@@ -60,7 +60,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
         else if ("START_GAME".equals(gameMsg.type())) {
             // המארח לחץ על כפתור ההתחלה
-            GameMessage startNotice = new GameMessage("GAME_STARTED", gameMsg.roomId(), "Server", "The game is starting now!");
+            GameMessage startNotice = new GameMessage("GAME_STARTED", gameMsg.roomId(), "Server", gameMsg.content());
             String jsonNotice = objectMapper.writeValueAsString(startNotice);
 
             // שולחים לכולם בחדר!
