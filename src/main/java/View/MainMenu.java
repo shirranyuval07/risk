@@ -10,6 +10,7 @@ import javafx.scene.text.FontWeight;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 // ייבוא הקליינט שלנו
@@ -23,11 +24,11 @@ public class MainMenu extends StackPane {
 
     private final List<PlayerRow> playerRows = new ArrayList<>();
 
-    private final Consumer<List<PlayerSetup>> onStartGame;
+    private final BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame;
     private final UserService userService;
     private Entity.User currentUser = null;
 
-    public MainMenu(Consumer<List<PlayerSetup>> onStartGame, UserService userService)
+    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame, UserService userService)
     {
         this.onStartGame = onStartGame;
         this.userService = userService;
@@ -75,9 +76,12 @@ public class MainMenu extends StackPane {
                 }
             }
 
-            if (activePlayers.size() >= 2) {
-                onStartGame.accept(activePlayers);
-            } else {
+            if (activePlayers.size() >= 2)
+            {
+                onStartGame.accept(activePlayers, null);
+            }
+            else
+            {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "You need at least 2 players to start!");
                 alert.show();
             }
@@ -285,14 +289,15 @@ public class MainMenu extends StackPane {
                     javafx.application.Platform.runLater(() -> {
                         System.out.println("Starting the game map for everyone!");
 
-                        // יצירת רשימת שחקנים זמנית כדי שהמפה תעלה
-                        // בהמשך תוכל לשלוח את הרשימה המדויקת מהשרת
+                        // שומרים את ה-ID של החדר כדי לדעת לאן לשלוח מהלכים
+                        networkClient.setRoomId(message.roomId());
+
                         List<PlayerSetup> players = new ArrayList<>();
                         players.add(new PlayerSetup("Online Player 1", Color.RED, "Human"));
                         players.add(new PlayerSetup("Online Player 2", Color.BLUE, "Human"));
 
-                        // הפקודה הקריטית: זה מה שסוגר את התפריט ופותח את המפה
-                        onStartGame.accept(players);
+                        // מעבירים את הצינור פנימה!
+                        onStartGame.accept(players, networkClient);
                     });
                 }
             });

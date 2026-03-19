@@ -66,5 +66,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             // שולחים לכולם בחדר!
             roomManager.broadcastToRoom(gameMsg.roomId(), jsonNotice);
         }
+        else if ("GAME_ACTION".equals(gameMsg.type())) {
+            // השרת מקבל פעולה ממשחק פעיל (למשל תקיפה) ופשוט משדר אותה לכל מי שבחדר
+            roomManager.broadcastToRoom(gameMsg.roomId(), payload);
+        }
     }
 }

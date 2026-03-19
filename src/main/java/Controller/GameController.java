@@ -1,41 +1,87 @@
 package Controller;
 
-import Model.*; // ייבוא כל מחלקות המודל כולל המצבים (DraftState, AttackState וכו')
+import Model.*;
 import Model.Records.BattleResult;
 import Model.States.DraftState;
 import Model.States.GameState;
 import Model.States.AttackState;
 import Model.States.FortifyState;
+import Model.States.SetupState;
 import View.CardsDialog;
 import View.GameRoot;
 
+import com.example.demo.RiskWebSocketClient;
 import javafx.animation.PauseTransition;
 import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 import java.util.Set;
-
-import Model.States.SetupState;
-import org.jspecify.annotations.NonNull;
 
 public class GameController {
     private final RiskGame gameModel;
     private final GameRoot gameView;
     private Country sourceCountry = null;
 
-    public GameController(RiskGame model, GameRoot view) {
+    // משתני רשת
+    private final RiskWebSocketClient networkClient;
+    private final boolean isMultiplayer;
+
+    public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient) {
         this.gameModel = model;
         this.gameView = view;
+        this.networkClient = networkClient;
+        this.isMultiplayer = (networkClient != null);
 
         initializeListeners();
+
+        if (isMultiplayer) {
+            setupNetworkListeners();
+        }
+
         checkAndExecuteAITurn();
+    }
+
+    private void setupNetworkListeners() {
+        networkClient.setOnMessageReceived(message -> {
+            javafx.application.Platform.runLater(() -> {
+                if ("GAME_ACTION".equals(message.type())) {
+                    String[] parts = message.content().split(":");
+                    String action = parts[0];
+
+                    if ("NEXT_PHASE".equals(action)) {
+                        executeNextPhaseLocal();
+                    }
+                    else if ("DRAFT".equals(action)) {
+                        int countryId = Integer.parseInt(parts[1]);
+                        Country c = gameModel.getBoard().getCountry(countryId);
+                        executeDraftLocal(c);
+                    }
+                    else if ("FORTIFY".equals(action)) {
+                        int srcId = Integer.parseInt(parts[1]);
+                        int dstId = Integer.parseInt(parts[2]);
+                        int amount = Integer.parseInt(parts[3]);
+                        Country src = gameModel.getBoard().getCountry(srcId);
+                        Country dst = gameModel.getBoard().getCountry(dstId);
+                        executeFortifyLocal(src, dst, amount);
+                    }
+                    // כאן נוסיף בהמשך את הטיפול בהודעות של ATTACK
+                }
+            });
+        });
     }
 
     private void initializeListeners() {
         // 1. טיפול בקליקים על מדינות
         gameView.getMapPane().setOnCountryClick(clickedCountry -> {
             if (isCurrentPlayerAI()) return;
+            // חסימה: אם זה מולטיפלייר וזה לא התור שלך, אי אפשר ללחוץ על המפה!
+            if (isMultiplayer && !gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName())) {
+                gameView.getControlPane().setMessage("It's not your turn!");
+                return;
+            }
+
             if (clickedCountry != null) {
                 onCountrySelected(clickedCountry);
             }
@@ -45,9 +91,12 @@ public class GameController {
         // 2. טיפול בכפתור מעבר שלב
         gameView.getControlPane().getBtnNextPhase().setOnAction(e -> {
             if (isCurrentPlayerAI()) return;
+            if (isMultiplayer && !gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName())) return;
+
             handleNextPhaseRequest();
             gameView.getPlayerStatsPane().updateStats();
         });
+
         // 3. טיפול בכפתור שמות המדינות
         gameView.getControlPane().getBtnToggleNames().setOnAction(e -> {
             javafx.scene.control.Button btn = gameView.getControlPane().getBtnToggleNames();
@@ -59,24 +108,22 @@ public class GameController {
                 gameView.getMapPane().toggleNames(false);
             }
         });
+
         gameView.getControlPane().getBtnCards().setOnAction(e -> {
             CardsDialog.show(gameModel.getCurrentPlayer(), () -> {
-                // מה קורה כשטרייד מצליח? מעדכנים את הסטטיסטיקות כדי לראות את החיילים!
                 gameView.getPlayerStatsPane().updateStats();
             });
         });
     }
 
     private void onCountrySelected(Country clickedCountry) {
-        // שליפת אובייקט הסטייט הנוכחי מהמודל
         GameState currentState = gameModel.getCurrentState();
 
-        // זיהוי פולימורפי של השלב הנוכחי וניתוב לפעולה המתאימה ב-Controller
         if (currentState instanceof SetupState) {
-
+            // בשלב ה-Setup נשתמש כרגע בלוגיקה המקומית עד שנסנכרן גם אותו
             if (gameModel.placeArmy(clickedCountry)) {
                 gameView.getControlPane().setMessage("Placed army on " + clickedCountry.getName());
-                checkAndExecuteAITurn(); // Kickstart the next player if it's an AI
+                checkAndExecuteAITurn();
             } else {
                 gameView.getControlPane().setMessage("Cannot place army here!");
             }
@@ -89,8 +136,17 @@ public class GameController {
         }
     }
 
+    // --- טיפול בהצבת חיילים (DRAFT) ---
+
     private void handleDraftAction(Country country) {
-        // ה-Controller קורא למודל, והמודל מעביר את הבקשה ל-DraftState
+        if (isMultiplayer) {
+            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(), "DRAFT:" + country.getId());
+        } else {
+            executeDraftLocal(country);
+        }
+    }
+
+    private void executeDraftLocal(Country country) {
         if (gameModel.placeArmy(country)) {
             gameView.getControlPane().setMessage("Deployed 1 army to " + country.getName());
             gameView.getPlayerStatsPane().updateStats();
@@ -99,47 +155,113 @@ public class GameController {
         }
     }
 
-    private void handleAttackAction(Country clickedCountry) {
-        if (sourceCountry == null)
-        {
+    // --- טיפול בהעברת שלב (NEXT PHASE) ---
 
-            if (canAttackFrom(clickedCountry))
-            {
+    private void handleNextPhaseRequest() {
+        if (isMultiplayer) {
+            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(), "NEXT_PHASE");
+        } else {
+            executeNextPhaseLocal();
+        }
+    }
+
+    private void executeNextPhaseLocal() {
+        gameModel.nextPhase();
+        clearSelection();
+
+        if (isCurrentPlayerAI()) {
+            checkAndExecuteAITurn();
+        } else if (gameModel.getCurrentState() instanceof DraftState && gameModel.getCurrentPlayer().getDraftArmies() > 0) {
+            gameView.getControlPane().setMessage("You have armies left to place!");
+        }
+        gameView.getPlayerStatsPane().updateStats();
+    }
+
+    // --- טיפול בתגבורת (FORTIFY) ---
+
+    private void handleFortifyAction(Country clickedCountry) {
+        if (sourceCountry == null) {
+            if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()) && clickedCountry.getArmies() > 1) {
+                setSelection(clickedCountry, "Move from " + clickedCountry.getName() + ". Select target.");
+                Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
+                if (!targets.isEmpty())
+                    gameView.getMapPane().highlightTargets(targets);
+                else
+                    gameView.getControlPane().setMessage("No valid targets to fortify from here!");
+            }
+        } else {
+            if (clickedCountry.equals(sourceCountry))
+                clearSelection();
+            else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
+
+                int maxMove = sourceCountry.getArmies() - 1;
+                TextInputDialog dialog = new TextInputDialog();
+                dialog.setTitle("Fortify Territory");
+                dialog.setHeaderText("Moving armies from " + sourceCountry.getName() + " to " + clickedCountry.getName());
+                dialog.setContentText("Enter amount (Max: " + maxMove + "):");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(input -> {
+                    try {
+                        if (!input.isEmpty()) {
+                            int amount = Integer.parseInt(input);
+                            if (isMultiplayer) {
+                                networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                                        "FORTIFY:" + sourceCountry.getId() + ":" + clickedCountry.getId() + ":" + amount);
+                                clearSelection();
+                            } else {
+                                executeFortifyLocal(sourceCountry, clickedCountry, amount);
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        gameView.getControlPane().setMessage("Invalid number!");
+                        clearSelection();
+                    }
+                });
+            }
+        }
+    }
+
+    private void executeFortifyLocal(Country src, Country dst, int amount) {
+        String resMsg = gameModel.fortify(src, dst, amount);
+        gameView.getControlPane().setMessage(resMsg);
+        gameView.getPlayerStatsPane().updateStats();
+        clearSelection();
+    }
+
+    // --- טיפול בהתקפה (ATTACK) ---
+    // הערה: כרגע מוגדר לעבוד בצורה מקומית גם במולטיפלייר עד שנפתור את סנכרון הקוביות
+
+    private void handleAttackAction(Country clickedCountry) {
+        if (sourceCountry == null) {
+            if (canAttackFrom(clickedCountry)) {
                 setSelection(clickedCountry, "Select target for " + clickedCountry.getName());
                 Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
-                if(!targets.isEmpty())
+                if (!targets.isEmpty())
                     gameView.getMapPane().highlightTargets(targets);
                 else
                     gameView.getControlPane().setMessage("No valid targets to attack from here!");
             }
-        }
-        else
-        {
+        } else {
             if (clickedCountry.equals(sourceCountry))
                 clearSelection();
-            else
-            {
-                // המודל יעביר את הבקשה ל-AttackState
+            else {
+                // TODO: בעתיד הקרוב נשנה את זה לשלוח בקשת התקפה לשרת
                 BattleResult result = gameModel.attack(sourceCountry, clickedCountry);
-                if (result != null)
-                {
+                if (result != null) {
                     View.BattleResultDialog.show(result);
 
-                    if (result.conquered())
-                    {
+                    if (result.conquered()) {
                         int amountToMove = getAmountToMove(clickedCountry, result);
                         gameModel.handleConquest(sourceCountry, clickedCountry, amountToMove);
-
                         gameView.getControlPane().setMessage("Territory Conquered!");
-                    } else
-                    {
+                    } else {
                         gameView.getControlPane().setMessage("Attack completed.");
                     }
                     gameView.getPlayerStatsPane().updateStats();
-                }
-                else
+                } else {
                     gameView.getControlPane().setMessage("Attack failed or invalid.");
-
+                }
                 clearSelection();
             }
         }
@@ -151,7 +273,6 @@ public class GameController {
             choices.add(i);
         }
 
-        // הצגת חלון בחירה למשתמש
         javafx.scene.control.ChoiceDialog<Integer> dialog =
                 new javafx.scene.control.ChoiceDialog<>(result.maxMove(), choices);
         dialog.setTitle("Victory!");
@@ -159,75 +280,16 @@ public class GameController {
         dialog.setContentText("Choose how many armies to move:");
 
         Optional<Integer> chosenAmount = dialog.showAndWait();
-
-        // ביצוע ההעברה בפועל דרך המודל עם הכמות שנבחרה (או המקסימום אם השחקן סגר את החלון)
         return chosenAmount.orElse(result.maxMove());
     }
 
-    private void handleFortifyAction(Country clickedCountry) {
-        if (sourceCountry == null)
-        {
-            if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()) && clickedCountry.getArmies() > 1)
-            {
-                setSelection(clickedCountry, "Move from " + clickedCountry.getName() + ". Select target.");
-                Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
-                if(!targets.isEmpty())
-                    gameView.getMapPane().highlightTargets(targets);
-                else
-                    gameView.getControlPane().setMessage("No valid targets to attack from here!");
-            }
-        }
-        else
-        {
-            if (clickedCountry.equals(sourceCountry))
-                clearSelection();
-            else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()))
-                executeFortifyMove(clickedCountry);
-        }
-    }
+    // --- מערכת התורות והבוטים ---
 
-    private void executeFortifyMove(Country target) {
-        int maxMove = sourceCountry.getArmies() - 1;
-
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Fortify Territory");
-        dialog.setHeaderText("Moving armies from " + sourceCountry.getName() + " to " + target.getName());
-        dialog.setContentText("Enter amount (Max: " + maxMove + "):");
-
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(input -> {
-            try {
-                if (!input.isEmpty()) {
-                    int amount = Integer.parseInt(input);
-                    // ה-Controller שולח למודל, שמטופל על ידי FortifyState
-                    String resMsg = gameModel.fortify(sourceCountry, target, amount);
-                    gameView.getControlPane().setMessage(resMsg);
-                }
-            } catch (NumberFormatException e) {
-                gameView.getControlPane().setMessage("Invalid number!");
-            }
-        });
-        clearSelection();
-    }
-
-    private void handleNextPhaseRequest() {
-        gameModel.nextPhase(); // מחליף את הסטייט הפנימי במודל
-        clearSelection();
-
-        if (isCurrentPlayerAI()) {
-            checkAndExecuteAITurn();
-        } else if (gameModel.getCurrentState() instanceof DraftState && gameModel.getCurrentPlayer().getDraftArmies() > 0) {
-            gameView.getControlPane().setMessage("You have armies left to place!");
-        }
-    }
-
-    // הפעלת הבוט
     private void checkAndExecuteAITurn() {
-        // 1. קודם כל, אם המשחק נגמר - תעצור הכל ותכתוב מי ניצח!
         if (gameModel.isGameOver()) {
-            Player winner = gameModel.getCurrentPlayer(); // השחקן האחרון שנשאר
+            Player winner = gameModel.getCurrentPlayer();
             gameView.getControlPane().setMessage("🏆 GAME OVER! Winner: " + winner.getName() + " 🏆");
-            return; // השורה הזו שוברת את הלולאה האינסופית
+            return;
         }
 
         if (isCurrentPlayerAI()) {
@@ -235,17 +297,18 @@ public class GameController {
             pause.play();
             gameView.getPlayerStatsPane().updateStats();
         }
-
     }
 
     private @NonNull PauseTransition getPauseTransition() {
-        PauseTransition pause = (gameModel.getCurrentState() instanceof SetupState) ? new PauseTransition(Duration.seconds(0.05)):new PauseTransition(Duration.seconds(1));
-        pause.setOnFinished(e -> {
+        PauseTransition pause = (gameModel.getCurrentState() instanceof SetupState) ?
+                new PauseTransition(Duration.seconds(0.05)) : new PauseTransition(Duration.seconds(1));
 
-            // 2. הגנת ביטחון במקרה שהמשחק נגמר תוך כדי ההשהייה
+        pause.setOnFinished(e -> {
             if (gameModel.isGameOver()) return;
 
             if (isCurrentPlayerAI()) {
+                // במולטיפלייר נצטרך לוודא שרק שחקן אחד (המארח) מריץ את הבוט כדי למנוע כפילויות
+                // בינתיים השארתי את זה כפי שזה.
                 gameModel.getCurrentPlayer().playTurn(gameModel);
                 clearSelection();
                 checkAndExecuteAITurn();
@@ -253,6 +316,8 @@ public class GameController {
         });
         return pause;
     }
+
+    // --- פעולות עזר ---
 
     private void setSelection(Country c, String msg) {
         sourceCountry = c;
@@ -273,5 +338,4 @@ public class GameController {
     private boolean isCurrentPlayerAI() {
         return gameModel.getCurrentPlayer() != null && gameModel.getCurrentPlayer().isAI();
     }
-
 }

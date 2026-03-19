@@ -66,9 +66,8 @@ public class RiskApplication extends Application {
     }
 
     // הפונקציה הזו מופעלת רק אחרי שהמשתמש לחץ על כפתור ההתחלה בתפריט
-    private void startGameWithConfig(List<MainMenu.PlayerSetup> playerSetups) {
-        RiskWebSocketClient networkClient = new RiskWebSocketClient("Yuval");
-        networkClient.connect();
+    private void startGameWithConfig(List<MainMenu.PlayerSetup> playerSetups, RiskWebSocketClient networkClient) {
+
         RiskGame game = new RiskGame();
 
         // שליפת אסטרטגיות הבוטים מתוך Spring Context
@@ -97,7 +96,7 @@ public class RiskApplication extends Application {
 
         // בניית הממשק של המפה והקונטרולר
         GameRoot root = new GameRoot(game);
-        new GameController(game, root);
+        new GameController(game, root, networkClient);
 
 
         Scene gameScene = new Scene(root, 1200, 800);

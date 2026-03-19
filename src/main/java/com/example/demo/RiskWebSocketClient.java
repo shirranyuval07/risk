@@ -2,6 +2,7 @@ package com.example.demo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Platform;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.net.URI;
@@ -16,6 +17,9 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Setter
     private String playerName;
+    // תוסיף את השורה הזו ליד המשתנה playerName
+    @Setter @Getter
+    private String roomId;
 
     // פונקציה שהמסך (UI) ישתמש בה כדי להגיד ללקוח מה לעשות עם התשובות
     // פה נשמור את הפעולה שהמסך מבקש שנעשה כשמגיעה הודעה
@@ -28,7 +32,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
 
     public void connect() {
         HttpClient client = HttpClient.newHttpClient();
-        client.newWebSocketBuilder()
+        client.newWebSocketBuilder()//
                 .buildAsync(URI.create("wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"), this)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
@@ -68,5 +72,9 @@ public class RiskWebSocketClient implements WebSocket.Listener {
             System.out.println("Error parsing received JSON");
         }
         return WebSocket.Listener.super.onText(webSocket, data, last);
+    }
+
+    public String getPlayerName() {
+        return playerName;
     }
 }
