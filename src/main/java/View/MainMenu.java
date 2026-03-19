@@ -20,7 +20,11 @@ public class MainMenu extends StackPane {
 
     private final List<PlayerRow> playerRows = new ArrayList<>();
 
-    public MainMenu(Consumer<List<PlayerSetup>> onStartGame) {
+    private final Consumer<List<PlayerSetup>> onStartGame;
+
+    public MainMenu(Consumer<List<PlayerSetup>> onStartGame)
+    {
+        this.onStartGame = onStartGame;
         setBackground(new Background(new BackgroundFill(Color.rgb(8, 16, 35), CornerRadii.EMPTY, Insets.EMPTY)));
 
         // הקונטיינר המרכזי של התפריט
@@ -179,8 +183,18 @@ public class MainMenu extends StackPane {
                     System.out.println("UI Updated: " + message.content() + " is now visible!");
                 }
                 else if (message.type().equals("GAME_STARTED")) {
-                    System.out.println("Server said to start the game!");
-                    // פה נכניס בהמשך את המעבר למפה
+                    javafx.application.Platform.runLater(() -> {
+                        System.out.println("Starting the game map for everyone!");
+
+                        // יצירת רשימת שחקנים זמנית כדי שהמפה תעלה
+                        // בהמשך תוכל לשלוח את הרשימה המדויקת מהשרת
+                        List<PlayerSetup> players = new ArrayList<>();
+                        players.add(new PlayerSetup("Online Player 1", Color.RED, "Human"));
+                        players.add(new PlayerSetup("Online Player 2", Color.BLUE, "Human"));
+
+                        // הפקודה הקריטית: זה מה שסוגר את התפריט ופותח את המפה
+                        onStartGame.accept(players);
+                    });
                 }
             });
         });

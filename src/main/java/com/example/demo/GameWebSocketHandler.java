@@ -58,5 +58,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(error)));
             }
         }
+        else if ("START_GAME".equals(gameMsg.type())) {
+            // המארח לחץ על כפתור ההתחלה
+            GameMessage startNotice = new GameMessage("GAME_STARTED", gameMsg.roomId(), "Server", "The game is starting now!");
+            String jsonNotice = objectMapper.writeValueAsString(startNotice);
+
+            // שולחים לכולם בחדר!
+            roomManager.broadcastToRoom(gameMsg.roomId(), jsonNotice);
+        }
     }
 }
