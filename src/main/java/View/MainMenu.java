@@ -89,7 +89,7 @@ public class MainMenu extends StackPane {
 
         // --- קוד הרשת (Multiplayer) ---
 
-        RiskWebSocketClient networkClient = new RiskWebSocketClient("Yuval");
+        RiskWebSocketClient networkClient = new RiskWebSocketClient("Guest");
         networkClient.connect();
 
         Button createRoomBtn = new Button("CREATE ROOM");
