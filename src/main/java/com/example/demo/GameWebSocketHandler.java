@@ -1,20 +1,22 @@
 package com.example.demo;
 
-import Model.Country;
 import Model.Records.BattleResult;
-import Model.RiskGame;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
+
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private final RoomManager roomManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RiskGame serverGame = new RiskGame();
+    private final Random random = new Random();
 
     public GameWebSocketHandler(RoomManager roomManager) {
         this.roomManager = roomManager;
@@ -61,66 +63,64 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         } else if ("GAME_ACTION".equals(gameMsg.type())) {
 
             if (gameMsg.content().startsWith("ATTACK_REQ:")) {
-                // Format: "ATTACK_REQ:<attackerId>-><defenderId>"
-                String[] ids = gameMsg.content().substring(11).split("->");
-                int attackerId = Integer.parseInt(ids[0]);
-                int defenderId = Integer.parseInt(ids[1]);
+                // Format: "ATTACK_REQ:<attackerId>-><defenderId>:<attackerArmies>:<defenderArmies>"
+                String attackData = gameMsg.content().substring(11);
+                String[] parts = attackData.split(":");
+                String[] ids = parts[0].split("->");
+                int attackerId     = Integer.parseInt(ids[0]);
+                int defenderId     = Integer.parseInt(ids[1]);
+                int attackerArmies = Integer.parseInt(parts[1]);
+                int defenderArmies = Integer.parseInt(parts[2]);
 
-                Country attacker = serverGame.getBoard().getCountry(attackerId);
-                Country defender = serverGame.getBoard().getCountry(defenderId);
+                BattleResult result = rollBattle(attackerArmies, defenderArmies);
 
-                if (attacker != null && defender != null) {
-                    BattleResult result = serverGame.getCurrentState().attack(attacker, defender);
+                // Format: "<attackerId>:<defenderId>:<BattleResultJson>"
+                String battleResultJson = objectMapper.writeValueAsString(result);
+                String content = attackerId + ":" + defenderId + ":" + battleResultJson;
 
-                    if (result != null) {
-                        // Handle conquest on the server's authoritative game state
-                        if (result.conquered()) {
-                            // Default: move the minimum number of armies (clients can request more via CONQUEST_MOVE)
-                            serverGame.handleConquest(attacker, defender, result.minMove());
-                        }
-
-                        // Encode country IDs into the content alongside the BattleResult JSON
-                        // Format: "<attackerId>:<defenderId>:<BattleResultJson>"
-                        String battleResultJson = objectMapper.writeValueAsString(result);
-                        String content = attackerId + ":" + defenderId + ":" + battleResultJson;
-
-                        GameMessage resultMsg = new GameMessage(
-                                "BATTLE_RESULT",
-                                gameMsg.roomId(),
-                                "Server",
-                                content
-                        );
-                        roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(resultMsg));
-                    }
-                }
-
-            } else if (gameMsg.content().startsWith("CONQUEST_MOVE:")) {
-                // The attacker chose how many armies to move after conquest
-                // Format: "CONQUEST_MOVE:<attackerId>:<defenderId>:<amount>"
-                // The server already moved minMove armies during ATTACK_REQ, so we move the delta here.
-                String[] parts = gameMsg.content().substring(14).split(":");
-                int attackerId = Integer.parseInt(parts[0]);
-                int defenderId = Integer.parseInt(parts[1]);
-                int totalMove = Integer.parseInt(parts[2]);
-
-                Country attacker = serverGame.getBoard().getCountry(attackerId);
-                Country defender = serverGame.getBoard().getCountry(defenderId);
-
-                if (attacker != null && defender != null) {
-                    // We already moved minMove, so broadcast the final chosen amount to all clients
-                    GameMessage moveMsg = new GameMessage(
-                            "GAME_ACTION",
-                            gameMsg.roomId(),
-                            "Server",
-                            "CONQUEST_MOVE:" + attackerId + ":" + defenderId + ":" + totalMove
-                    );
-                    roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(moveMsg));
-                }
+                GameMessage resultMsg = new GameMessage("BATTLE_RESULT", gameMsg.roomId(), "Server", content);
+                roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(resultMsg));
 
             } else {
-                // All other game actions (SETUP_PLACE, DRAFT, FORTIFY, NEXT_PHASE) — broadcast as-is
+                // All other actions (SETUP_PLACE, DRAFT, FORTIFY, NEXT_PHASE, CONQUEST_MOVE) — broadcast as-is
                 roomManager.broadcastToRoom(gameMsg.roomId(), payload);
             }
         }
+    }
+
+    /**
+     * Pure dice-rolling battle logic — mirrors AttackState.attack() but needs no game state.
+     */
+    private BattleResult rollBattle(int attackerArmies, int defenderArmies) {
+        int aDiceCount = Math.min(3, attackerArmies - 1);
+        int dDiceCount = Math.min(2, defenderArmies);
+
+        Integer[] aRolls = rollDice(aDiceCount);
+        Integer[] dRolls = rollDice(dDiceCount);
+
+        Arrays.sort(aRolls, Collections.reverseOrder());
+        Arrays.sort(dRolls, Collections.reverseOrder());
+
+        int comparisons = Math.min(aDiceCount, dDiceCount);
+        int aLoss = 0, dLoss = 0;
+
+        for (int i = 0; i < comparisons; i++) {
+            if (aRolls[i] > dRolls[i]) dLoss++;
+            else aLoss++;
+        }
+
+        boolean conquered = (defenderArmies - dLoss) <= 0;
+        int minMove = aDiceCount;
+        int maxMove = attackerArmies - 1 - aLoss;
+
+        return new BattleResult(aRolls, dRolls, aLoss, dLoss, conquered, minMove, maxMove);
+    }
+
+    private Integer[] rollDice(int count) {
+        Integer[] rolls = new Integer[count];
+        for (int i = 0; i < count; i++) {
+            rolls[i] = random.nextInt(6) + 1;
+        }
+        return rolls;
     }
 }

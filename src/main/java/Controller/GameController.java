@@ -304,7 +304,7 @@ public class GameController {
                 if (isMultiplayer) {
                     // Send to server — the server rolls dice and broadcasts result to everyone
                     networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
-                            "ATTACK_REQ:" + attacker.getId() + "->" + clickedCountry.getId());
+                            "ATTACK_REQ:" + attacker.getId() + "->" + clickedCountry.getId() + ":" + attacker.getArmies() + ":" + clickedCountry.getArmies());
                 } else {
                     // Local game: roll locally as before
                     BattleResult result = gameModel.attack(attacker, clickedCountry);
