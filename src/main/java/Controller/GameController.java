@@ -54,22 +54,26 @@ public class GameController {
 
                     if ("NEXT_PHASE".equals(action)) {
                         executeNextPhaseLocal();
-                    } else if ("SETUP_PLACE".equals(action)) {
+                    }
+                    else if ("SETUP_PLACE".equals(action)) {
                         int countryId = Integer.parseInt(parts[1]);
                         Country c = gameModel.getBoard().getCountry(countryId);
                         executeSetupLocal(c);
-                    } else if ("DRAFT".equals(action)) {
+                    }
+                    else if ("DRAFT".equals(action)) {
                         int countryId = Integer.parseInt(parts[1]);
                         Country c = gameModel.getBoard().getCountry(countryId);
                         executeDraftLocal(c);
-                    } else if ("FORTIFY".equals(action)) {
+                    }
+                    else if ("FORTIFY".equals(action)) {
                         int srcId = Integer.parseInt(parts[1]);
                         int dstId = Integer.parseInt(parts[2]);
                         int amount = Integer.parseInt(parts[3]);
                         Country src = gameModel.getBoard().getCountry(srcId);
                         Country dst = gameModel.getBoard().getCountry(dstId);
                         executeFortifyLocal(src, dst, amount);
-                    } else if ("CONQUEST_MOVE".equals(action)) {
+                    }
+                    else if ("CONQUEST_MOVE".equals(action)) {
                         // parts: [CONQUEST_MOVE, attackerId, defenderId, totalAmount]
                         int attackerId = Integer.parseInt(parts[1]);
                         int defenderId = Integer.parseInt(parts[2]);
@@ -88,8 +92,15 @@ public class GameController {
                             applyPendingConquestMove(attacker, defender, totalMove);
                         }
                     }
+                    else if ("NEXT_TURN".equals(action)) {
+                        // parts[1] = playerName, parts[2] = draftArmies
+                        String playerName = parts[1];
+                        int draftArmies = Integer.parseInt(parts[2]);
+                        executeNextTurnLocal(playerName, draftArmies);
+                    }
 
-                } else if ("BATTLE_RESULT".equals(message.type())) {
+                }
+                else if ("BATTLE_RESULT".equals(message.type())) {
                     // content format: "<attackerId>:<defenderId>:<BattleResultJson>"
                     // Find the first two colons to split IDs from the JSON (JSON itself contains colons)
                     String content = message.content();
@@ -112,14 +123,33 @@ public class GameController {
                         }
                     }
                 }
+
             });
         });
+
+    }
+
+    private void executeNextTurnLocal(String playerName, int draftArmies)
+    {
+        gameModel.nextTurn();
+
+        // Find the player by name and set their armies
+        for (Player p : gameModel.getPlayers()) {
+            if (p.getName().equals(playerName)) {
+                p.setDraftArmies(draftArmies);
+                break;
+            }
+        }
+        // Let the local game advance the turn normally
+        clearSelection();
+        gameView.getPlayerStatsPane().updateStats();
     }
 
     private void initializeListeners() {
         gameView.getMapPane().setOnCountryClick(clickedCountry -> {
             if (isCurrentPlayerAI()) return;
-            if (isMultiplayer && !gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName())) {
+            if (isMultiplayer
+                    && !gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName())) {
                 gameView.getControlPane().setMessage("It's not your turn!");
                 return;
             }
@@ -220,14 +250,28 @@ public class GameController {
     }
 
     private void executeNextPhaseLocal() {
+        boolean wasFortify = gameModel.getCurrentState() instanceof FortifyState;
+
         gameModel.nextPhase();
         clearSelection();
 
+        // If it was fortify, nextTurn() already set DraftState for the next player
+        // so we don't need to do anything extra except check for AI
+        if (isMultiplayer && gameModel.getCurrentState() instanceof DraftState && !wasFortify) {
+            Player p = gameModel.getCurrentPlayer();
+            if (!p.getName().equals(networkClient.getPlayerName())) {
+                networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                        "NEXT_TURN:" + p.getName() + ":" + p.getDraftArmies());
+            }
+        }
+
         if (isCurrentPlayerAI()) {
             checkAndExecuteAITurn();
-        } else if (gameModel.getCurrentState() instanceof DraftState && gameModel.getCurrentPlayer().getDraftArmies() > 0) {
+        } else if (gameModel.getCurrentState() instanceof DraftState
+                && gameModel.getCurrentPlayer().getDraftArmies() > 0) {
             gameView.getControlPane().setMessage("You have armies left to place!");
         }
+
         gameView.getPlayerStatsPane().updateStats();
     }
 
@@ -280,6 +324,7 @@ public class GameController {
         gameView.getControlPane().setMessage(resMsg);
         gameView.getPlayerStatsPane().updateStats();
         clearSelection();
+        checkAndExecuteAITurn();
     }
 
     // --- ATTACK ---

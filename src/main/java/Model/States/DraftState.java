@@ -59,6 +59,6 @@ public class DraftState implements GameState
 
     @Override
     public String getPhaseName() {
-        return "";
+        return "DRAFT";
     }
 }
