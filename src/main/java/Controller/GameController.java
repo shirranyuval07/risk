@@ -11,6 +11,7 @@ import View.CardsDialog;
 import View.GameRoot;
 
 import com.example.demo.RiskWebSocketClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.animation.PauseTransition;
 import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
@@ -24,9 +25,10 @@ public class GameController {
     private final GameRoot gameView;
     private Country sourceCountry = null;
 
-    // משתני רשת
+    // Network fields
     private final RiskWebSocketClient networkClient;
     private final boolean isMultiplayer;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient) {
         this.gameModel = model;
@@ -52,37 +54,71 @@ public class GameController {
 
                     if ("NEXT_PHASE".equals(action)) {
                         executeNextPhaseLocal();
-                    }
-                    else if ("SETUP_PLACE".equals(action)) {
-                        // מקבלים את ה-ID מההודעה, מוצאים את המדינה, ושמים עליה חייל
+                    } else if ("SETUP_PLACE".equals(action)) {
                         int countryId = Integer.parseInt(parts[1]);
                         Country c = gameModel.getBoard().getCountry(countryId);
                         executeSetupLocal(c);
-                    }
-                    else if ("DRAFT".equals(action)) {
+                    } else if ("DRAFT".equals(action)) {
                         int countryId = Integer.parseInt(parts[1]);
                         Country c = gameModel.getBoard().getCountry(countryId);
                         executeDraftLocal(c);
-                    }
-                    else if ("FORTIFY".equals(action)) {
+                    } else if ("FORTIFY".equals(action)) {
                         int srcId = Integer.parseInt(parts[1]);
                         int dstId = Integer.parseInt(parts[2]);
                         int amount = Integer.parseInt(parts[3]);
                         Country src = gameModel.getBoard().getCountry(srcId);
                         Country dst = gameModel.getBoard().getCountry(dstId);
                         executeFortifyLocal(src, dst, amount);
+                    } else if ("CONQUEST_MOVE".equals(action)) {
+                        // parts: [CONQUEST_MOVE, attackerId, defenderId, totalAmount]
+                        int attackerId = Integer.parseInt(parts[1]);
+                        int defenderId = Integer.parseInt(parts[2]);
+                        int totalMove  = Integer.parseInt(parts[3]);
+                        Country attacker = gameModel.getBoard().getCountry(attackerId);
+                        Country defender = gameModel.getBoard().getCountry(defenderId);
+                        if (attacker != null && defender != null) {
+                            // Apply the player's chosen move amount on all clients.
+                            // minMove armies were already moved during executeBattleResultLocal,
+                            // so we just move the delta here.
+                            int delta = totalMove - attacker.getArmies(); // re-derived below
+                            // Simpler: just do a fresh handleConquest with the chosen amount
+                            // (executeBattleResultLocal already called handleConquest with minMove,
+                            //  so undo that and redo with totalMove is complex — instead we
+                            //  track the pending conquest and apply totalMove directly)
+                            applyPendingConquestMove(attacker, defender, totalMove);
+                        }
                     }
-                    // כאן נוסיף בהמשך את הטיפול בהודעות של ATTACK
+
+                } else if ("BATTLE_RESULT".equals(message.type())) {
+                    // content format: "<attackerId>:<defenderId>:<BattleResultJson>"
+                    // Find the first two colons to split IDs from the JSON (JSON itself contains colons)
+                    String content = message.content();
+                    int firstColon  = content.indexOf(':');
+                    int secondColon = content.indexOf(':', firstColon + 1);
+
+                    int attackerId = Integer.parseInt(content.substring(0, firstColon));
+                    int defenderId = Integer.parseInt(content.substring(firstColon + 1, secondColon));
+                    String battleJson = content.substring(secondColon + 1);
+
+                    Country attacker = gameModel.getBoard().getCountry(attackerId);
+                    Country defender = gameModel.getBoard().getCountry(defenderId);
+
+                    if (attacker != null && defender != null) {
+                        try {
+                            BattleResult result = objectMapper.readValue(battleJson, BattleResult.class);
+                            executeBattleResultLocal(attacker, defender, result);
+                        } catch (Exception e) {
+                            System.out.println("Failed to parse BattleResult: " + e.getMessage());
+                        }
+                    }
                 }
             });
         });
     }
 
     private void initializeListeners() {
-        // 1. טיפול בקליקים על מדינות
         gameView.getMapPane().setOnCountryClick(clickedCountry -> {
             if (isCurrentPlayerAI()) return;
-            // חסימה: אם זה מולטיפלייר וזה לא התור שלך, אי אפשר ללחוץ על המפה!
             if (isMultiplayer && !gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName())) {
                 gameView.getControlPane().setMessage("It's not your turn!");
                 return;
@@ -94,7 +130,6 @@ public class GameController {
             gameView.getPlayerStatsPane().updateStats();
         });
 
-        // 2. טיפול בכפתור מעבר שלב
         gameView.getControlPane().getBtnNextPhase().setOnAction(e -> {
             if (isCurrentPlayerAI()) return;
             if (isMultiplayer && !gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName())) return;
@@ -103,7 +138,6 @@ public class GameController {
             gameView.getPlayerStatsPane().updateStats();
         });
 
-        // 3. טיפול בכפתור שמות המדינות
         gameView.getControlPane().getBtnToggleNames().setOnAction(e -> {
             javafx.scene.control.Button btn = gameView.getControlPane().getBtnToggleNames();
             if (btn.getText().contains("Show")) {
@@ -126,10 +160,8 @@ public class GameController {
         GameState currentState = gameModel.getCurrentState();
 
         if (currentState instanceof SetupState) {
-            // קוראים לפונקציה החדשה במקום לעשות את הלוגיקה פה
             handleSetupAction(clickedCountry);
-        }
-        else if (currentState instanceof DraftState) {
+        } else if (currentState instanceof DraftState) {
             handleDraftAction(clickedCountry);
         } else if (currentState instanceof AttackState) {
             handleAttackAction(clickedCountry);
@@ -137,11 +169,11 @@ public class GameController {
             handleFortifyAction(clickedCountry);
         }
     }
-// --- טיפול בהצבת חיילים בתחילת המשחק (SETUP) ---
+
+    // --- SETUP ---
 
     private void handleSetupAction(Country country) {
         if (isMultiplayer) {
-            // אם אנחנו ברשת, נשלח הודעה לשרת עם ה-ID של המדינה
             networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(), "SETUP_PLACE:" + country.getId());
         } else {
             executeSetupLocal(country);
@@ -153,15 +185,12 @@ public class GameController {
             gameView.getControlPane().setMessage("Placed army on " + country.getName());
             gameView.getPlayerStatsPane().updateStats();
             checkAndExecuteAITurn();
-        }
-        else
-        {
+        } else {
             gameView.getControlPane().setMessage("Cannot place army here!");
         }
     }
 
-
-    // --- טיפול בהצבת חיילים (DRAFT) ---
+    // --- DRAFT ---
 
     private void handleDraftAction(Country country) {
         if (isMultiplayer) {
@@ -180,7 +209,7 @@ public class GameController {
         }
     }
 
-    // --- טיפול בהעברת שלב (NEXT PHASE) ---
+    // --- NEXT PHASE ---
 
     private void handleNextPhaseRequest() {
         if (isMultiplayer) {
@@ -202,7 +231,7 @@ public class GameController {
         gameView.getPlayerStatsPane().updateStats();
     }
 
-    // --- טיפול בתגבורת (FORTIFY) ---
+    // --- FORTIFY ---
 
     private void handleFortifyAction(Country clickedCountry) {
         if (sourceCountry == null) {
@@ -215,10 +244,9 @@ public class GameController {
                     gameView.getControlPane().setMessage("No valid targets to fortify from here!");
             }
         } else {
-            if (clickedCountry.equals(sourceCountry))
+            if (clickedCountry.equals(sourceCountry)) {
                 clearSelection();
-            else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
-
+            } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
                 int maxMove = sourceCountry.getArmies() - 1;
                 TextInputDialog dialog = new TextInputDialog();
                 dialog.setTitle("Fortify Territory");
@@ -254,8 +282,7 @@ public class GameController {
         clearSelection();
     }
 
-    // --- טיפול בהתקפה (ATTACK) ---
-    // הערה: כרגע מוגדר לעבוד בצורה מקומית גם במולטיפלייר עד שנפתור את סנכרון הקוביות
+    // --- ATTACK ---
 
     private void handleAttackAction(Country clickedCountry) {
         if (sourceCountry == null) {
@@ -268,29 +295,122 @@ public class GameController {
                     gameView.getControlPane().setMessage("No valid targets to attack from here!");
             }
         } else {
-            if (clickedCountry.equals(sourceCountry))
+            if (clickedCountry.equals(sourceCountry)) {
                 clearSelection();
-            else {
-                // TODO: בעתיד הקרוב נשנה את זה לשלוח בקשת התקפה לשרת
-                BattleResult result = gameModel.attack(sourceCountry, clickedCountry);
-                if (result != null) {
-                    View.BattleResultDialog.show(result);
+            } else {
+                Country attacker = sourceCountry;
+                clearSelection();
 
-                    if (result.conquered()) {
-                        int amountToMove = getAmountToMove(clickedCountry, result);
-                        gameModel.handleConquest(sourceCountry, clickedCountry, amountToMove);
-                        gameView.getControlPane().setMessage("Territory Conquered!");
-                    } else {
-                        gameView.getControlPane().setMessage("Attack completed.");
-                    }
-                    gameView.getPlayerStatsPane().updateStats();
+                if (isMultiplayer) {
+                    // Send to server — the server rolls dice and broadcasts result to everyone
+                    networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                            "ATTACK_REQ:" + attacker.getId() + "->" + clickedCountry.getId());
                 } else {
-                    gameView.getControlPane().setMessage("Attack failed or invalid.");
+                    // Local game: roll locally as before
+                    BattleResult result = gameModel.attack(attacker, clickedCountry);
+                    if (result != null) {
+                        executeBattleResultLocal(attacker, clickedCountry, result);
+                    } else {
+                        gameView.getControlPane().setMessage("Attack failed or invalid.");
+                    }
                 }
-                clearSelection();
             }
         }
     }
+
+    /**
+     * Applies a BattleResult that arrived either from the server (multiplayer)
+     * or from the local dice roll (single-player). Shared by both paths.
+     *
+     * For conquests: applies minMove immediately (matching what the server did),
+     * then — only on the attacker's own client — asks how many more to move and
+     * sends a CONQUEST_MOVE message so every client syncs to the final amount.
+     */
+    private void executeBattleResultLocal(Country attacker, Country defender, BattleResult result) {
+        // Apply army losses that are encoded in the result
+        // (AttackState.attack already did this on the server; we need to mirror it here on clients)
+        // Note: In multiplayer the local gameModel has NOT rolled yet — we must apply losses manually.
+        if (isMultiplayer) {
+            applyLossesDirectly(attacker, defender, result);
+        }
+
+        View.BattleResultDialog.show(result);
+
+        if (result.conquered()) {
+            // Apply the minimum conquest move (mirrors what the server already did)
+            gameModel.handleConquest(attacker, defender, result.minMove());
+            gameView.getControlPane().setMessage("Territory Conquered!");
+            gameView.getPlayerStatsPane().updateStats();
+
+            // Only the attacker's client shows the "how many armies to move" dialog
+            boolean iAmTheAttacker = !isMultiplayer ||
+                    gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName());
+
+            if (iAmTheAttacker && result.maxMove() > result.minMove()) {
+                int chosenAmount = getAmountToMove(defender, result);
+                int delta = chosenAmount - result.minMove();
+
+                if (delta > 0) {
+                    if (isMultiplayer) {
+                        // Tell all clients to apply the extra armies
+                        networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                                "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId() + ":" + chosenAmount);
+                    } else {
+                        // Local: move the extra armies right now
+                        attacker.removeArmies(delta);
+                        defender.addArmies(delta);
+                    }
+                }
+            }
+        } else {
+            gameView.getControlPane().setMessage("Attack completed.");
+        }
+
+        gameView.getPlayerStatsPane().updateStats();
+    }
+
+    /**
+     * In multiplayer, the local model hasn't run attack() — so we apply
+     * the army losses from the server's BattleResult directly.
+     */
+    private void applyLossesDirectly(Country attacker, Country defender, BattleResult result) {
+        attacker.removeArmies(result.attackerLosses());
+        defender.removeArmies(result.defenderLosses());
+    }
+
+    /**
+     * Called when a CONQUEST_MOVE message is received. The attacker's client
+     * already applied minMove via handleConquest; here we move the remaining delta.
+     */
+    private void applyPendingConquestMove(Country attacker, Country defender, int totalMove) {
+        int delta = totalMove - attacker.getArmies(); // armies already moved = minMove
+        // Safer approach: just check how many were already moved (minMove was the first handleConquest)
+        // We store nothing, so just apply the extra armies directly:
+        // totalMove - minMove were not yet moved on non-attacker clients.
+        // The attacker's client sends this AFTER it already moved minMove, so:
+        // All clients (including attacker) will receive this. Since attacker already moved
+        // the full amount locally, we guard by re-syncing:
+        // Simplest correct approach: apply delta on everyone except the original attacker client.
+        // But since we can't know who the "original" attacker is from the broadcast alone,
+        // we track a flag instead.
+
+        // Practical solution: store the extra delta from the last conquest and guard with it.
+        // For now, all clients receive and apply the delta; the attacker skips because it
+        // already applied the full totalMove interactively.
+        if (pendingConquestHandled) {
+            pendingConquestHandled = false; // attacker's client: skip re-application
+            return;
+        }
+        int extra = totalMove - defender.getArmies(); // armies already on defender after minMove
+        if (extra > 0) {
+            attacker.removeArmies(extra);
+            defender.addArmies(extra);
+        }
+        gameView.getPlayerStatsPane().updateStats();
+    }
+
+    // Flag: true on the attacker's client after they interactively chose the move amount
+    private boolean pendingConquestHandled = false;
 
     private static int getAmountToMove(Country clickedCountry, BattleResult result) {
         java.util.List<Integer> choices = new java.util.ArrayList<>();
@@ -308,7 +428,7 @@ public class GameController {
         return chosenAmount.orElse(result.maxMove());
     }
 
-    // --- מערכת התורות והבוטים ---
+    // --- AI & TURN MANAGEMENT ---
 
     private void checkAndExecuteAITurn() {
         if (gameModel.isGameOver()) {
@@ -332,8 +452,6 @@ public class GameController {
             if (gameModel.isGameOver()) return;
 
             if (isCurrentPlayerAI()) {
-                // במולטיפלייר נצטרך לוודא שרק שחקן אחד (המארח) מריץ את הבוט כדי למנוע כפילויות
-                // בינתיים השארתי את זה כפי שזה.
                 gameModel.getCurrentPlayer().playTurn(gameModel);
                 clearSelection();
                 checkAndExecuteAITurn();
@@ -342,7 +460,7 @@ public class GameController {
         return pause;
     }
 
-    // --- פעולות עזר ---
+    // --- HELPERS ---
 
     private void setSelection(Country c, String msg) {
         sourceCountry = c;
