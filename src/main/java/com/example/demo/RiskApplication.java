@@ -31,10 +31,20 @@ public class RiskApplication extends Application {
     private ConfigurableApplicationContext springContext;
     private Stage primaryStage;
 
+    // Whether this instance is running as the host (server mode)
+    private boolean isServer = false;
+
     @Override
     public void init() {
-        // טעינת תשתיות ה-Spring ברקע
-        springContext = SpringApplication.run(RiskApplication.class);
+        List<String> params = getParameters().getRaw();
+        isServer = params.contains("--server");
+
+        if (isServer) {
+            System.out.println("🖥 Starting in SERVER mode — Spring Boot will start.");
+            springContext = SpringApplication.run(RiskApplication.class);
+        } else {
+            System.out.println("🎮 Starting in CLIENT mode — no server will be started.");
+        }
     }
 
     @Override
@@ -49,58 +59,59 @@ public class RiskApplication extends Application {
         }
 
         primaryStage.setTitle("⚔ Risk: Global Conquest 2026 ⚔");
-
-        // טעינת מסך התפריט הראשי
         showMainMenu();
-
         primaryStage.setMaximized(true);
         primaryStage.show();
     }
 
     private void showMainMenu() {
-        UserService userService = springContext.getBean(UserService.class);
+        // UserService is only available in server mode — clients get null (login/signup disabled)
+        UserService userService = (springContext != null)
+                ? springContext.getBean(UserService.class)
+                : null;
 
-        MainMenu mainMenu = new MainMenu(this::startGameWithConfig,userService);
+        MainMenu mainMenu = new MainMenu(this::startGameWithConfig, userService);
         Scene menuScene = new Scene(mainMenu, 1200, 800);
         primaryStage.setScene(menuScene);
     }
 
-    // הפונקציה הזו מופעלת רק אחרי שהמשתמש לחץ על כפתור ההתחלה בתפריט
     private void startGameWithConfig(List<MainMenu.PlayerSetup> playerSetups, RiskWebSocketClient networkClient) {
-
         RiskGame game = new RiskGame();
 
-        // שליפת אסטרטגיות הבוטים מתוך Spring Context
-        BalancedStrategy balancedStrategy = springContext.getBean(BalancedStrategy.class);
-        DefensiveStrategy defensiveStrategy = springContext.getBean(DefensiveStrategy.class);
-        OffensiveStrategy offensiveStrategy = springContext.getBean(OffensiveStrategy.class);
+        if (isServer && springContext != null) {
+            // Only the host can use AI bots (they require Spring beans)
+            BalancedStrategy balancedStrategy = springContext.getBean(BalancedStrategy.class);
+            DefensiveStrategy defensiveStrategy = springContext.getBean(DefensiveStrategy.class);
+            OffensiveStrategy offensiveStrategy = springContext.getBean(OffensiveStrategy.class);
 
-        // תרגום בחירות ה-UI לאובייקטי Player אמיתיים
-        for (MainMenu.PlayerSetup setup : playerSetups) {
-            boolean isAI = !setup.type().equals("Human");
-            Player p = new Player(setup.name(), setup.color(), isAI);
+            for (MainMenu.PlayerSetup setup : playerSetups) {
+                boolean isAI = !setup.type().equals("Human");
+                Player p = new Player(setup.name(), setup.color(), isAI);
 
-            // אם זה בוט, משדכים לו את המוח הנכון לפי מה שנבחר בקומבובוקס
-            if (isAI) {
-                switch (setup.type()) {
-                    case "AI - Balanced" -> p.setStrategy(new GreedyAI(balancedStrategy));
-                    case "AI - Defensive" -> p.setStrategy(new GreedyAI(defensiveStrategy));
-                    case "AI - Offensive" -> p.setStrategy(new GreedyAI(offensiveStrategy));
+                if (isAI) {
+                    switch (setup.type()) {
+                        case "AI - Balanced"  -> p.setStrategy(new GreedyAI(balancedStrategy));
+                        case "AI - Defensive" -> p.setStrategy(new GreedyAI(defensiveStrategy));
+                        case "AI - Offensive" -> p.setStrategy(new GreedyAI(offensiveStrategy));
+                    }
                 }
+                game.addPlayer(p);
             }
-            game.addPlayer(p);
+        } else {
+            // Client mode: all players are Human (no AI beans available)
+            for (MainMenu.PlayerSetup setup : playerSetups) {
+                Player p = new Player(setup.name(), setup.color(), false);
+                game.addPlayer(p);
+            }
         }
 
-        // התחלת הלוגיקה
         if (networkClient != null) {
             game.setGameSeed(networkClient.getGameSeed());
         }
         game.startGame();
 
-        // בניית הממשק של המפה והקונטרולר
         GameRoot root = new GameRoot(game);
         new GameController(game, root, networkClient);
-
 
         Scene gameScene = new Scene(root, 1200, 800);
         primaryStage.setScene(gameScene);

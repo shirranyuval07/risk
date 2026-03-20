@@ -11,9 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
-// ייבוא הקליינט שלנו
 import com.example.demo.RiskWebSocketClient;
 import javafx.util.Pair;
 import service.UserService;
@@ -23,23 +21,21 @@ public class MainMenu extends StackPane {
     public record PlayerSetup(String name, Color color, String type) {}
 
     private final List<PlayerRow> playerRows = new ArrayList<>();
-
     private final BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame;
+
+    // null when running in client mode (no Spring context)
     private final UserService userService;
     private Entity.User currentUser = null;
 
-    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame, UserService userService)
-    {
+    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame, UserService userService) {
         this.onStartGame = onStartGame;
         this.userService = userService;
         setBackground(new Background(new BackgroundFill(Color.rgb(8, 16, 35), CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // הקונטיינר המרכזי של התפריט
         VBox mainContent = new VBox(30);
         mainContent.setAlignment(Pos.CENTER);
         mainContent.setPadding(new Insets(50));
 
-        // כותרת
         Label title = new Label("⚔ RISK: GLOBAL CONQUEST ⚔");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 40));
         title.setTextFill(Color.WHITE);
@@ -62,7 +58,7 @@ public class MainMenu extends StackPane {
             playersBox.getChildren().add(row);
         }
 
-        // --- כפתור משחק מקומי (Hot-Seat) ---
+        // --- Local game button ---
         Button btnStart = new Button("START LOCAL CONQUEST");
         btnStart.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
         btnStart.setStyle("-fx-background-color: #2eaa50; -fx-text-fill: white; -fx-padding: 15 40; -fx-background-radius: 5;");
@@ -75,20 +71,14 @@ public class MainMenu extends StackPane {
                     activePlayers.add(new PlayerSetup(row.getName(), row.getColor(), row.getType()));
                 }
             }
-
-            if (activePlayers.size() >= 2)
-            {
+            if (activePlayers.size() >= 2) {
                 onStartGame.accept(activePlayers, null);
-            }
-            else
-            {
-                Alert alert = new Alert(Alert.AlertType.WARNING, "You need at least 2 players to start!");
-                alert.show();
+            } else {
+                new Alert(Alert.AlertType.WARNING, "You need at least 2 players to start!").show();
             }
         });
 
-        // --- קוד הרשת (Multiplayer) ---
-
+        // --- Multiplayer buttons ---
         RiskWebSocketClient networkClient = new RiskWebSocketClient("Guest");
         networkClient.connect();
 
@@ -96,16 +86,12 @@ public class MainMenu extends StackPane {
         createRoomBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
         createRoomBtn.setStyle("-fx-background-color: #0055e1; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;");
         createRoomBtn.setCursor(javafx.scene.Cursor.HAND);
-
-        createRoomBtn.setOnAction(e -> {
-            networkClient.sendAction("CREATE_ROOM", "", "Create me a room");
-        });
+        createRoomBtn.setOnAction(e -> networkClient.sendAction("CREATE_ROOM", "", "Create me a room"));
 
         Button joinRoomBtn = new Button("JOIN ROOM");
         joinRoomBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
         joinRoomBtn.setStyle("-fx-background-color: #e18f3c; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;");
         joinRoomBtn.setCursor(javafx.scene.Cursor.HAND);
-
         joinRoomBtn.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
             dialog.setTitle("Join Room");
@@ -117,15 +103,12 @@ public class MainMenu extends StackPane {
             });
         });
 
-        // טיפול בתשובות שמגיעות מהשרת (כשאנחנו בתפריט)
         networkClient.setOnMessageReceived(message -> {
             if (message.type().equals("ROOM_CREATED")) {
                 showLobby(message.roomId(), true, networkClient, mainContent);
-            }
-            else if (message.type().equals("JOIN_ROOM_SUCCESS")) {
+            } else if (message.type().equals("JOIN_ROOM_SUCCESS")) {
                 showLobby(message.roomId(), false, networkClient, mainContent);
-            }
-            else if (message.type().equals("ERROR")) {
+            } else if (message.type().equals("ERROR")) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText(message.content());
@@ -137,117 +120,91 @@ public class MainMenu extends StackPane {
         multiplayerBox.setAlignment(Pos.CENTER);
         multiplayerBox.getChildren().addAll(createRoomBtn, joinRoomBtn);
 
-        // הוספת כל הכפתורים למסך הראשי
         mainContent.getChildren().addAll(title, playersBox, btnStart, multiplayerBox);
 
-        // --- יצירת כפתור החוקים המרחף בפינה ---
+        // --- Rules button ---
         Button btnRules = new Button("📖 Rules");
         btnRules.setStyle("-fx-background-color: #4a6a92; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 5;");
         btnRules.setCursor(javafx.scene.Cursor.HAND);
         btnRules.setOnAction(e -> RulesDialog.show());
-
         StackPane.setAlignment(btnRules, Pos.TOP_RIGHT);
         StackPane.setMargin(btnRules, new Insets(20));
 
-
+        // --- Auth box (only shown in server mode where UserService is available) ---
         VBox authBox = new VBox(15);
+        authBox.setAlignment(Pos.TOP_LEFT);
+        authBox.setMaxWidth(150);
+        StackPane.setAlignment(authBox, Pos.TOP_LEFT);
+        StackPane.setMargin(authBox, new Insets(20));
 
         Label userLabel = new Label("Welcome, Guest");
         userLabel.setTextFill(Color.WHITE);
         userLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
 
-        Button loginBtn = new Button("Login");
-        Button signupBtn = new Button("Sign Up");
-        Button logoutBtn = new Button("Logout");
+        if (userService != null) {
+            // Full auth UI available (server mode)
+            Button loginBtn  = new Button("Login");
+            Button signupBtn = new Button("Sign Up");
+            Button logoutBtn = new Button("Logout");
+            logoutBtn.setVisible(false);
+            logoutBtn.setManaged(false);
 
-        logoutBtn.setVisible(false);
-        logoutBtn.setManaged(false); // הפקודה הזו דואגת שהכפתור גם לא יתפוס מקום ריק כשהוא מוסתר
+            authBox.getChildren().addAll(userLabel, loginBtn, signupBtn, logoutBtn);
 
-        authBox.getChildren().addAll(userLabel, loginBtn, signupBtn, logoutBtn);
+            signupBtn.setOnAction(e -> {
+                Optional<Pair<String, String>> result = LoginDialog.show("Sign Up");
+                result.ifPresent(credentials -> {
+                    boolean success = userService.signup(credentials.getKey(), credentials.getValue());
+                    if (success) {
+                        new Alert(Alert.AlertType.INFORMATION, "Registration successful! You can now login.").show();
+                    } else {
+                        new Alert(Alert.AlertType.ERROR, "Username already exists!").show();
+                    }
+                });
+            });
 
-        // יישור התוכן בתוך ה-VBox לשמאל-למעלה
-        authBox.setAlignment(Pos.TOP_LEFT);
+            loginBtn.setOnAction(e -> {
+                Optional<Pair<String, String>> result = LoginDialog.show("Login");
+                result.ifPresent(credentials -> {
+                    Entity.User loggedInUser = userService.login(credentials.getKey(), credentials.getValue());
+                    if (loggedInUser != null) {
+                        userLabel.setText("Commander: " + loggedInUser.getUsername());
+                        networkClient.setPlayerName(loggedInUser.getUsername());
+                        playerRows.getFirst().setName(loggedInUser.getUsername());
+                        loginBtn.setVisible(false);  loginBtn.setManaged(false);
+                        signupBtn.setVisible(false); signupBtn.setManaged(false);
+                        logoutBtn.setVisible(true);  logoutBtn.setManaged(true);
+                        this.currentUser = loggedInUser;
+                    } else {
+                        new Alert(Alert.AlertType.ERROR, "Invalid username or password!").show();
+                    }
+                });
+            });
 
-        authBox.setMaxWidth(150);
+            logoutBtn.setOnAction(e -> {
+                userLabel.setText("Welcome, Guest");
+                networkClient.setPlayerName("Guest");
+                playerRows.getFirst().setName("General 1");
+                loginBtn.setVisible(true);  loginBtn.setManaged(true);
+                signupBtn.setVisible(true); signupBtn.setManaged(true);
+                logoutBtn.setVisible(false); logoutBtn.setManaged(false);
+                this.currentUser = null;
+            });
 
-        // אומר ל-StackPane למקם את הקופסה שלנו בצד שמאל למעלה
-        StackPane.setAlignment(authBox, Pos.TOP_LEFT);
-        StackPane.setMargin(authBox, new Insets(20)); // נותן קצת מרווח מהקיר השמאלי
+        } else {
+            // Client mode — just show a label, no login available
+            Label clientLabel = new Label("🎮 Client Mode");
+            clientLabel.setTextFill(Color.LIGHTGRAY);
+            clientLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
+            authBox.getChildren().addAll(userLabel, clientLabel);
+        }
 
-        // הוספת התפריט הראשי וכפתור החוקים לשכבות של ה-StackPane
         getChildren().addAll(mainContent, btnRules, authBox);
-
-        // --- פעולת כפתור ההרשמה (Sign Up) ---
-        signupBtn.setOnAction(e -> {
-            Optional<Pair<String, String>> result = LoginDialog.show("Sign Up");
-
-            result.ifPresent(credentials -> {
-                String user = credentials.getKey();
-                String pass = credentials.getValue();
-
-                // כאן אנחנו קוראים לפונקציית signup שיצרת (או שתיצור) ב-UserService
-                boolean success = userService.signup(user, pass);
-
-                if (success) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Registration successful! You can now login.");
-                    alert.show();
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Username already exists!");
-                    alert.show();
-                }
-            });
-        });
-
-// --- פעולת כפתור ההתחברות (Login) ---
-        loginBtn.setOnAction(e -> {
-            Optional<Pair<String, String>> result = LoginDialog.show("Login");
-
-            result.ifPresent(credentials -> {
-                String user = credentials.getKey();
-                String pass = credentials.getValue();
-
-                // כאן אנחנו בודקים את המשתמש במסד הנתונים
-                Entity.User loggedInUser = userService.login(user, pass);
-
-                if (loggedInUser != null) {
-                    // התחברות מוצלחת!
-                    userLabel.setText("Commander: " + loggedInUser.getUsername());
-                    networkClient.setPlayerName(loggedInUser.getUsername());
-
-                    PlayerRow player1 = playerRows.getFirst();
-                    player1.setName(loggedInUser.getUsername());
-
-                    // מסתירים את ההתחברות ומציגים התנתקות
-                    loginBtn.setVisible(false); loginBtn.setManaged(false);
-                    signupBtn.setVisible(false); signupBtn.setManaged(false);
-                    logoutBtn.setVisible(true); logoutBtn.setManaged(true);
-                    this.currentUser = loggedInUser;
-                }
-                else
-                {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid username or password!");
-                    alert.show();
-                }
-            });
-        });
-
-// --- פעולת כפתור ההתנתקות (Logout) ---
-        logoutBtn.setOnAction(e -> {
-            // מאפסים את הכל חזרה
-            userLabel.setText("Welcome, Guest");
-            networkClient.setPlayerName("Guest");
-            playerRows.getFirst().setName("General 1");
-            loginBtn.setVisible(true); loginBtn.setManaged(true);
-            signupBtn.setVisible(true); signupBtn.setManaged(true);
-            logoutBtn.setVisible(false); logoutBtn.setManaged(false);
-            this.currentUser = null;
-        });
     }
 
-    // --- פונקציית הלובי (Waiting Room) ---
-    private void showLobby(String roomCode, boolean isHost, RiskWebSocketClient networkClient, VBox mainContent)
-    {
-        String myName = (currentUser != null) ? currentUser.getUsername() : "Guest";
+    // --- Lobby ---
+    private void showLobby(String roomCode, boolean isHost, RiskWebSocketClient networkClient, VBox mainContent) {
+        String myName = (currentUser != null) ? currentUser.getUsername() : networkClient.getPlayerName();
         List<String> lobbyPlayers = new ArrayList<>();
         lobbyPlayers.add(myName);
 
@@ -262,7 +219,6 @@ public class MainMenu extends StackPane {
         subtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 20));
         subtitle.setTextFill(Color.LIGHTGRAY);
 
-        // בודק אם מישהו מחובר, ואם כן מציג את שמו. אם לא, מציג Guest.
         TextArea playerList = new TextArea("Players in room:\n- You (" + myName + ")\n");
         playerList.setEditable(false);
         playerList.setMaxWidth(400);
@@ -273,62 +229,43 @@ public class MainMenu extends StackPane {
         startMultiplayerBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
         startMultiplayerBtn.setStyle("-fx-background-color: #e13c3c; -fx-text-fill: white; -fx-padding: 15 40; -fx-background-radius: 5;");
         startMultiplayerBtn.setCursor(javafx.scene.Cursor.HAND);
-        startMultiplayerBtn.setVisible(isHost); // מוסתר למי שאינו המארח
+        startMultiplayerBtn.setVisible(isHost);
 
         startMultiplayerBtn.setOnAction(e -> {
             long randomSeed = new java.util.Random().nextLong();
-
-            // מחברים את ה-Seed ואת רשימת השחקנים (מופרדים בפסיק) למחרוזת אחת
             String payload = randomSeed + ":" + String.join(",", lobbyPlayers);
-
             networkClient.sendAction("START_GAME", roomCode, payload);
         });
 
         lobbyBox.getChildren().addAll(title, subtitle, playerList, startMultiplayerBtn);
 
         networkClient.setOnMessageReceived(message -> {
-            // Platform.runLater הוא קריטי - הוא אומר לג'אווה "תעדכני את המסך עכשיו"
             javafx.application.Platform.runLater(() -> {
                 if (message.type().equals("PLAYER_JOINED")) {
-                    // אם השרת שלח הודעה שמישהו הצטרף, נוסיף אותו לרשימה הלבנה
                     lobbyPlayers.add(message.content());
                     playerList.appendText("- " + message.content() + " has joined!\n");
-                    System.out.println("UI Updated: " + message.content() + " is now visible!");
-                }
-                else if (message.type().equals("GAME_STARTED")) {
+                } else if (message.type().equals("PLAYER_DISCONNECTED")) {
+                    playerList.appendText("⚠ A player disconnected.\n");
+                } else if (message.type().equals("GAME_STARTED")) {
                     javafx.application.Platform.runLater(() -> {
-                        System.out.println("Starting the game map for everyone!");
                         networkClient.setRoomId(message.roomId());
-
-                        // מפצלים את ההודעה ל-2 חלקים: חלק 0 זה ה-Seed, חלק 1 זה השמות
                         String[] parts = message.content().split(":");
                         long seed = Long.parseLong(parts[0]);
                         networkClient.setGameSeed(seed);
-
-                        // מפצלים את רשימת השמות למערך
                         String[] playerNames = parts[1].split(",");
 
-
                         List<PlayerSetup> players = new ArrayList<>();
-
-                        // עוברים על כל השמות שהגיעו ומייצרים צבע דינמי
                         for (int i = 0; i < playerNames.length; i++) {
-                            // חישוב המיקום של הצבע על הגלגל (בין 0 ל-360)
                             double hue = i * (360.0 / playerNames.length);
-
-                            // יצירת הצבע: hue הוא הגוון, 0.85 זה עוצמת הצבע, 0.9 זה הבהירות
                             Color dynamicColor = Color.hsb(hue, 0.85, 0.9);
-
                             players.add(new PlayerSetup(playerNames[i], dynamicColor, "Human"));
                         }
-
                         onStartGame.accept(players, networkClient);
                     });
                 }
             });
         });
 
-        // הסתרת התפריט המקורי והצגת הלובי
         mainContent.setVisible(false);
         this.getChildren().add(lobbyBox);
     }
@@ -369,11 +306,9 @@ public class MainMenu extends StackPane {
             getChildren().addAll(lbl, nameField, colorPicker, typeBox);
         }
 
-        public String getName() { return nameField.getText(); }
-        public Color getColor() { return colorPicker.getValue(); }
-        public String getType() { return typeBox.getValue(); }
-        public void setName(String newName) {
-            this.nameField.setText(newName);
-        }
+        public String getName()  { return nameField.getText(); }
+        public Color getColor()  { return colorPicker.getValue(); }
+        public String getType()  { return typeBox.getValue(); }
+        public void setName(String newName) { nameField.setText(newName); }
     }
 }
