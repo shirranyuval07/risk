@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RoomManager {
 
+    @Getter
     private final Map<String, List<WebSocketSession>> rooms = new ConcurrentHashMap<>();
 
     // Also track which room each session belongs to, so we can clean up on disconnect

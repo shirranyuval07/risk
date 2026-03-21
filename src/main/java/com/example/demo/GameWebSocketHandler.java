@@ -38,7 +38,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             String newRoomId = roomManager.createRoom();
             roomManager.joinRoom(newRoomId, session);
 
-            GameMessage response = new GameMessage("ROOM_CREATED", newRoomId, "Server", "Your room is ready!");
+            GameMessage response = new GameMessage("ROOM_CREATED", newRoomId, "Server", ""+roomManager.getRooms().get(newRoomId).size());
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
 
         } else if ("JOIN_ROOM".equals(gameMsg.type())) {
@@ -46,7 +46,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             if (joined) {
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
-                        new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", "Joined!"))));
+                        new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", ""+roomManager.getRooms().get(gameMsg.roomId()).size()))));
 
                 GameMessage notice = new GameMessage("PLAYER_JOINED", gameMsg.roomId(), "Server", gameMsg.sender());
                 roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(notice));
