@@ -45,13 +45,17 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             boolean joined = roomManager.joinRoom(gameMsg.roomId(), session);
 
             if (joined) {
+                int index = roomManager.getRooms().get(gameMsg.roomId()).size();
+                String playerNameWithIndex = gameMsg.sender() + index;
+
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
-                        new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", ""+roomManager.getRooms().get(gameMsg.roomId()).size()))));
+                        new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", "" + index))));
 
-                GameMessage notice = new GameMessage("PLAYER_JOINED", gameMsg.roomId(), "Server", gameMsg.sender());
+                // broadcast the indexed name, not the raw sender name
+                GameMessage notice = new GameMessage("PLAYER_JOINED", gameMsg.roomId(), "Server", playerNameWithIndex);
                 roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(notice));
-
-            } else {
+            }
+            else {
                 GameMessage error = new GameMessage("ERROR", "", "Server", "Room not found!");
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(error)));
             }
