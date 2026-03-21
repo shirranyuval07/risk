@@ -378,34 +378,33 @@ public class GameController {
      * In local mode, AttackState.attack() already applied the losses.
      */
     private void applyBattleResult(Country attacker, Country defender, BattleResult result) {
-        if(gameModel.getCurrentPlayer().equals(attacker.getOwner()))
-        {
+        boolean iAmTheAttacker = !isMultiplayer ||
+                attacker.getOwner().getName().equals(networkClient.getPlayerName());
+
+        if (iAmTheAttacker) {
             View.BattleResultDialog.show(result);
         }
 
         if (result.conquered()) {
             int minMove = isMultiplayer ? result.minMove() : 1;
             int maxMove = isMultiplayer ? result.maxMove() : attacker.getArmies() - 1;
-            gameModel.handleConquest(attacker, defender, minMove);
-            gameView.getControlPane().setMessage("Territory Conquered!");
-            gameView.getPlayerStatsPane().updateStats();
 
-            // Only the attacker's client asks how many armies to move
-            if (isMyTurn() && result.maxMove() > minMove) {
-                int chosenAmount = showConquestMoveDialog(defender, result,minMove,maxMove);
-                int extraArmies  = chosenAmount - minMove;
+            if (iAmTheAttacker) {
+                int chosenAmount = showConquestMoveDialog(defender, minMove, maxMove);
+                gameModel.handleConquest(attacker, defender, chosenAmount);
 
-                if (extraArmies > 0) {
-                    if (isMultiplayer) {
-                        networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
-                                "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId() + ":" + minMove + ":" + chosenAmount);
-                        pendingConquestHandled = true;
-                    } else {
-                        attacker.removeArmies(extraArmies);
-                        defender.addArmies(extraArmies);
-                    }
+                if (isMultiplayer) {
+                    pendingConquestHandled = true;
+                    networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                            "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId()
+                                    + ":" + minMove + ":" + chosenAmount);
                 }
+            } else {
+                gameModel.handleConquest(attacker, defender, minMove);
             }
+
+            gameView.getControlPane().setMessage("Territory Conquered!");
+
         } else {
             gameView.getControlPane().setMessage("Attack completed.");
         }
@@ -430,7 +429,7 @@ public class GameController {
         gameView.getPlayerStatsPane().updateStats();
     }
 
-    private static int showConquestMoveDialog(Country conquered, BattleResult result, int minMove, int maxMove) {
+    private static int showConquestMoveDialog(Country conquered, int minMove, int maxMove) {
         java.util.List<Integer> choices = new java.util.ArrayList<>();
         for (int i = minMove; i <= maxMove; i++) choices.add(i);
 
