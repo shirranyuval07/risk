@@ -349,6 +349,9 @@ public class GameController {
             // Second click — confirm attack or deselect
             if (clickedCountry.equals(sourceCountry)) {
                 clearSelection();
+            } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
+                // Clicked own country — deselect instead of attacking
+                clearSelection();
             } else {
                 performAttack(sourceCountry, clickedCountry);
                 clearSelection();
