@@ -378,6 +378,10 @@ public class GameController {
      * In local mode, AttackState.attack() already applied the losses.
      */
     private void applyBattleResult(Country attacker, Country defender, BattleResult result) {
+        if (isMultiplayer) {
+            attacker.removeArmies(result.attackerLosses());
+            defender.removeArmies(result.defenderLosses());
+        }
         boolean iAmTheAttacker = !isMultiplayer ||
                 attacker.getOwner().getName().equals(networkClient.getPlayerName());
 
