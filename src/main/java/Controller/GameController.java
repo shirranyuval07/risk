@@ -126,7 +126,8 @@ public class GameController {
             case "CONQUEST_MOVE" -> applyConquestMove(
                     getCountry(parts[1]),
                     getCountry(parts[2]),
-                    Integer.parseInt(parts[3]));
+                    Integer.parseInt(parts[3]),
+                    Integer.parseInt(parts[4]));
         }
     }
 
@@ -383,19 +384,22 @@ public class GameController {
         }
 
         if (result.conquered()) {
-            gameModel.handleConquest(attacker, defender, result.minMove());
+            int minMove = isMultiplayer ? result.minMove() : 1;
+            int maxMove = isMultiplayer ? result.maxMove() : attacker.getArmies() - 1;
+            gameModel.handleConquest(attacker, defender, minMove);
             gameView.getControlPane().setMessage("Territory Conquered!");
             gameView.getPlayerStatsPane().updateStats();
 
             // Only the attacker's client asks how many armies to move
-            if (isMyTurn() && result.maxMove() > result.minMove()) {
-                int chosenAmount = showConquestMoveDialog(defender, result);
-                int extraArmies  = chosenAmount - result.minMove();
+            if (isMyTurn() && result.maxMove() > minMove) {
+                int chosenAmount = showConquestMoveDialog(defender, result,minMove,maxMove);
+                int extraArmies  = chosenAmount - minMove;
 
                 if (extraArmies > 0) {
                     if (isMultiplayer) {
                         networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
-                                "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId() + ":" + chosenAmount);
+                                "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId() + ":" + minMove + ":" + chosenAmount);
+                        pendingConquestHandled = true;
                     } else {
                         attacker.removeArmies(extraArmies);
                         defender.addArmies(extraArmies);
@@ -413,12 +417,12 @@ public class GameController {
      * Called when a CONQUEST_MOVE message arrives.
      * The attacker already applied the move locally, so they skip re-applying it.
      */
-    private void applyConquestMove(Country attacker, Country defender, int totalMove) {
+    private void applyConquestMove(Country attacker, Country defender, int minMove, int totalMove) {
         if (pendingConquestHandled) {
             pendingConquestHandled = false;
             return;
         }
-        int extra = totalMove - defender.getArmies();
+        int extra = totalMove - minMove;
         if (extra > 0) {
             attacker.removeArmies(extra);
             defender.addArmies(extra);
@@ -426,17 +430,17 @@ public class GameController {
         gameView.getPlayerStatsPane().updateStats();
     }
 
-    private static int showConquestMoveDialog(Country conquered, BattleResult result) {
+    private static int showConquestMoveDialog(Country conquered, BattleResult result, int minMove, int maxMove) {
         java.util.List<Integer> choices = new java.util.ArrayList<>();
-        for (int i = result.minMove(); i <= result.maxMove(); i++) choices.add(i);
+        for (int i = minMove; i <= maxMove; i++) choices.add(i);
 
         javafx.scene.control.ChoiceDialog<Integer> dialog =
-                new javafx.scene.control.ChoiceDialog<>(result.maxMove(), choices);
+                new javafx.scene.control.ChoiceDialog<>(maxMove, choices);
         dialog.setTitle("Victory!");
         dialog.setHeaderText("You conquered " + conquered.getName());
         dialog.setContentText("Choose how many armies to move:");
 
-        return dialog.showAndWait().orElse(result.maxMove());
+        return dialog.showAndWait().orElse(maxMove);
     }
 
     // =========================================================================
