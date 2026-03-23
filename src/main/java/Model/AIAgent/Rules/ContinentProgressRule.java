@@ -10,7 +10,7 @@ public class ContinentProgressRule implements HeuristicRule {
     private final double enemyBreakMultiplier;
     private final double bonusFocus;
     private final double progressFocus;
-    private final double resistanceAvoidance; // תוספת חדשה: רתיעה מהתנגדות
+    private final double resistanceAvoidance;
 
     public ContinentProgressRule(double enemyBreakMultiplier, double bonusFocus, double progressFocus, double resistanceAvoidance) {
         this.enemyBreakMultiplier = enemyBreakMultiplier;

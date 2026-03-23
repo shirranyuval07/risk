@@ -1,6 +1,7 @@
 package Model.States;
 
 import Model.Country;
+import Model.Dice;
 import Model.Player;
 import Model.Records.BattleResult;
 import Model.RiskGame;
@@ -18,11 +19,6 @@ public class AttackState implements GameState {
     }
 
     @Override
-    public boolean placeArmy(Country country) {
-        return false;
-    }
-
-    @Override
     public BattleResult attack(Country attacker, Country defender) {
         Player currentPlayer = game.getCurrentPlayer();
 
@@ -35,8 +31,8 @@ public class AttackState implements GameState {
         int aDiceCount = Math.min(3, attacker.getArmies() - 1);
         int dDiceCount = Math.min(2, defender.getArmies());
 
-        Integer[] aRolls = game.getDice().roll(aDiceCount);
-        Integer[] dRolls = game.getDice().roll(dDiceCount);
+        Integer[] aRolls = Dice.roll(aDiceCount);
+        Integer[] dRolls = Dice.roll(dDiceCount);
 
         int comparisons = Math.min(aDiceCount, dDiceCount);
         int aLoss = 0, dLoss = 0;

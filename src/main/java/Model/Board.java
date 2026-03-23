@@ -32,9 +32,12 @@ public class Board {
 
     private final Map<String, String> rawSvgData = new HashMap<>();
 
+    private final double scale = 1.35;
+    private final double offsetX = -250;
+    private  final double offsetY = -150;
     public Board() {
         loadSvgData();
-        loadBoardFromJson(); // This single method replaces 150+ lines of hardcoded data!
+        loadBoardFromJson();
     }
 
     private void loadSvgData() {
@@ -67,7 +70,7 @@ public class Board {
     }
 
     private void loadBoardFromJson() {
-        try (InputStream is = getClass().getResourceAsStream("/board.json")) {
+        try (InputStream is = getClass().getResourceAsStream("/Board.json")) {
             if (is == null) {
                 throw new RuntimeException("Cannot find board.json in Resources folder!");
             }
@@ -110,7 +113,7 @@ public class Board {
             }
 
             // 5. Apply Global Scale
-            applyGlobalScale(1.35, -250, -150);
+            applyGlobalScale(this.scale, this.offsetX, this.offsetY);
 
         } catch (Exception e) {
             log.error("Failed to load board configuration from JSON", e);
@@ -142,7 +145,7 @@ public class Board {
 
     private void applyGlobalScale(double scale, double offsetX, double offsetY) {
         for (Country c : countries.values()) {
-            SVGPath p = (SVGPath) c.getShape();
+            SVGPath p = c.getShape();
 
             Scale scaleTransform = new Scale(scale, scale, 0, 0);
             Translate translateTransform = new Translate(offsetX, offsetY);
@@ -179,7 +182,7 @@ public class Board {
         double centerY = (minY + maxY) / 2.0;
 
         for (Country c : cont.getCountries()) {
-            SVGPath p = (SVGPath) c.getShape();
+            SVGPath p = c.getShape();
 
             Scale scaleTransform = new Scale(scale, scale, centerX, centerY);
             Translate translateTransform = new Translate(offsetX, offsetY);

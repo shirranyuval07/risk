@@ -165,9 +165,16 @@ public class RiskGame {
 
     public void advanceSetupTurn() {
         // Cycle to the next player who still has setup armies left to place
+        int attempts = 0;
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-        } while (players.get(currentPlayerIndex).getDraftArmies() <= 0);
+            attempts++;
+            if (attempts > players.size()) {
+                log.error("CRITICAL: No valid players found for next turn!");
+                this.gameOver = true;
+                return;
+            }
+        } while (players.get(currentPlayerIndex).getOwnedCountries().isEmpty());
 
         currentPlayerProperty.set(players.get(currentPlayerIndex));
     }

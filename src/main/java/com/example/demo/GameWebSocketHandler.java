@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
+import static Model.Dice.rollBattle;
+
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
 
@@ -90,41 +92,5 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 roomManager.broadcastToRoom(gameMsg.roomId(), payload);
             }
         }
-    }
-
-    /**
-     * Pure dice-rolling battle logic — mirrors AttackState.attack() but needs no game state.
-     */
-    private BattleResult rollBattle(int attackerArmies, int defenderArmies) {
-        int aDiceCount = Math.min(3, attackerArmies - 1);
-        int dDiceCount = Math.min(2, defenderArmies);
-
-        Integer[] aRolls = rollDice(aDiceCount);
-        Integer[] dRolls = rollDice(dDiceCount);
-
-        Arrays.sort(aRolls, Collections.reverseOrder());
-        Arrays.sort(dRolls, Collections.reverseOrder());
-
-        int comparisons = Math.min(aDiceCount, dDiceCount);
-        int aLoss = 0, dLoss = 0;
-
-        for (int i = 0; i < comparisons; i++) {
-            if (aRolls[i] > dRolls[i]) dLoss++;
-            else aLoss++;
-        }
-
-        boolean conquered = (defenderArmies - dLoss) <= 0;
-        int minMove = aDiceCount;
-        int maxMove = attackerArmies - 1 - aLoss;
-
-        return new BattleResult(aRolls, dRolls, aLoss, dLoss, conquered, minMove, maxMove);
-    }
-
-    private Integer[] rollDice(int count) {
-        Integer[] rolls = new Integer[count];
-        for (int i = 0; i < count; i++) {
-            rolls[i] = random.nextInt(6) + 1;
-        }
-        return rolls;
     }
 }
