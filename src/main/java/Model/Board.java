@@ -67,7 +67,7 @@ public class Board {
     }
 
     private void loadBoardFromJson() {
-        try (InputStream is = getClass().getResourceAsStream("/board.json")) {
+        try (InputStream is = getClass().getResourceAsStream("/Board.json")) {
             if (is == null) {
                 throw new RuntimeException("Cannot find board.json in Resources folder!");
             }
