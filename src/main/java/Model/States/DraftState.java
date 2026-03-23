@@ -37,10 +37,6 @@ public class DraftState implements GameState
         return null;
     }
 
-    @Override
-    public String fortify(Country from, Country to, int amount) {
-        return "Wrong phase! You are currently in the Draft phase.";
-    }
 
     @Override
     public void nextPhase() {

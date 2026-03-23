@@ -42,15 +42,7 @@ public class SetupState implements GameState {
         return true;
     }
 
-    @Override
-    public BattleResult attack(Country attacker, Country defender) {
-        return null; // Not allowed during setup
-    }
 
-    @Override
-    public String fortify(Country from, Country to, int amount) {
-        return "Cannot fortify during Setup Phase.";
-    }
 
     @Override
     public void nextPhase() {

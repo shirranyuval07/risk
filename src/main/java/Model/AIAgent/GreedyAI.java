@@ -1,9 +1,7 @@
 package Model.AIAgent;
 
 import Model.*;
-import Model.AIAgent.Strategies.DefensiveStrategy;
 import Model.AIAgent.Strategies.HeuristicStrategy;
-import Model.AIAgent.Strategies.OffensiveStrategy;
 import Model.Records.AttackMove;
 import Model.Records.BattleResult;
 import Model.Records.FortifyMove;
@@ -270,19 +268,5 @@ public class GreedyAI implements BotStrategy {
         }
     }
 
-    private Country findSafeRearCountry(Player player) {
-        Country best = null;
-        int maxSurplus = 0;
 
-        for (Country c : player.getOwnedCountries()) {
-            if (c.getArmies() > 1 && graphAnalyzer.countEnemyNeighbors(c, player) == 0) {
-                int surplus = c.getArmies() - 1;
-                if (surplus > maxSurplus) {
-                    maxSurplus = surplus;
-                    best = c;
-                }
-            }
-        }
-        return best;
-    }
 }

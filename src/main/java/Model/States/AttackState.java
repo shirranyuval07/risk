@@ -66,11 +66,6 @@ public class AttackState implements GameState {
     }
 
     @Override
-    public String fortify(Country from, Country to, int amount) {
-        return "Wrong phase! You are currently in the Attack phase.";
-    }
-
-    @Override
     public void nextPhase() {
         game.setCurrentState(new FortifyState(game));
     }

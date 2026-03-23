@@ -91,6 +91,7 @@ public class Player {
     }
 
     // פונקציה חכמה שמוצאת את הסט הטוב ביותר וממירה אותו אוטומטית לצבאות!
+    // פונקציה חכמה שמוצאת את הסט הטוב ביותר וממירה אותו אוטומטית לצבאות!
     public int tradeAnyValidSet() {
         int inf = java.util.Collections.frequency(cards, Card.INFANTRY);
         int cav = java.util.Collections.frequency(cards, Card.CAVALRY);
@@ -98,21 +99,24 @@ public class Player {
 
         // קודם בודק אם יש אחד מכל סוג (הכי משתלם)
         if (inf > 0 && cav > 0 && art > 0) {
-            cards.remove(Card.INFANTRY); cards.remove(Card.CAVALRY); cards.remove(Card.ARTILLERY);
+            // .forEach(cards::remove) removes exactly ONE instance of each card from the list
+            List.of(Card.INFANTRY, Card.CAVALRY, Card.ARTILLERY).forEach(cards::remove);
             return 10;
         }
-        // אחר כך בודק אם יש 3 מאותו סוג
-        else if (art >= 3) {
-            for(int i=0; i<3; i++) cards.remove(Card.ARTILLERY);
-            return 8;
-        } else if (cav >= 3) {
-            for(int i=0; i<3; i++) cards.remove(Card.CAVALRY);
-            return 6;
-        } else if (inf >= 3) {
-            for(int i=0; i<3; i++) cards.remove(Card.INFANTRY);
-            return 4;
-        }
+        // אחר כך בודק אם יש 3 מאותו סוג בעזרת פונקציית העזר
+        if (art >= 3) return tradeMatchingCards(Card.ARTILLERY, 8);
+        if (cav >= 3) return tradeMatchingCards(Card.CAVALRY, 6);
+        if (inf >= 3) return tradeMatchingCards(Card.INFANTRY, 4);
+
         return 0; // אין סט חוקי
+    }
+
+    // פונקציית עזר שחוסכת כתיבת לולאות כפולות
+    private int tradeMatchingCards(Card type, int reward) {
+        for (int i = 0; i < 3; i++) {
+            cards.remove(type); // removes the first occurrence of this card type
+        }
+        return reward;
     }
     // ---  פונקציה להסרת מדינה כאשר שחקן אחר כובש אותה ---
     public void removeCountry(Country c) {

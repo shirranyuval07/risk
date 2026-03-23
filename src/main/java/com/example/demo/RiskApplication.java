@@ -1,10 +1,9 @@
 package com.example.demo;
 
 import Controller.GameController;
-import Model.AIAgent.Strategies.BalancedStrategy;
-import Model.AIAgent.Strategies.DefensiveStrategy;
+import Model.AIAgent.BotStrategy;
 import Model.AIAgent.GreedyAI;
-import Model.AIAgent.Strategies.OffensiveStrategy;
+import Model.AIAgent.Strategies.HeuristicStrategy;
 import Model.Player;
 import Model.RiskGame;
 import View.GameRoot;
@@ -23,7 +22,7 @@ import service.UserService;
 
 import java.util.List;
 
-@SpringBootApplication(scanBasePackages = {"com.example.demo", "Model", "service"})
+@SpringBootApplication(scanBasePackages = {"com.example.demo", "Model", "service", "Model.Config"})
 @EnableJpaRepositories(basePackages = "repository")
 @EntityScan(basePackages = "Entity")
 public class RiskApplication extends Application {
@@ -33,6 +32,9 @@ public class RiskApplication extends Application {
 
     // Whether this instance is running as the host (server mode)
     private boolean isServer = false;
+
+    // REMOVED the @Autowired constructor and the strategy fields at the class level.
+    // JavaFX needs the default empty constructor to launch!
 
     @Override
     public void init() {
@@ -65,7 +67,6 @@ public class RiskApplication extends Application {
     }
 
     private void showMainMenu() {
-        // UserService is only available in server mode — clients get null (login/signup disabled)
         UserService userService = (springContext != null)
                 ? springContext.getBean(UserService.class)
                 : null;
@@ -79,10 +80,11 @@ public class RiskApplication extends Application {
         RiskGame game = new RiskGame();
 
         if (isServer && springContext != null) {
-            // Only the host can use AI bots (they require Spring beans)
-            BalancedStrategy balancedStrategy = springContext.getBean(BalancedStrategy.class);
-            DefensiveStrategy defensiveStrategy = springContext.getBean(DefensiveStrategy.class);
-            OffensiveStrategy offensiveStrategy = springContext.getBean(OffensiveStrategy.class);
+
+            // FETCH the strategies dynamically from the Spring context!
+            HeuristicStrategy balancedStrategy = springContext.getBean("balancedStrategy", HeuristicStrategy.class);
+            HeuristicStrategy defensiveStrategy = springContext.getBean("defensiveStrategy", HeuristicStrategy.class);
+            HeuristicStrategy offensiveStrategy = springContext.getBean("offensiveStrategy", HeuristicStrategy.class);
 
             for (MainMenu.PlayerSetup setup : playerSetups) {
                 boolean isAI = !setup.type().equals("Human");
