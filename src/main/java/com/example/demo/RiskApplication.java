@@ -21,6 +21,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import service.UserService;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 @SpringBootApplication(scanBasePackages = {"com.example.demo", "Model", "service", "Model.Config"})
 @EnableJpaRepositories(basePackages = "repository")
@@ -32,6 +33,8 @@ public class RiskApplication extends Application {
 
     // Whether this instance is running as the host (server mode)
     private boolean isServer = false;
+
+    private Logger log;
 
     // REMOVED the @Autowired constructor and the strategy fields at the class level.
     // JavaFX needs the default empty constructor to launch!
@@ -57,7 +60,7 @@ public class RiskApplication extends Application {
             Image icon = new Image("map_background.png");
             primaryStage.getIcons().add(icon);
         } catch (Exception e) {
-            System.out.println("Icon image not found");
+            log.info("Icon image not found");
         }
 
         primaryStage.setTitle("⚔ Risk: Global Conquest 2026 ⚔");

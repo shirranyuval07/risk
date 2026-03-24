@@ -13,8 +13,12 @@ import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
 import org.jspecify.annotations.NonNull;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 public class GameController {
 
@@ -28,12 +32,15 @@ public class GameController {
     private final boolean isMultiplayer;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final Map<Class<? extends GameState>, Consumer<Country>> phaseClickHandlers = new HashMap<>();
+
     // Tracks the first country selected during Attack / Fortify
     private Country sourceCountry = null;
 
     // Prevents the attacker's client from double-applying conquest army moves
     private boolean pendingConquestHandled = false;
 
+    private Logger log;
     // =========================================================================
     //  Constructor
     // =========================================================================
@@ -58,6 +65,12 @@ public class GameController {
     // =========================================================================
 
     private void initializeUIListeners() {
+
+        phaseClickHandlers.put(SetupState.class, this::handleSetupClick);
+        phaseClickHandlers.put(DraftState.class, this::handleDraftClick);
+        phaseClickHandlers.put(AttackState.class, this::handleAttackClick);
+        phaseClickHandlers.put(FortifyState.class, this::handleFortifyClick);
+
         // Map click — route to the correct phase handler
         gameView.getMapPane().setOnCountryClick(clickedCountry -> {
             if (isCurrentPlayerAI()) return;
@@ -147,7 +160,7 @@ public class GameController {
             BattleResult result = objectMapper.readValue(battleJson, BattleResult.class);
             applyBattleResult(attacker, defender, result);
         } catch (Exception e) {
-            System.out.println("Failed to parse BattleResult: " + e.getMessage());
+            log.severe("Failed to parse BattleResult: " + e.getMessage());
         }
     }
 
@@ -156,10 +169,10 @@ public class GameController {
     // =========================================================================
 
     private void handleCountryClick(Country clickedCountry) {
-        if      (gameModel.getCurrentState() instanceof SetupState)   handleSetupClick(clickedCountry);
-        else if (gameModel.getCurrentState() instanceof DraftState)   handleDraftClick(clickedCountry);
-        else if (gameModel.getCurrentState() instanceof AttackState)  handleAttackClick(clickedCountry);
-        else if (gameModel.getCurrentState() instanceof FortifyState) handleFortifyClick(clickedCountry);
+        Consumer<Country> handler = phaseClickHandlers.get(gameModel.getCurrentState().getClass());
+        if (handler != null) {
+            handler.accept(clickedCountry);
+        }
     }
 
     // =========================================================================
