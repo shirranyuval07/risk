@@ -1,5 +1,6 @@
 package View;
 
+import com.example.demo.GameAction;
 import com.example.demo.GameMessage;
 import com.example.demo.RiskWebSocketClient;
 import javafx.geometry.Insets;
@@ -14,18 +15,12 @@ import lombok.Getter;
 import service.UserService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
-/**
- * The main menu screen.
- * Coordinates player setup rows, local/multiplayer buttons, auth, and the lobby.
- * Inner classes:
- *  - AuthBox→ login / signup / logout UI
- *  - LobbyScreen → waiting room after creating or joining a room
- *  - PlayerRow→ one row in the player configuration table
- */
 public class MainMenu extends StackPane {
 
     public record PlayerSetup(String name, Color color, String type) {}
@@ -69,11 +64,18 @@ public class MainMenu extends StackPane {
 
         // Listen for server responses to CREATE_ROOM / JOIN_ROOM
         networkClient.setOnMessageReceived(message -> {
-            switch (message.type()) {
-                case "ROOM_CREATED"      -> openLobby(message, true,  networkClient, mainContent);
-                case "JOIN_ROOM_SUCCESS" -> openLobby(message, false, networkClient, mainContent);
-                case "ERROR"             -> showError(message.content());
-            }
+            javafx.application.Platform.runLater(() -> {
+                switch (message.type()) {
+                    case ROOM_CREATED      -> openLobby(message, true,  networkClient, mainContent);
+                    case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, mainContent);
+                    case ERROR -> {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> payload = (Map<String, Object>) message.content();
+                        showError(payload != null ? (String) payload.get("RoomNotFound") : "Unknown Error");
+                    }
+                    default -> {}
+                }
+            });
         });
     }
 
@@ -137,16 +139,20 @@ public class MainMenu extends StackPane {
         Button createBtn = styledButton("CREATE ROOM", "#0055e1", 16);
         Button joinBtn   = styledButton("JOIN ROOM",   "#e18f3c", 16);
 
-        createBtn.setOnAction(e ->
-                networkClient.sendAction("CREATE_ROOM", "", "Create me a room"));
+        createBtn.setOnAction(e -> {
+            Map<String, Object> payload = new HashMap<>();
+            networkClient.sendAction(GameAction.CREATE_ROOM, "", payload);
+        });
 
         joinBtn.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
             dialog.setTitle("Join Room");
             dialog.setHeaderText("Enter the 4-character Room Code:");
             dialog.showAndWait().ifPresent(code -> {
-                if (!code.trim().isEmpty())
-                    networkClient.sendAction("JOIN_ROOM", code.toUpperCase(), "Let me in");
+                if (!code.trim().isEmpty()) {
+                    Map<String, Object> payload = new HashMap<>();
+                    networkClient.sendAction(GameAction.JOIN_ROOM, code.toUpperCase(), payload);
+                }
             });
         });
 
@@ -169,9 +175,20 @@ public class MainMenu extends StackPane {
 
     private void openLobby(GameMessage message, boolean isHost,
                            RiskWebSocketClient networkClient, VBox mainContent) {
+        // Here message.content() is the Map we sent from the Server in CREATE_ROOM or JOIN_ROOM
+        // We can optionally use the generated index or ID, but for now we rely on the network client's name
         String myName = (authBox.getCurrentUser() != null)
                 ? authBox.getCurrentUser().getUsername()
-                : networkClient.getPlayerName() + message.content();
+                : networkClient.getPlayerName();
+
+        // If it's a join, we append the assigned index (optional)
+        if (!isHost && message.content() != null) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> payload = (Map<String, Object>) message.content();
+            if (payload.containsKey("playerID")) {
+                myName += payload.get("playerID").toString();
+            }
+        }
 
         networkClient.setPlayerName(myName);
         LobbyScreen lobby = new LobbyScreen(message.roomId(), isHost, myName, networkClient, onStartGame);
@@ -200,7 +217,7 @@ public class MainMenu extends StackPane {
         return btn;
     }
 
-    private static void showError(String message) {
+    private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(message);
@@ -331,8 +348,11 @@ public class MainMenu extends StackPane {
             startBtn.setVisible(isHost);
             startBtn.setOnAction(e -> {
                 long seed = new java.util.Random().nextLong();
-                networkClient.sendAction("START_GAME", roomCode,
-                        seed + ":" + String.join(",", lobbyPlayers));
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("seed", seed);
+                payload.put("players", lobbyPlayers);
+
+                networkClient.sendAction(GameAction.START_GAME, roomCode, payload);
             });
 
             getChildren().addAll(title, subtitle, playerList, startBtn);
@@ -340,33 +360,39 @@ public class MainMenu extends StackPane {
             // Handle incoming lobby events
             networkClient.setOnMessageReceived(message ->
                     javafx.application.Platform.runLater(() -> {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> payload = (Map<String, Object>) message.content();
+
                         switch (message.type()) {
-                            case "PLAYER_JOINED" -> {
-                                lobbyPlayers.add(message.content());
-                                playerList.appendText("- " + message.content() + " has joined!\n");
+                            case PLAYER_JOINED -> {
+                                String newPlayer = (String) payload.get("PlayerNameWithID");
+                                lobbyPlayers.add(newPlayer);
+                                playerList.appendText("- " + newPlayer + " has joined!\n");
                             }
-                            case "PLAYER_DISCONNECTED" ->
-                                    playerList.appendText("⚠ A player disconnected.\n");
-                            case "GAME_STARTED" -> {
+
+                            // אם נוסיף בעתיד PLAYER_DISCONNECTED, נטפל בו פה
+
+                            case GAME_STARTED -> {
                                 networkClient.setRoomId(message.roomId());
-                                String[] parts = message.content().split(":");
-                                networkClient.setGameSeed(Long.parseLong(parts[0]));
-                                onStartGame.accept(
-                                        buildPlayerSetups(parts[1].split(",")),
-                                        networkClient
-                                );
+
+                                long seed = ((Number) payload.get("seed")).longValue();
+                                @SuppressWarnings("unchecked")
+                                List<String> playersList = (List<String>) payload.get("players");
+
+                                networkClient.setGameSeed(seed);
+                                onStartGame.accept(buildPlayerSetups(playersList), networkClient);
                             }
+                            default -> {}
                         }
                     })
             );
         }
 
-        /** Assigns each player a unique color evenly spread around the color wheel */
-        private List<PlayerSetup> buildPlayerSetups(String[] playerNames) {
+        private List<PlayerSetup> buildPlayerSetups(List<String> playerNames) {
             List<PlayerSetup> players = new ArrayList<>();
-            for (int i = 0; i < playerNames.length; i++) {
-                double hue = i * (360.0 / playerNames.length);
-                players.add(new PlayerSetup(playerNames[i], Color.hsb(hue, 0.85, 0.9), "Human"));
+            for (int i = 0; i < playerNames.size(); i++) {
+                double hue = i * (360.0 / playerNames.size());
+                players.add(new PlayerSetup(playerNames.get(i), Color.hsb(hue, 0.85, 0.9), "Human"));
             }
             return players;
         }

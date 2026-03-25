@@ -32,7 +32,6 @@ public class GameController {
     private final RiskWebSocketClient networkClient;
     private final boolean isMultiplayer;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
     private final Map<Class<? extends GameState>, Consumer<Country>> phaseClickHandlers = new HashMap<>();
 
     // Tracks the first country selected during Attack / Fortify
@@ -41,7 +40,8 @@ public class GameController {
     // Prevents the attacker's client from double-applying conquest army moves
     private boolean pendingConquestHandled = false;
 
-    private Logger log;
+    private Logger log = Logger.getLogger(GameController.class.getName());
+
     // =========================================================================
     //  Constructor
     // =========================================================================
@@ -116,53 +116,66 @@ public class GameController {
     private void initializeNetworkListeners() {
         networkClient.setOnMessageReceived(message ->
                 javafx.application.Platform.runLater(() -> {
+
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> payload = (Map<String, Object>) message.content();
+
+                    if (payload == null) {
+                        payload = new HashMap<>(); // הגנה מפני payload ריק
+                    }
+
                     switch (message.type()) {
-                        case GameAction.GAME_ACTION   -> handleIncomingGameAction(message.content());
-                        case GameAction.BATTLE_RESULT -> handleIncomingBattleResult(message.content());
+
+                        case NEXT_PHASE -> executeNextPhaseLocal();
+
+                        case SETUP_PLACE -> {
+                            String countryId = String.valueOf(payload.get("SetupPlaceID"));
+                            executeSetupLocal(getCountry(countryId));
+                        }
+
+                        case DRAFT -> {
+                            String countryId = String.valueOf(payload.get("targetCountryId"));
+                            executeDraftLocal(getCountry(countryId));
+                        }
+
+                        case NEXT_TURN -> {
+                            String playerName = (String) payload.get("NEXT_TURN");
+                            int draftArmies = (Integer) payload.get("DRAFT_ARMIES");
+                            executeNextTurnLocal(playerName, draftArmies);
+                        }
+
+                        case FORTIFY -> {
+                            String srcId = String.valueOf(payload.get("FORTIFY"));
+                            String destId = String.valueOf(payload.get("DESTINATION_ID"));
+                            int amount = (Integer) payload.get("FORTIFY_AMOUNT");
+                            executeFortifyLocal(getCountry(srcId), getCountry(destId), amount);
+                        }
+
+                        case CONQUEST_MOVE -> {
+                            String srcId = String.valueOf(payload.get("CONQUEST_MOVE"));
+                            String destId = String.valueOf(payload.get("CONQUEST_DESTINATION"));
+                            int minMove = (Integer) payload.get("MIN_MOVE");
+                            int amount = (Integer) payload.get("CONQUEST_AMOUNT");
+                            applyConquestMove(getCountry(srcId), getCountry(destId), minMove, amount);
+                        }
+
+                        case BATTLE_RESULT -> {
+                            try {
+                                String attackerId = String.valueOf(payload.get("attackerId"));
+                                String defenderId = String.valueOf(payload.get("defenderId"));
+                                BattleResult result = objectMapper.convertValue(payload.get("battleResult"), BattleResult.class);
+                                applyBattleResult(getCountry(attackerId), getCountry(defenderId), result);
+                            } catch (Exception e) {
+                                log.severe("Failed to parse BattleResult: " + e.getMessage());
+                            }
+                        }
+
+                        default -> {
+                            // מתעלם מסוגי הודעות אחרות שלא נוגעות למהלך המשחק הישיר כאן (כמו JOIN_ROOM)
+                        }
                     }
                 })
         );
-    }
-
-    private void handleIncomingGameAction(String content) {
-        String[] parts = content.split(":");
-        String action = parts[0];
-
-        switch (action) {
-            case "NEXT_PHASE"    -> executeNextPhaseLocal();
-            case "SETUP_PLACE"   -> executeSetupLocal(getCountry(parts[1]));
-            case "DRAFT"         -> executeDraftLocal(getCountry(parts[1]));
-            case "NEXT_TURN"     -> executeNextTurnLocal(parts[1], Integer.parseInt(parts[2]));
-            case "FORTIFY"       -> executeFortifyLocal(
-                    getCountry(parts[1]),
-                    getCountry(parts[2]),
-                    Integer.parseInt(parts[3]));
-            case "CONQUEST_MOVE" -> applyConquestMove(
-                    getCountry(parts[1]),
-                    getCountry(parts[2]),
-                    Integer.parseInt(parts[3]),
-                    Integer.parseInt(parts[4]));
-        }
-    }
-
-    private void handleIncomingBattleResult(String content) {
-        // Content format: "<attackerId>:<defenderId>:<BattleResultJson>"
-        // We split carefully because the JSON itself contains colons
-        int firstColon  = content.indexOf(':');
-        int secondColon = content.indexOf(':', firstColon + 1);
-
-        Country attacker  = getCountry(content.substring(0, firstColon));
-        Country defender  = getCountry(content.substring(firstColon + 1, secondColon));
-        String battleJson = content.substring(secondColon + 1);
-
-        if (attacker == null || defender == null) return;
-
-        try {
-            BattleResult result = objectMapper.readValue(battleJson, BattleResult.class);
-            applyBattleResult(attacker, defender, result);
-        } catch (Exception e) {
-            log.severe("Failed to parse BattleResult: " + e.getMessage());
-        }
     }
 
     // =========================================================================
@@ -182,8 +195,9 @@ public class GameController {
 
     private void handleSetupClick(Country country) {
         if (isMultiplayer) {
-            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
-                    "SETUP_PLACE:" + country.getId());
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("SetupPlaceID", country.getId());
+            networkClient.sendAction(GameAction.SETUP_PLACE, networkClient.getRoomId(), payload);
         } else {
             executeSetupLocal(country);
         }
@@ -205,8 +219,9 @@ public class GameController {
 
     private void handleDraftClick(Country country) {
         if (isMultiplayer) {
-            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
-                    "DRAFT:" + country.getId());
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("targetCountryId", country.getId());
+            networkClient.sendAction(GameAction.DRAFT, networkClient.getRoomId(), payload);
         } else {
             executeDraftLocal(country);
         }
@@ -227,21 +242,19 @@ public class GameController {
 
     private void handleNextPhaseRequest() {
         if (isMultiplayer) {
-            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(), "NEXT_PHASE");
+            Map<String, Object> payload = new HashMap<>();
+            networkClient.sendAction(GameAction.NEXT_PHASE, networkClient.getRoomId(), payload);
         } else {
             executeNextPhaseLocal();
         }
     }
 
     private void executeNextPhaseLocal() {
-        // Capture phase BEFORE advancing, because FortifyState.nextPhase()
-        // calls nextTurn() internally — so the state changes inside nextPhase()
         boolean wasFortify = gameModel.getCurrentState() instanceof FortifyState;
 
         gameModel.nextPhase();
         clearSelection();
 
-        // After fortify ends a turn, broadcast the new player's turn info to all clients
         if (isMultiplayer && gameModel.getCurrentState() instanceof DraftState && !wasFortify) {
             broadcastNextTurnIfNeeded();
         }
@@ -256,20 +269,19 @@ public class GameController {
         gameView.getPlayerStatsPane().updateStats();
     }
 
-    /** Sends NEXT_TURN to all clients if the new current player is not me */
     private void broadcastNextTurnIfNeeded() {
         Player newCurrentPlayer = gameModel.getCurrentPlayer();
         if (!newCurrentPlayer.getName().equals(networkClient.getPlayerName())) {
-            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
-                    "NEXT_TURN:" + newCurrentPlayer.getName() + ":" + newCurrentPlayer.getDraftArmies());
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("NEXT_TURN", newCurrentPlayer.getName());
+            payload.put("DRAFT_ARMIES", newCurrentPlayer.getDraftArmies());
+            networkClient.sendAction(GameAction.NEXT_TURN, networkClient.getRoomId(), payload);
         }
     }
 
-    /** Called on all clients when a NEXT_TURN message is received */
     private void executeNextTurnLocal(String playerName, int draftArmies) {
         gameModel.nextTurn();
 
-        // Override the draft army count with the authoritative value from the sender
         for (Player p : gameModel.getPlayers()) {
             if (p.getName().equals(playerName)) {
                 p.setDraftArmies(draftArmies);
@@ -287,7 +299,6 @@ public class GameController {
 
     private void handleFortifyClick(Country clickedCountry) {
         if (sourceCountry == null) {
-            // First click — select source territory
             if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())
                     && clickedCountry.getArmies() > 1) {
                 setSelection(clickedCountry, "Move from " + clickedCountry.getName() + ". Select target.");
@@ -299,7 +310,6 @@ public class GameController {
                 }
             }
         } else {
-            // Second click — confirm move or deselect
             if (clickedCountry.equals(sourceCountry)) {
                 clearSelection();
             } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
@@ -321,8 +331,12 @@ public class GameController {
                 if (!input.isEmpty()) {
                     int amount = Integer.parseInt(input);
                     if (isMultiplayer) {
-                        networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
-                                "FORTIFY:" + sourceCountry.getId() + ":" + destination.getId() + ":" + amount);
+                        Map<String, Object> payload = new HashMap<>();
+                        payload.put("FORTIFY", sourceCountry.getId());
+                        payload.put("DESTINATION_ID", destination.getId());
+                        payload.put("FORTIFY_AMOUNT", amount);
+
+                        networkClient.sendAction(GameAction.FORTIFY, networkClient.getRoomId(), payload);
                         clearSelection();
                     } else {
                         executeFortifyLocal(sourceCountry, destination, amount);
@@ -340,7 +354,7 @@ public class GameController {
         gameView.getControlPane().setMessage(resultMsg);
         gameView.getPlayerStatsPane().updateStats();
         clearSelection();
-        checkAndExecuteAITurn(); // fortify ends the turn, so trigger AI if it's their turn next
+        checkAndExecuteAITurn();
     }
 
     // =========================================================================
@@ -349,7 +363,6 @@ public class GameController {
 
     private void handleAttackClick(Country clickedCountry) {
         if (sourceCountry == null) {
-            // First click — select attacker
             if (canAttackFrom(clickedCountry)) {
                 setSelection(clickedCountry, "Select target for " + clickedCountry.getName());
                 Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
@@ -360,11 +373,9 @@ public class GameController {
                 }
             }
         } else {
-            // Second click — confirm attack or deselect
             if (clickedCountry.equals(sourceCountry)) {
                 clearSelection();
             } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
-                // Clicked own country — deselect instead of attacking
                 clearSelection();
             } else {
                 performAttack(sourceCountry, clickedCountry);
@@ -375,10 +386,13 @@ public class GameController {
 
     private void performAttack(Country attacker, Country defender) {
         if (isMultiplayer) {
-            // Send to server — server rolls dice and broadcasts result to all clients
-            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
-                    "ATTACK_REQ:" + attacker.getId() + "->" + defender.getId()
-                            + ":" + attacker.getArmies() + ":" + defender.getArmies());
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("ATTACK_REQ", attacker.getId());
+            payload.put("DESTINATION_ID", defender.getId());
+            payload.put("ATTACKER_ARMIES", attacker.getArmies());
+            payload.put("DEFENDER_ARMIES", defender.getArmies());
+
+            networkClient.sendAction(GameAction.ATTACK_REQ, networkClient.getRoomId(), payload);
         } else {
             BattleResult result = gameModel.attack(attacker, defender);
             if (result != null) {
@@ -389,11 +403,6 @@ public class GameController {
         }
     }
 
-    /**
-     * Applies a BattleResult on this client — used both in local and multiplayer mode.
-     * In multiplayer, army losses are applied manually since the local model never rolled.
-     * In local mode, AttackState.attack() already applied the losses.
-     */
     private void applyBattleResult(Country attacker, Country defender, BattleResult result) {
         if (isMultiplayer) {
             attacker.removeArmies(result.attackerLosses());
@@ -415,10 +424,14 @@ public class GameController {
                 gameModel.handleConquest(attacker, defender, chosenAmount);
 
                 if (isMultiplayer) {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("CONQUEST_MOVE", attacker.getId());
+                    payload.put("CONQUEST_DESTINATION", defender.getId());
+                    payload.put("CONQUEST_AMOUNT", chosenAmount);
+                    payload.put("MIN_MOVE", minMove);
+
                     pendingConquestHandled = true;
-                    networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
-                            "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId()
-                                    + ":" + minMove + ":" + chosenAmount);
+                    networkClient.sendAction(GameAction.CONQUEST_MOVE, networkClient.getRoomId(), payload);
                 }
             } else {
                 gameModel.handleConquest(attacker, defender, minMove);
@@ -433,10 +446,6 @@ public class GameController {
         gameView.getPlayerStatsPane().updateStats();
     }
 
-    /**
-     * Called when a CONQUEST_MOVE message arrives.
-     * The attacker already applied the move locally, so they skip re-applying it.
-     */
     private void applyConquestMove(Country attacker, Country defender, int minMove, int totalMove) {
         if (pendingConquestHandled) {
             pendingConquestHandled = false;
@@ -482,7 +491,6 @@ public class GameController {
     }
 
     private @NonNull PauseTransition buildAIPause() {
-        // The setup phase uses a very short delay; normal turns use 1 second so the player can watch
         Duration delay = (gameModel.getCurrentState() instanceof SetupState)
                 ? Duration.seconds(0.05)
                 : Duration.seconds(1);
@@ -501,7 +509,6 @@ public class GameController {
     //  Helpers
     // =========================================================================
 
-    /** Returns true if it's currently this client's player's turn */
     private boolean isMyTurn() {
         return !isMultiplayer ||
                 gameModel.getCurrentPlayer().getName().equals(networkClient.getPlayerName());
@@ -515,7 +522,6 @@ public class GameController {
         return c.getOwner().equals(gameModel.getCurrentPlayer()) && c.getArmies() > 1;
     }
 
-    /** Convenience method to look up a country by its ID string */
     private Country getCountry(String id) {
         return gameModel.getBoard().getCountry(Integer.parseInt(id));
     }

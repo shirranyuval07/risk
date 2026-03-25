@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -22,7 +23,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     @Setter @Getter
     private String roomId;
 
-    private Logger log;
+    private final Logger log = Logger.getLogger(RiskWebSocketClient.class.getName());
     @Setter @Getter
     private long gameSeed = 0;
 
@@ -47,7 +48,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
                     return null;
                 });
     }
-    public void sendAction(GameAction type, String roomId, String content) {
+    public void sendAction(GameAction type, String roomId, Map<String,Object> content) {
         try {
             if (webSocket == null) {
                 log.severe("⚠️ ERROR: Not connected to server! Cannot send action: " + type);
