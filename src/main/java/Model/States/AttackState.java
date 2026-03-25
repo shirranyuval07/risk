@@ -62,8 +62,8 @@ public class AttackState implements GameState {
     }
 
     @Override
-    public void nextPhase() {
-        game.setCurrentState(new FortifyState(game));
+    public GameState nextPhase() {
+        return new FortifyState(game);
     }
 
     @Override

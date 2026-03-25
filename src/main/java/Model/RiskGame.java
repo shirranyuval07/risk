@@ -34,6 +34,9 @@ public class RiskGame {
     @Getter @Setter
     private long gameSeed = 0;
 
+    // למעלה יחד עם שאר המשתנים של RiskGame
+    private final List<GameUpdateListener> listeners = new ArrayList<>();
+
     public RiskGame() {
         this.board = new Board();
         this.players = new ArrayList<>();
@@ -56,6 +59,7 @@ public class RiskGame {
     }
 
     public void startGame() {
+        notifyGameMessage("Game started");
         if (players.isEmpty()) return;
         initializeSetup();
 
@@ -93,6 +97,7 @@ public class RiskGame {
     }
 
     public void nextTurn() {
+        notifyGameMessage("moved to next turn");
         long activePlayersCount = players.stream()
                 .filter(p -> !p.getOwnedCountries().isEmpty())
                 .count();
@@ -118,6 +123,7 @@ public class RiskGame {
     }
 
     private void startTurn() {
+        notifyGameMessage("turn started");
         Player p = getCurrentPlayer();
         currentPlayerProperty.set(p); // MAGIC: This tells the UI the player changed!
 
@@ -127,23 +133,33 @@ public class RiskGame {
         p.setDraftArmies(reinforcement);
         log.info("It's {}'s turn. Reinforcements: {}", p.getName(), reinforcement);
 
-        setCurrentState(new DraftState(this));
     }
 
     public boolean placeArmy(Country country) {
-        return getCurrentState().placeArmy(country);
+        boolean placeArmyComplete = getCurrentState().placeArmy(country);
+        if(placeArmyComplete) {
+            notifyStatsUpdated();
+        }
+        return placeArmyComplete;
     }
 
     public BattleResult attack(Country attacker, Country defender) {
-        return getCurrentState().attack(attacker, defender);
+        BattleResult attackResult = getCurrentState().attack(attacker, defender);
+        notifyStatsUpdated();
+        return attackResult;
     }
 
     public String fortify(Country from, Country to, int amount) {
-        return getCurrentState().fortify(from, to, amount);
+        String fortifyResult =  getCurrentState().fortify(from, to, amount);
+        notifyStatsUpdated();
+        return fortifyResult;
     }
 
     public void nextPhase() {
-        getCurrentState().nextPhase();
+        GameState next = getCurrentState().nextPhase();
+        if (next != null) {
+            setCurrentState(next); // מחליף סטייט רק אם באמת קיבלנו אישור לעבור שלב
+        }
     }
 
     public void handleConquest(Country attacker, Country defender, int moveAmount) {
@@ -156,6 +172,7 @@ public class RiskGame {
         attacker.removeArmies(moveAmount);
         defender.addArmies(moveAmount);
         newOwner.setConqueredThisTurn(true);
+        notifyStatsUpdated();
     }
 
     public Player getCurrentPlayer() {
@@ -177,5 +194,23 @@ public class RiskGame {
         } while (players.get(currentPlayerIndex).getOwnedCountries().isEmpty());
 
         currentPlayerProperty.set(players.get(currentPlayerIndex));
+    }
+
+    // מאפשר ל-UI להירשם כמאזין
+    public void addGameUpdateListener(GameUpdateListener listener) {
+        listeners.add(listener);
+    }
+
+    // פונקציות עזר שהמודל יפעיל כדי "לצעוק" למאזינים
+    public void notifyStatsUpdated() {
+        for (GameUpdateListener listener : listeners) {
+            listener.onStatsUpdated();
+        }
+    }
+
+    public void notifyGameMessage(String message) {
+        for (GameUpdateListener listener : listeners) {
+            listener.onGameMessage(message);
+        }
     }
 }

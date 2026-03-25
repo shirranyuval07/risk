@@ -34,7 +34,7 @@ public class SetupState implements GameState {
 
         if (allArmiesPlaced) {
             // Everyone is out of initial armies. Start the real game!
-            nextPhase();
+            game.setCurrentState(nextPhase());
         } else {
             // Still setting up: pass the turn to the next player
             game.advanceSetupTurn();
@@ -45,10 +45,11 @@ public class SetupState implements GameState {
 
 
     @Override
-    public void nextPhase() {
+    public GameState nextPhase() {
         // Setup is done. nextTurn() will pass the turn to the starting player,
         // calculate their initial reinforcements, and put them in the standard DraftState.
         game.nextTurn();
+        return new DraftState(game);
     }
 
     @Override

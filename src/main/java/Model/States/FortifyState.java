@@ -35,7 +35,7 @@ public class FortifyState implements GameState {
 
         from.removeArmies(amount);
         to.addArmies(amount);
-        nextPhase(); // Auto-end turn after one valid maneuver
+        game.setCurrentState(nextPhase());
         if (game.getCurrentPlayer().isConqueredThisTurn()) {
             game.getCurrentPlayer().addCard(Card.getRandom());
             game.getCurrentPlayer().setConqueredThisTurn(false); // איפוס לתור הבא
@@ -44,10 +44,11 @@ public class FortifyState implements GameState {
     }
 
     @Override
-    public void nextPhase() {
+    public GameState nextPhase() {
         // סיום התור! אנו קוראים לפונקציה של RiskGame שתעביר לשחקן הבא.
         // הפונקציה nextTurn() במחלקת RiskGame כבר דואגת לאתחל את השלב הבא ל-DraftState.
         game.nextTurn();
+        return new DraftState(game);
     }
 
     @Override

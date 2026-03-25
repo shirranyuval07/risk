@@ -47,10 +47,30 @@ public class GameController {
     // =========================================================================
 
     public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient) {
+
         this.gameModel = model;
         this.gameView = view;
         this.networkClient = networkClient;
         this.isMultiplayer = (networkClient != null);
+
+        // בתוך הבנאי של GameController:
+        gameModel.addGameUpdateListener(new GameUpdateListener() {
+            @Override
+            public void onStatsUpdated() {
+                // כשמגיעה קריאה מהמודל - מעדכנים את המסך!
+                javafx.application.Platform.runLater(() ->
+                        gameView.getPlayerStatsPane().updateStats()
+                );
+            }
+
+            @Override
+            public void onGameMessage(String message) {
+                // כשמגיעה הודעה מהמודל - מציגים אותה במסך!
+                javafx.application.Platform.runLater(() ->
+                        gameView.getControlPane().setMessage(message)
+                );
+            }
+        });
 
         initializeUIListeners();
 
@@ -82,7 +102,6 @@ public class GameController {
             if (clickedCountry != null) {
                 handleCountryClick(clickedCountry);
             }
-            gameView.getPlayerStatsPane().updateStats();
         });
 
         // Next Phase button
@@ -90,7 +109,6 @@ public class GameController {
             if (isCurrentPlayerAI()) return;
             if (isMultiplayer && !isMyTurn()) return;
             handleNextPhaseRequest();
-            gameView.getPlayerStatsPane().updateStats();
         });
 
         // Toggle country name labels on the map
@@ -205,7 +223,6 @@ public class GameController {
     private void executeSetupLocal(Country country) {
         if (gameModel.placeArmy(country)) {
             gameView.getControlPane().setMessage("Placed army on " + country.getName());
-            gameView.getPlayerStatsPane().updateStats();
             checkAndExecuteAITurn();
         } else {
             gameView.getControlPane().setMessage("Cannot place army here!");
@@ -227,12 +244,7 @@ public class GameController {
     }
 
     private void executeDraftLocal(Country country) {
-        if (gameModel.placeArmy(country)) {
-            gameView.getControlPane().setMessage("Deployed 1 army to " + country.getName());
-            gameView.getPlayerStatsPane().updateStats();
-        } else {
-            gameView.getControlPane().setMessage("Cannot deploy here!");
-        }
+        gameModel.placeArmy(country);
     }
 
     // =========================================================================
@@ -264,8 +276,6 @@ public class GameController {
                 && gameModel.getCurrentPlayer().getDraftArmies() > 0) {
             gameView.getControlPane().setMessage("You have armies left to place!");
         }
-
-        gameView.getPlayerStatsPane().updateStats();
     }
 
     private void broadcastNextTurnIfNeeded() {
@@ -289,7 +299,6 @@ public class GameController {
         }
 
         clearSelection();
-        gameView.getPlayerStatsPane().updateStats();
     }
 
     // =========================================================================
@@ -351,7 +360,6 @@ public class GameController {
     private void executeFortifyLocal(Country src, Country dst, int amount) {
         String resultMsg = gameModel.fortify(src, dst, amount);
         gameView.getControlPane().setMessage(resultMsg);
-        gameView.getPlayerStatsPane().updateStats();
         clearSelection();
         checkAndExecuteAITurn();
     }
@@ -441,8 +449,6 @@ public class GameController {
         } else {
             gameView.getControlPane().setMessage("Attack completed.");
         }
-
-        gameView.getPlayerStatsPane().updateStats();
     }
 
     private void applyConquestMove(Country attacker, Country defender, int minMove, int totalMove) {
@@ -455,7 +461,6 @@ public class GameController {
             attacker.removeArmies(extra);
             defender.addArmies(extra);
         }
-        gameView.getPlayerStatsPane().updateStats();
     }
 
     private static int showConquestMoveDialog(Country conquered, int minMove, int maxMove) {
@@ -485,7 +490,6 @@ public class GameController {
         if (isCurrentPlayerAI()) {
             PauseTransition pause = buildAIPause();
             pause.play();
-            gameView.getPlayerStatsPane().updateStats();
         }
     }
 

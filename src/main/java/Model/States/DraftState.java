@@ -39,13 +39,13 @@ public class DraftState implements GameState
 
 
     @Override
-    public void nextPhase() {
+    public GameState nextPhase() {
         if (game.getCurrentPlayer().getDraftArmies() > 0) {
             log.warn("Cannot advance: You must place all draft armies.");
-            return;
+            return null;
         }
 
-        game.setCurrentState(new AttackState(game));
+        return new AttackState(game);
     }
 
     @Override

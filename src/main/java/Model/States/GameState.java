@@ -13,7 +13,7 @@ public interface GameState {
         return "Wrong phase! You are currently in the " + getPhaseName() + " phase.";
     }
 
-    void nextPhase();
+    GameState nextPhase();
     Set<Country> getValidTargets(Country source);
     String getPhaseName();
 }
