@@ -40,7 +40,7 @@ public class GameController {
     // Prevents the attacker's client from double-applying conquest army moves
     private boolean pendingConquestHandled = false;
 
-    private Logger log = Logger.getLogger(GameController.class.getName());
+    private final Logger log = Logger.getLogger(GameController.class.getName());
 
     // =========================================================================
     //  Constructor
@@ -117,8 +117,7 @@ public class GameController {
         networkClient.setOnMessageReceived(message ->
                 javafx.application.Platform.runLater(() -> {
 
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> payload = (Map<String, Object>) message.content();
+                    Map<String, Object> payload = message.content();
 
                     if (payload == null) {
                         payload = new HashMap<>(); // הגנה מפני payload ריק

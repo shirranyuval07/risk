@@ -63,20 +63,17 @@ public class MainMenu extends StackPane {
         getChildren().addAll(mainContent, btnRules, authBox);
 
         // Listen for server responses to CREATE_ROOM / JOIN_ROOM
-        networkClient.setOnMessageReceived(message -> {
-            javafx.application.Platform.runLater(() -> {
-                switch (message.type()) {
-                    case ROOM_CREATED      -> openLobby(message, true,  networkClient, mainContent);
-                    case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, mainContent);
-                    case ERROR -> {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> payload = (Map<String, Object>) message.content();
-                        showError(payload != null ? (String) payload.get("RoomNotFound") : "Unknown Error");
-                    }
-                    default -> {}
+        networkClient.setOnMessageReceived(message -> javafx.application.Platform.runLater(() -> {
+            switch (message.type()) {
+                case ROOM_CREATED      -> openLobby(message, true,  networkClient, mainContent);
+                case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, mainContent);
+                case ERROR -> {
+                    Map<String, Object> payload =  message.content();
+                    showError(payload != null ? (String) payload.get("RoomNotFound") : "Unknown Error");
                 }
-            });
-        });
+                default -> {}
+            }
+        }));
     }
 
     // =========================================================================
@@ -89,7 +86,7 @@ public class MainMenu extends StackPane {
         content.setPadding(new Insets(50));
 
         Label title = new Label("⚔ RISK: GLOBAL CONQUEST ⚔");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 40));
+        title.setFont(Font.font("Segue UI", FontWeight.BOLD, 40));
         title.setTextFill(Color.WHITE);
 
         content.getChildren().addAll(
@@ -183,8 +180,7 @@ public class MainMenu extends StackPane {
 
         // If it's a join, we append the assigned index (optional)
         if (!isHost && message.content() != null) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> payload = (Map<String, Object>) message.content();
+            Map<String, Object> payload = message.content();
             if (payload.containsKey("playerID")) {
                 myName += payload.get("playerID").toString();
             }
@@ -211,7 +207,7 @@ public class MainMenu extends StackPane {
 
     private static Button styledButton(String text, String hexColor, int fontSize) {
         Button btn = new Button(text);
-        btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, fontSize));
+        btn.setFont(Font.font("Segue UI", FontWeight.BOLD, fontSize));
         btn.setStyle("-fx-background-color: " + hexColor + "; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;");
         btn.setCursor(javafx.scene.Cursor.HAND);
         return btn;
@@ -242,7 +238,7 @@ public class MainMenu extends StackPane {
 
             Label userLabel = new Label("Welcome, Guest");
             userLabel.setTextFill(Color.WHITE);
-            userLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+            userLabel.setFont(Font.font("Segue UI", FontWeight.BOLD, 16));
 
             if (userService != null) {
                 buildFullAuthUI(userService, networkClient, userLabel, onNameChanged);
@@ -308,7 +304,7 @@ public class MainMenu extends StackPane {
         private void buildClientModeUI(Label userLabel) {
             Label clientLabel = new Label("🎮 Client Mode");
             clientLabel.setTextFill(Color.LIGHTGRAY);
-            clientLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
+            clientLabel.setFont(Font.font("Segue UI", FontWeight.NORMAL, 13));
             getChildren().addAll(userLabel, clientLabel);
         }
     }
@@ -331,18 +327,18 @@ public class MainMenu extends StackPane {
             lobbyPlayers.add(myName);
 
             Label title = new Label("Waiting Room: " + roomCode);
-            title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 40));
+            title.setFont(Font.font("Segue UI", FontWeight.BOLD, 40));
             title.setTextFill(Color.WHITE);
 
             Label subtitle = new Label("Waiting for players to join...");
-            subtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 20));
+            subtitle.setFont(Font.font("Segue UI", FontWeight.NORMAL, 20));
             subtitle.setTextFill(Color.LIGHTGRAY);
 
             TextArea playerList = new TextArea("Players in room:\n- You (" + myName + ")\n");
             playerList.setEditable(false);
             playerList.setMaxWidth(400);
             playerList.setPrefHeight(200);
-            playerList.setFont(Font.font("Segoe UI", 16));
+            playerList.setFont(Font.font("Segue UI", 16));
 
             Button startBtn = styledButton("START MULTIPLAYER GAME", "#e13c3c", 20);
             startBtn.setVisible(isHost);
@@ -360,8 +356,7 @@ public class MainMenu extends StackPane {
             // Handle incoming lobby events
             networkClient.setOnMessageReceived(message ->
                     javafx.application.Platform.runLater(() -> {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> payload = (Map<String, Object>) message.content();
+                        Map<String, Object> payload = message.content();
 
                         switch (message.type()) {
                             case PLAYER_JOINED -> {
@@ -413,7 +408,7 @@ public class MainMenu extends StackPane {
 
             Label lbl = new Label("Player " + playerNum + ":");
             lbl.setTextFill(Color.WHITE);
-            lbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+            lbl.setFont(Font.font("Segue UI", FontWeight.BOLD, 16));
             lbl.setPrefWidth(80);
 
             nameField   = new TextField("General " + playerNum);
