@@ -10,6 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 public class RiskWebSocketClient implements WebSocket.Listener {
 
@@ -18,15 +19,13 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     @Getter
     @Setter
     private String playerName;
-    // תוסיף את השורה הזו ליד המשתנה playerName
     @Setter @Getter
     private String roomId;
 
-
+    private Logger log;
     @Setter @Getter
     private long gameSeed = 0;
-    // פונקציה שהמסך (UI) ישתמש בה כדי להגיד ללקוח מה לעשות עם התשובות
-    // פה נשמור את הפעולה שהמסך מבקש שנעשה כשמגיעה הודעה
+
     @Setter
     private Consumer<GameMessage> onMessageReceived;
 
@@ -41,18 +40,17 @@ public class RiskWebSocketClient implements WebSocket.Listener {
                 .buildAsync(URI.create("wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"), this)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
-                    System.out.println("Client connected and ready for UI commands!");
+                    log.fine("Client connected and ready for UI commands!");
                 })
                 .exceptionally(ex -> {
-                    System.out.println("❌ WebSocket Connection Failed: " + ex.getMessage());
-                    // אפשר גם לעדכן את ה-UI כאן בעתיד אם רוצים שגיאה קופצת
+                    log.warning("❌ WebSocket Connection Failed: " + ex.getMessage());
                     return null;
                 });
     }
-    public void sendAction(String type, String roomId, String content) {
+    public void sendAction(GameAction type, String roomId, String content) {
         try {
             if (webSocket == null) {
-                System.out.println("⚠️ ERROR: Not connected to server! Cannot send action: " + type);
+                log.severe("⚠️ ERROR: Not connected to server! Cannot send action: " + type);
                 // כאן אפשר להוסיף הקפצת Alert אם רוצים
                 return;
             }
@@ -61,7 +59,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
             String jsonMessage = objectMapper.writeValueAsString(msg);
             webSocket.sendText(jsonMessage, true);
         } catch (Exception e) {
-            System.out.println("Error sending message: " + e.getMessage());
+            log.severe("Error sending message: " + e.getMessage());
         }
     }
 
@@ -81,7 +79,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
             }
 
         } catch (Exception e) {
-            System.out.println("Error parsing received JSON");
+            log.severe("Error parsing received JSON");
         }
         return WebSocket.Listener.super.onText(webSocket, data, last);
     }

@@ -18,7 +18,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private final RoomManager roomManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Random random = new Random();
 
     public GameWebSocketHandler(RoomManager roomManager) {
         this.roomManager = roomManager;
@@ -36,14 +35,14 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         System.out.println("Received action: " + gameMsg.type() + " from " + gameMsg.sender());
 
-        if ("CREATE_ROOM".equals(gameMsg.type())) {
+        if (GameAction.CREATE_ROOM.equals(gameMsg.type())) {
             String newRoomId = roomManager.createRoom();
             roomManager.joinRoom(newRoomId, session);
 
-            GameMessage response = new GameMessage("ROOM_CREATED", newRoomId, "Server", ""+roomManager.getRooms().get(newRoomId).size());
+            GameMessage response = new GameMessage(GameAction.ROOM_CREATED, newRoomId, "Server", ""+roomManager.getRooms().get(newRoomId).size());
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
 
-        } else if ("JOIN_ROOM".equals(gameMsg.type())) {
+        } else if (GameAction.JOIN_ROOM.equals(gameMsg.type())) {
             boolean joined = roomManager.joinRoom(gameMsg.roomId(), session);
 
             if (joined) {
@@ -51,22 +50,22 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 String playerNameWithIndex = gameMsg.sender() + index;
 
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
-                        new GameMessage("JOIN_ROOM_SUCCESS", gameMsg.roomId(), "Server", "" + index))));
+                        new GameMessage(GameAction.JOIN_ROOM_SUCCESS, gameMsg.roomId(), "Server", "" + index))));
 
                 // broadcast the indexed name, not the raw sender name
-                GameMessage notice = new GameMessage("PLAYER_JOINED", gameMsg.roomId(), "Server", playerNameWithIndex);
+                GameMessage notice = new GameMessage(GameAction.PLAYER_JOINED, gameMsg.roomId(), "Server", playerNameWithIndex);
                 roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(notice));
             }
             else {
-                GameMessage error = new GameMessage("ERROR", "", "Server", "Room not found!");
+                GameMessage error = new GameMessage(GameAction.ERROR, "", "Server", "Room not found!");
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(error)));
             }
 
-        } else if ("START_GAME".equals(gameMsg.type())) {
-            GameMessage startNotice = new GameMessage("GAME_STARTED", gameMsg.roomId(), "Server", gameMsg.content());
+        } else if (GameAction.START_GAME.equals(gameMsg.type())) {
+            GameMessage startNotice = new GameMessage(GameAction.GAME_STARTED, gameMsg.roomId(), "Server", gameMsg.content());
             roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(startNotice));
 
-        } else if ("GAME_ACTION".equals(gameMsg.type())) {
+        } else if (GameAction.GAME_ACTION.equals(gameMsg.type())) {
 
             if (gameMsg.content().startsWith("ATTACK_REQ:")) {
                 // Format: "ATTACK_REQ:<attackerId>-><defenderId>:<attackerArmies>:<defenderArmies>"
@@ -84,7 +83,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 String battleResultJson = objectMapper.writeValueAsString(result);
                 String content = attackerId + ":" + defenderId + ":" + battleResultJson;
 
-                GameMessage resultMsg = new GameMessage("BATTLE_RESULT", gameMsg.roomId(), "Server", content);
+                GameMessage resultMsg = new GameMessage(GameAction.BATTLE_RESULT, gameMsg.roomId(), "Server", content);
                 roomManager.broadcastToRoom(gameMsg.roomId(), objectMapper.writeValueAsString(resultMsg));
 
             } else {

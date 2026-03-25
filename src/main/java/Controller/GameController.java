@@ -6,6 +6,7 @@ import Model.States.*;
 import View.CardsDialog;
 import View.GameRoot;
 
+import com.example.demo.GameAction;
 import com.example.demo.RiskWebSocketClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.animation.PauseTransition;
@@ -116,8 +117,8 @@ public class GameController {
         networkClient.setOnMessageReceived(message ->
                 javafx.application.Platform.runLater(() -> {
                     switch (message.type()) {
-                        case "GAME_ACTION"   -> handleIncomingGameAction(message.content());
-                        case "BATTLE_RESULT" -> handleIncomingBattleResult(message.content());
+                        case GameAction.GAME_ACTION   -> handleIncomingGameAction(message.content());
+                        case GameAction.BATTLE_RESULT -> handleIncomingBattleResult(message.content());
                     }
                 })
         );
@@ -181,7 +182,7 @@ public class GameController {
 
     private void handleSetupClick(Country country) {
         if (isMultiplayer) {
-            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
                     "SETUP_PLACE:" + country.getId());
         } else {
             executeSetupLocal(country);
@@ -204,7 +205,7 @@ public class GameController {
 
     private void handleDraftClick(Country country) {
         if (isMultiplayer) {
-            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
                     "DRAFT:" + country.getId());
         } else {
             executeDraftLocal(country);
@@ -226,7 +227,7 @@ public class GameController {
 
     private void handleNextPhaseRequest() {
         if (isMultiplayer) {
-            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(), "NEXT_PHASE");
+            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(), "NEXT_PHASE");
         } else {
             executeNextPhaseLocal();
         }
@@ -259,7 +260,7 @@ public class GameController {
     private void broadcastNextTurnIfNeeded() {
         Player newCurrentPlayer = gameModel.getCurrentPlayer();
         if (!newCurrentPlayer.getName().equals(networkClient.getPlayerName())) {
-            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
                     "NEXT_TURN:" + newCurrentPlayer.getName() + ":" + newCurrentPlayer.getDraftArmies());
         }
     }
@@ -320,7 +321,7 @@ public class GameController {
                 if (!input.isEmpty()) {
                     int amount = Integer.parseInt(input);
                     if (isMultiplayer) {
-                        networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                        networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
                                 "FORTIFY:" + sourceCountry.getId() + ":" + destination.getId() + ":" + amount);
                         clearSelection();
                     } else {
@@ -375,7 +376,7 @@ public class GameController {
     private void performAttack(Country attacker, Country defender) {
         if (isMultiplayer) {
             // Send to server — server rolls dice and broadcasts result to all clients
-            networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+            networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
                     "ATTACK_REQ:" + attacker.getId() + "->" + defender.getId()
                             + ":" + attacker.getArmies() + ":" + defender.getArmies());
         } else {
@@ -415,7 +416,7 @@ public class GameController {
 
                 if (isMultiplayer) {
                     pendingConquestHandled = true;
-                    networkClient.sendAction("GAME_ACTION", networkClient.getRoomId(),
+                    networkClient.sendAction(GameAction.GAME_ACTION, networkClient.getRoomId(),
                             "CONQUEST_MOVE:" + attacker.getId() + ":" + defender.getId()
                                     + ":" + minMove + ":" + chosenAmount);
                 }
