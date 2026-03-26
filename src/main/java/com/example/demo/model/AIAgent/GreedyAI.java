@@ -1,6 +1,5 @@
 package com.example.demo.model.AIAgent;
 
-import Model.*;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import com.example.demo.model.Country;
 import com.example.demo.model.Player;

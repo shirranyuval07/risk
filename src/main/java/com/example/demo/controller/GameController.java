@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import Model.*;
 import com.example.demo.view.dialog.BattleResultDialog;
 import com.example.demo.model.Country;
 import com.example.demo.model.GameUpdateListener;

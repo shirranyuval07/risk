@@ -13,18 +13,16 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import com.example.demo.db.service.UserService;
 
 import java.util.List;
-import java.util.logging.Logger;
-
-@SpringBootApplication(scanBasePackages = {"com.example.demo", "Model", "service", "Model.Config"})
-@EnableJpaRepositories(basePackages = "repository")
+@Slf4j
+@SpringBootApplication(scanBasePackages = {"com.example.demo"})
 @EntityScan(basePackages = "com/example/demo/db")
 public class RiskApplication extends Application {
 
@@ -34,7 +32,6 @@ public class RiskApplication extends Application {
     // Whether this instance is running as the host (server mode)
     private boolean isServer = false;
 
-    private Logger log;
 
     // REMOVED the @Autowired constructor and the strategy fields at the class level.
     // JavaFX needs the default empty constructor to launch!
@@ -113,10 +110,10 @@ public class RiskApplication extends Application {
         if (networkClient != null) {
             game.setGameSeed(networkClient.getGameSeed());
         }
-        game.startGame();
 
         GameRoot root = new GameRoot(game);
         new GameController(game, root, networkClient);
+        game.startGame();
 
         Scene gameScene = new Scene(root, 1200, 800);
         primaryStage.setScene(gameScene);
