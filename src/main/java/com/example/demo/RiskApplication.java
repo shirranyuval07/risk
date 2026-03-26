@@ -110,10 +110,10 @@ public class RiskApplication extends Application {
         if (networkClient != null) {
             game.setGameSeed(networkClient.getGameSeed());
         }
+        game.startGame();
 
         GameRoot root = new GameRoot(game);
         new GameController(game, root, networkClient);
-        game.startGame();
 
         Scene gameScene = new Scene(root, 1200, 800);
         primaryStage.setScene(gameScene);
