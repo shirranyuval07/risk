@@ -25,7 +25,7 @@ public class RiskGame {
     private final ObjectProperty<Player> currentPlayerProperty = new SimpleObjectProperty<>();
 
     @Getter
-    private final Dice dice;
+    private final Dice dice= new Dice();
 
 
     @Getter
@@ -33,6 +33,8 @@ public class RiskGame {
 
     @Getter @Setter
     private long gameSeed = 0;
+    @Getter
+    private final CombatManager combatManager= new CombatManager();
 
     // למעלה יחד עם שאר המשתנים של RiskGame
     private final List<GameUpdateListener> listeners = new ArrayList<>();
@@ -41,7 +43,6 @@ public class RiskGame {
         this.board = new Board();
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
-        this.dice = new Dice();
     }
 
     // --- PROPERTY GETTERS ---
@@ -163,15 +164,7 @@ public class RiskGame {
     }
 
     public void handleConquest(Country attacker, Country defender, int moveAmount) {
-        Player oldOwner = defender.getOwner();
-        Player newOwner = attacker.getOwner();
-
-        oldOwner.removeCountry(defender);
-        newOwner.addCountry(defender);
-
-        attacker.removeArmies(moveAmount);
-        defender.addArmies(moveAmount);
-        newOwner.setConqueredThisTurn(true);
+        this.combatManager.executeConquest(attacker, defender, moveAmount);
         notifyStatsUpdated();
     }
 
