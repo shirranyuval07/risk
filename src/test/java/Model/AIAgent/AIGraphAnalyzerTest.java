@@ -1,7 +1,8 @@
 package Model.AIAgent;
 
-import Model.Country;
-import Model.Player;
+import com.example.demo.model.AIAgent.AIGraphAnalyzer;
+import com.example.demo.model.Country;
+import com.example.demo.model.Player;
 import org.junit.jupiter.api.Test;
 import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;

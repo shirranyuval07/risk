@@ -1,13 +1,13 @@
 package com.example.demo;
 
-import Controller.GameController;
-import Model.AIAgent.BotStrategy;
-import Model.AIAgent.GreedyAI;
-import Model.AIAgent.Strategies.HeuristicStrategy;
-import Model.Player;
-import Model.RiskGame;
-import View.GameRoot;
-import View.MainMenu;
+import com.example.demo.controller.GameController;
+import com.example.demo.model.AIAgent.GreedyAI;
+import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
+import com.example.demo.model.Player;
+import com.example.demo.model.RiskGame;
+import com.example.demo.view.GameRoot;
+import com.example.demo.view.MainMenu;
+import com.example.demo.network.client.RiskWebSocketClient;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -18,14 +18,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import service.UserService;
+import com.example.demo.db.service.UserService;
 
 import java.util.List;
 import java.util.logging.Logger;
 
 @SpringBootApplication(scanBasePackages = {"com.example.demo", "Model", "service", "Model.Config"})
 @EnableJpaRepositories(basePackages = "repository")
-@EntityScan(basePackages = "Entity")
+@EntityScan(basePackages = "com/example/demo/db")
 public class RiskApplication extends Application {
 
     private ConfigurableApplicationContext springContext;
