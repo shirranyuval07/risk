@@ -10,6 +10,7 @@ import lombok.Setter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -49,6 +50,22 @@ public class RiskWebSocketClient implements WebSocket.Listener {
                     log.warning("❌ WebSocket Connection Failed: " + ex.getMessage());
                     return null;
                 });
+    }
+    public void disconnect() {
+        // קודם כל בודקים שבכלל יש חיבור פעיל כדי לא לקבל שגיאת NullPointer
+        if (this.webSocket != null) {
+            try {
+                // שולחים לשרת הודעת סגירה מסודרת.
+                // הפקודה NORMAL_CLOSURE (קוד 1000) אומרת לשרת "אני מתנתק מרצוני, הכל בסדר".
+                this.webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Returning to main menu")
+                        .thenAccept(ws -> {
+                            log.info("WebSocket disconnected gracefully.");
+                            this.webSocket = null; // מנקים את המשתנה
+                        });
+            } catch (Exception e) {
+                log.warning("Error while disconnecting from WebSocket: " + e.getMessage());
+            }
+        }
     }
     public void sendAction(GameAction type, String roomId, Map<String,Object> content) {
         try {

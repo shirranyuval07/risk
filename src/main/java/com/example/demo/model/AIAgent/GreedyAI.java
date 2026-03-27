@@ -18,11 +18,8 @@ import java.util.Set;
 public class GreedyAI implements BotStrategy {
 
     private final AIGraphAnalyzer graphAnalyzer = new AIGraphAnalyzer();
-
-    // 1. משתנה האסטרטגיה שמחליף את ה-Evaluator ואת כל הקבועים
     private final HeuristicStrategy strategy;
 
-    // 2. הבנאי שמקבל את "המוח" מבחוץ (Dependency Injection)
     public GreedyAI(HeuristicStrategy strategy) {
         this.strategy = strategy;
     }
@@ -52,16 +49,13 @@ public class GreedyAI implements BotStrategy {
     }
 
     @Override
-    public Country findSetUpCountry(Player player, RiskGame game)
-    {
-        double stackingWeight = strategy.getSetupStackingWeight(); // for balanced
+    public Country findSetUpCountry(Player player, RiskGame game) {
+        double stackingWeight = strategy.getSetupStackingWeight();
         Country bestCountry = null;
         double bestScore = -1;
-        for(Country country : player.getOwnedCountries())
-        {
+        for(Country country : player.getOwnedCountries()) {
             int currentEnemyCount = 0;
-            for(Country neighbor : country.getNeighbors())
-            {
+            for(Country neighbor : country.getNeighbors()) {
                 if(neighbor.getOwner() != player)
                     currentEnemyCount += neighbor.getArmies();
             }
@@ -79,39 +73,41 @@ public class GreedyAI implements BotStrategy {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  שלב 1 – DRAFT
+    //  שלב 1 – DRAFT (פיצול נקי)
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseReinforcement(Player player, RiskGame game) {
-        // --- תיקון: פיצול התנהגות גיוס לפי אופי הבוט ---
-        // נשתמש בסף ההתקפה כדי להבין אם הבוט התקפי (סף נמוך) או הגנתי
-        boolean isAggressive = strategy.getAttackThreshold() < 0.5;
+        boolean isAggressive = strategy.getAttackThreshold() < 0;
 
         if (isAggressive) {
-            // התנהגות התקפית: יצירת "ראש חץ"
-            AttackMove bestPotentialAttack = null;
-            for (Country source : player.getOwnedCountries()) {
-                for (Country target : source.getNeighbors()) {
-                    if (target.getOwner() != player) {
-                        double score = strategy.calculateHeuristic(source, target, player, graphAnalyzer);
-                        if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore()) {
-                            bestPotentialAttack = new AttackMove(source, target, score);
-                        }
+            executeAggressiveDraft(player, game);
+        } else {
+            executeDefensiveDraft(player, game);
+        }
+    }
+
+    private void executeAggressiveDraft(Player player, RiskGame game) {
+        AttackMove bestPotentialAttack = null;
+        for (Country source : player.getOwnedCountries()) {
+            for (Country target : source.getNeighbors()) {
+                if (target.getOwner() != player) {
+                    double score = strategy.calculateHeuristic(source, target, player, graphAnalyzer);
+                    if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore()) {
+                        bestPotentialAttack = new AttackMove(source, target, score);
                     }
                 }
             }
-
-            // זורקים את כל התגבורת על נקודת הפריצה הזו כדי לדרוס את היבשת!
-            if (bestPotentialAttack != null) {
-                while (player.getDraftArmies() > 0) {
-                    game.placeArmy(bestPotentialAttack.source());
-                }
-                log.info("[AI DRAFT] Offensive Spearhead: Dumped all armies on {}", bestPotentialAttack.source().getName());
-                return; // מסיימים את הגיוס
-            }
         }
 
-        // --- ההתנהגות ההגנתית המקורית (פיזור פרופורציונלי לפי איומים) ---
+        if (bestPotentialAttack != null) {
+            while (player.getDraftArmies() > 0) {
+                game.placeArmy(bestPotentialAttack.source());
+            }
+            log.info("[AI DRAFT] Offensive Spearhead: Dumped all armies on {}", bestPotentialAttack.source().getName());
+        }
+    }
+
+    private void executeDefensiveDraft(Player player, RiskGame game) {
         Map<Country, Double> threatScores = new HashMap<>();
         double totalThreat = 0.0;
         Set<Country> myBottlenecks = graphAnalyzer.findArticulationPoints(player);
@@ -179,18 +175,15 @@ public class GreedyAI implements BotStrategy {
         while (!attackQueue.isEmpty()) {
             AttackMove best = attackQueue.poll();
 
-            // אם ההתקפה כבר לא חוקית עוד לפני שהתחלנו, דלג עליה
             if (!isMoveStillValid(best, player))
                 continue;
 
             boolean conquered = false;
 
-            //  המשך לתקוף את אותו היעד כל עוד היתרון שלנו נשמר ולא כבשנו!
             while (isMoveStillValid(best, player) && !conquered) {
                 conquered = performAttack(best, game);
             }
 
-            // אם בסופו של דבר כבשנו את המדינה, מפת המשחק השתנתה משמעותית, אז נבנה את התור מחדש
             if (conquered) {
                 attackQueue = buildAttackQueue(player);
             }
@@ -206,13 +199,10 @@ public class GreedyAI implements BotStrategy {
             for (Country target : source.getNeighbors()) {
                 if (target.getOwner() == player) continue;
 
-                // 3. שימוש באסטרטגיה לבדיקת היתרון המינימלי
                 if (source.getArmies() - target.getArmies() < strategy.getMinArmyAdvantage()) continue;
 
-                // 4. שימוש באסטרטגיה לחישוב הציון
                 double score = strategy.calculateHeuristic(source, target, player, graphAnalyzer);
 
-                // 5. שימוש באסטרטגיה לבדיקת סף ההתקפה
                 if (score > strategy.getAttackThreshold())
                     queue.add(new AttackMove(source, target, score));
             }
@@ -227,8 +217,7 @@ public class GreedyAI implements BotStrategy {
                 String.format("%.2f", move.heuristicScore()));
 
         BattleResult result = game.attack(move.source(), move.target());
-        if (result != null && result.conquered())
-        {
+        if (result != null && result.conquered()) {
             int amountToMove = this.strategy.getTroopsToMoveAfterConquest(
                     move.source(),
                     move.target(),
@@ -248,7 +237,6 @@ public class GreedyAI implements BotStrategy {
         if (move.source().getArmies() <= 1) return false;
         if (move.target().getOwner() == player) return false;
 
-        // 6. שימוש באסטרטגיה לבדיקת חוקיות מעודכנת
         return move.source().getArmies() - move.target().getArmies() >= strategy.getMinArmyAdvantage();
     }
 
@@ -260,15 +248,11 @@ public class GreedyAI implements BotStrategy {
         FortifyMove smartMove = graphAnalyzer.calculateBestFortify(player);
 
         if (smartMove != null) {
-            // 2. מבצעים את המהלך מול לוגיקת המשחק
             game.fortify(smartMove.source(), smartMove.target(), smartMove.armiesToMove());
-
             log.info("[AI FORTIFY] Moved {} armies from {} (Trapped) to {} (Border)",
                     smartMove.armiesToMove(), smartMove.source().getName(), smartMove.target().getName());
         } else {
             log.info("[AI FORTIFY] No trapped armies to move. Skipping fortify.");
         }
     }
-
-
 }

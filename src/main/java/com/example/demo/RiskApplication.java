@@ -113,7 +113,7 @@ public class RiskApplication extends Application {
         game.startGame();
 
         GameRoot root = new GameRoot(game);
-        new GameController(game, root, networkClient);
+        new GameController(game, root, networkClient,this::showMainMenu);
 
         Scene gameScene = new Scene(root, 1200, 800);
         primaryStage.setScene(gameScene);

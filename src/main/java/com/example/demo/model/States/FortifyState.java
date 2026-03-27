@@ -36,10 +36,6 @@ public class FortifyState implements GameState {
         from.removeArmies(amount);
         to.addArmies(amount);
         game.setCurrentState(nextPhase());
-        if (game.getCurrentPlayer().isConqueredThisTurn()) {
-            game.getCurrentPlayer().addCard(Card.getRandom());
-            game.getCurrentPlayer().setConqueredThisTurn(false); // איפוס לתור הבא
-        }
         return "Moved " + amount + " armies successfully.";
     }
 

@@ -17,6 +17,7 @@ public class ControlPane extends HBox {
     @Getter private final Button btnNextPhase;
     @Getter private final Button btnCards;
     @Getter private final Button btnToggleNames;
+    @Getter private final Button btnBackToMainMenu;
     private final Label messageLabel;
     private final Label playerLabel;
     private final Label phaseLabel;
@@ -45,7 +46,11 @@ public class ControlPane extends HBox {
         btnToggleNames = new Button("👁 Show Names");
         btnToggleNames.setStyle("-fx-background-color: #4a6a92; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15;");
 
-        getChildren().addAll(infoBox, messageLabel, btnToggleNames, btnNextPhase, btnCards);
+        btnBackToMainMenu = new Button("Back To Main Menu");
+        btnBackToMainMenu.setStyle("-fx-background-color: #4a6a92; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15;");
+        btnBackToMainMenu.setVisible(false);
+        btnBackToMainMenu.setManaged(false);
+        getChildren().addAll(infoBox, messageLabel, btnToggleNames, btnNextPhase, btnCards,btnBackToMainMenu);
 
         setupBindings(game);
     }
@@ -81,11 +86,21 @@ public class ControlPane extends HBox {
     private Label createStyledLabel(String text) {
         Label label = new Label(text);
         label.setTextFill(Color.WHITE);
-        label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        label.setFont(Font.font("Segue UI", FontWeight.BOLD, 14));
         return label;
     }
 
     public void setMessage(String msg) {
         messageLabel.setText(msg);
+    }
+    public void showGameOverState() {
+        btnNextPhase.setVisible(false);
+        btnNextPhase.setManaged(false);
+
+        btnCards.setVisible(false);
+        btnCards.setManaged(false);
+
+        btnBackToMainMenu.setVisible(true);
+        btnBackToMainMenu.setManaged(true);
     }
 }

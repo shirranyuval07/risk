@@ -79,7 +79,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             }
 
             case ATTACK_REQ -> {
-                // שולפים את הנתונים ישירות מהמילון - בלי Substring ובלי Split!
                 Map<String, Object> data = gameMsg.content();
 
                 int attackerArmies = (int) data.get("ATTACKER_ARMIES");

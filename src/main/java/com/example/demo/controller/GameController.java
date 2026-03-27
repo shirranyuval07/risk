@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.animation.PauseTransition;
 import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 
 import java.util.HashMap;
@@ -24,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-
+@Slf4j
 public class GameController {
 
     // =========================================================================
@@ -44,18 +45,20 @@ public class GameController {
     // Prevents the attacker's client from double-applying conquest army moves
     private boolean pendingConquestHandled = false;
 
-    private final Logger log = Logger.getLogger(GameController.class.getName());
+    private final Runnable onReturnToMenu;
+
 
     // =========================================================================
     //  Constructor
     // =========================================================================
 
-    public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient) {
+    public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient, Runnable onReturnToMenu) {
 
         this.gameModel = model;
         this.gameView = view;
         this.networkClient = networkClient;
         this.isMultiplayer = (networkClient != null);
+        this.onReturnToMenu = onReturnToMenu;
 
         // בתוך הבנאי של GameController:
         gameModel.addGameUpdateListener(new GameUpdateListener() {
@@ -129,6 +132,14 @@ public class GameController {
                         gameView.getPlayerStatsPane().updateStats()
                 )
         );
+        gameView.getControlPane().getBtnBackToMainMenu().setOnAction(e -> {
+            if (networkClient != null) { networkClient.disconnect(); }
+
+            if (onReturnToMenu != null) {
+                onReturnToMenu.run(); // זה מפעיל את הפונקציה showMainMenu מ-RiskApplication!
+            }
+            log.info("Returning to Main Menu...");
+        });
     }
 
     // =========================================================================
@@ -187,7 +198,7 @@ public class GameController {
                                 BattleResult result = objectMapper.convertValue(payload.get("battleResult"), BattleResult.class);
                                 applyBattleResult(getCountry(attackerId), getCountry(defenderId), result);
                             } catch (Exception e) {
-                                log.severe("Failed to parse BattleResult: " + e.getMessage());
+                                log.error("Failed to parse BattleResult: {}", e.getMessage());
                             }
                         }
 
@@ -488,6 +499,7 @@ public class GameController {
         if (gameModel.isGameOver()) {
             gameView.getControlPane().setMessage(
                     "🏆 GAME OVER! Winner: " + gameModel.getCurrentPlayer().getName() + " 🏆");
+            gameView.getControlPane().showGameOverState();
             return;
         }
 

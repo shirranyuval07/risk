@@ -125,7 +125,7 @@ public class RiskGame {
     private void startTurn() {
         notifyGameMessage("turn started");
         Player p = getCurrentPlayer();
-        currentPlayerProperty.set(p); // MAGIC: This tells the UI the player changed!
+        currentPlayerProperty.set(p);
 
         int reinforcement = Math.max(3, p.getOwnedCountries().size() / 3);
         reinforcement += board.calculateContinentBonus(p);
