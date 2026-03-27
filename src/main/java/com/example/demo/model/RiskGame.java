@@ -102,6 +102,14 @@ public class RiskGame {
 
     public void nextTurn() {
         notifyGameMessage("moved to next turn");
+
+        Player endingPlayer = getCurrentPlayer();
+        if (endingPlayer != null && endingPlayer.isConqueredThisTurn()) {
+            endingPlayer.addCard(Card.getRandom()); // חלוקת קלף רנדומלי
+            endingPlayer.setConqueredThisTurn(false); // איפוס הדגל לקראת התור הבא שלו
+            log.info("{} received a bonus card for conquering a territory!", endingPlayer.getName());
+        }
+
         long activePlayersCount = players.stream()
                 .filter(p -> !p.getOwnedCountries().isEmpty())
                 .count();
@@ -109,14 +117,9 @@ public class RiskGame {
         if (activePlayersCount <= 1) {
             this.gameOver = true;
             log.info("Game Over! We have a winner!");
+            notifyGameMessage("Game Over! " + (endingPlayer != null ? endingPlayer.getName() : "Somebody") + " wins!");
+            notifyStatsUpdated();
             return;
-        }
-
-        Player endingPlayer = getCurrentPlayer();
-        if (endingPlayer != null && endingPlayer.isConqueredThisTurn()) {
-            endingPlayer.addCard(Card.getRandom()); // חלוקת קלף רנדומלי
-            endingPlayer.setConqueredThisTurn(false); // איפוס הדגל לקראת התור הבא שלו
-            log.info("{} received a bonus card for conquering a territory!", endingPlayer.getName());
         }
 
         do {
