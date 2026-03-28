@@ -1,12 +1,16 @@
 package com.example.demo.controller;
 
-import com.example.demo.view.dialog.BattleResultDialog;
+import com.example.demo.view.dialog.DialogManager;
+
 import com.example.demo.model.Country;
 import com.example.demo.model.GameUpdateListener;
 import com.example.demo.model.Player;
-import com.example.demo.model.Records.BattleResult;
-import com.example.demo.view.dialog.CardsDialog;
 import com.example.demo.view.GameRoot;
+import com.example.demo.model.States.GameState.SetupState;
+import com.example.demo.model.States.GameState.DraftState;
+import com.example.demo.model.States.GameState.AttackState;
+import com.example.demo.model.States.GameState.FortifyState;
+import com.example.demo.model.Records.GameRecords.BattleResult;
 
 import com.example.demo.model.RiskGame;
 import com.example.demo.model.States.*;
@@ -24,7 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
+
 @Slf4j
 public class GameController {
 
@@ -128,7 +132,7 @@ public class GameController {
 
         // Cards dialog
         gameView.getControlPane().getBtnCards().setOnAction(e ->
-                CardsDialog.show(gameModel.getCurrentPlayer(), () ->
+                DialogManager.showCardsDialog(gameModel.getCurrentPlayer(), () ->
                         gameView.getPlayerStatsPane().updateStats()
                 )
         );
@@ -434,7 +438,7 @@ public class GameController {
                 attacker.getOwner().getName().equals(networkClient.getPlayerName());
 
         if (iAmTheAttacker) {
-            BattleResultDialog.show(result);
+            DialogManager.showBattleResultDialog(result);
         }
 
         if (result.conquered()) {

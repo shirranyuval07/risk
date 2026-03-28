@@ -1,6 +1,5 @@
 package com.example.demo.network.server;
 
-import com.example.demo.model.Records.BattleResult;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.shared.GameMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +7,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+
+
+import com.example.demo.model.Records.GameRecords.BattleResult;
 
 import java.util.*;
 

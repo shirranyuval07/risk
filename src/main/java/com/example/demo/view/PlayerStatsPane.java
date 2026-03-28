@@ -1,9 +1,13 @@
 package com.example.demo.view;
 
+
+import com.example.demo.model.States.GameState.SetupState;
+
+
+
 import com.example.demo.model.Country;
 import com.example.demo.model.Player;
 import com.example.demo.model.RiskGame;
-import com.example.demo.model.States.SetupState;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Background;

@@ -1,7 +1,10 @@
 package com.example.demo.model;
 
+import com.example.demo.model.States.GameState.SetupState;
+
+
+
 import com.example.demo.model.AIAgent.BotStrategy;
-import com.example.demo.model.States.SetupState;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import lombok.Getter;

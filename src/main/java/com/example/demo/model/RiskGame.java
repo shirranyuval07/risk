@@ -1,8 +1,12 @@
 package com.example.demo.model;
 
-import com.example.demo.model.Records.BattleResult;
+import com.example.demo.model.States.GameState.SetupState;
+
+
+
+
 import com.example.demo.model.States.GameState;
-import com.example.demo.model.States.SetupState;
+import com.example.demo.model.Records.GameRecords.BattleResult;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import lombok.Getter;

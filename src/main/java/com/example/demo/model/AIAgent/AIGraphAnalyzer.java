@@ -2,7 +2,10 @@ package com.example.demo.model.AIAgent;
 
 import com.example.demo.model.Country;
 import com.example.demo.model.Player;
-import com.example.demo.model.Records.FortifyMove;
+
+
+
+import com.example.demo.model.Records.GameRecords.FortifyMove;
 
 import java.util.*;
 
@@ -147,7 +150,7 @@ public class AIGraphAnalyzer
             }
         }
 
-        if (bestSource != null && bestTarget != null) {
+        if (bestSource != null) {
             return new FortifyMove(bestSource, bestTarget, bestSource.getArmies() - 1);
         }
 

@@ -3,13 +3,12 @@ package com.example.demo.model.AIAgent;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import com.example.demo.model.Country;
 import com.example.demo.model.Player;
-import com.example.demo.model.Records.AttackMove;
-import com.example.demo.model.Records.BattleResult;
-import com.example.demo.model.Records.FortifyMove;
 import com.example.demo.model.RiskGame;
 import com.example.demo.model.util.MaxPriorityQueue;
 import lombok.extern.slf4j.Slf4j;
-
+import com.example.demo.model.Records.GameRecords.AttackMove;
+import com.example.demo.model.Records.GameRecords.FortifyMove;
+import com.example.demo.model.Records.GameRecords.BattleResult;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

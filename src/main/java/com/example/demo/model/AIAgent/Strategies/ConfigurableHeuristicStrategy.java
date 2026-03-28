@@ -1,7 +1,6 @@
 package com.example.demo.model.AIAgent.Strategies;
 
-import com.example.demo.model.AIAgent.Rules.ContinentProgressRule;
-import com.example.demo.model.AIAgent.Rules.FutureThreatRule;
+import com.example.demo.model.AIAgent.Rules.HeuristicRule;
 import com.example.demo.model.Country;
 
 public class ConfigurableHeuristicStrategy extends AbstractHeuristicStrategy {
@@ -16,8 +15,8 @@ public class ConfigurableHeuristicStrategy extends AbstractHeuristicStrategy {
             TroopMovementBehavior movementBehavior) {
 
         super(wWin, wCont, wStrat, wCost, artBonus, casMult, expPenalty, attackThresh, minAdv, setupWeight);
-        this.addRule(new FutureThreatRule(), weightFutureThreat);
-        this.addRule(new ContinentProgressRule(continentBreakMultiplier, bonusFocus, progressFocus, resistanceAvoidance), wCont);
+        this.addRule(HeuristicRule.futureThreatRule(), weightFutureThreat);
+        this.addRule(HeuristicRule.continentProgressRule(continentBreakMultiplier, bonusFocus, progressFocus, resistanceAvoidance), wCont);
         this.movementBehavior = movementBehavior;
     }
 

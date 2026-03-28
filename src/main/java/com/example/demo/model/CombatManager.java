@@ -1,8 +1,9 @@
 package com.example.demo.model;
 
-import com.example.demo.model.Records.BattleResult;
 import lombok.extern.slf4j.Slf4j;
 
+
+import com.example.demo.model.Records.GameRecords.BattleResult;
 import java.util.Arrays;
 import java.util.Collections;
 

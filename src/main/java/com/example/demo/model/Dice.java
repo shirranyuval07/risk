@@ -1,11 +1,10 @@
 package com.example.demo.model;
 
-import com.example.demo.model.Records.BattleResult;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
+import com.example.demo.model.Records.GameRecords.BattleResult;
 public class Dice {
     private static Random random = new Random();
 

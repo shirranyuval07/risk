@@ -1,11 +1,10 @@
 package com.example.demo.view;
 
+import com.example.demo.view.dialog.DialogManager;
 import com.example.demo.db.entity.User;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.shared.GameMessage;
 import com.example.demo.network.client.RiskWebSocketClient;
-import com.example.demo.view.dialog.LoginDialog;
-import com.example.demo.view.dialog.RulesDialog;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -165,7 +164,7 @@ public class MainMenu extends StackPane {
         Button btn = new Button("📖 Rules");
         btn.setStyle("-fx-background-color: #4a6a92; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 5;");
         btn.setCursor(javafx.scene.Cursor.HAND);
-        btn.setOnAction(e -> RulesDialog.show());
+        btn.setOnAction(e -> DialogManager.showRulesDialog());
         return btn;
     }
 
@@ -263,7 +262,7 @@ public class MainMenu extends StackPane {
             getChildren().addAll(userLabel, loginBtn, signupBtn, logoutBtn);
 
             signupBtn.setOnAction(e -> {
-                Optional<Pair<String, String>> result = LoginDialog.show("Sign Up");
+                Optional<Pair<String, String>> result = DialogManager.showLoginDialog("Sign Up");
                 result.ifPresent(creds -> {
                     if (userService.signup(creds.getKey(), creds.getValue())) {
                         new Alert(Alert.AlertType.INFORMATION, "Registration successful! You can now login.").show();
@@ -274,7 +273,7 @@ public class MainMenu extends StackPane {
             });
 
             loginBtn.setOnAction(e -> {
-                Optional<Pair<String, String>> result = LoginDialog.show("Login");
+                Optional<Pair<String, String>> result = DialogManager.showLoginDialog("Login");
                 result.ifPresent(creds -> {
                     User user = userService.login(creds.getKey(), creds.getValue());
                     if (user != null) {
