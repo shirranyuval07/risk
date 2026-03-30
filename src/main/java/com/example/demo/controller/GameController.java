@@ -2,6 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.view.dialog.DialogManager;
 
+import com.example.demo.model.CardService;
+import com.example.demo.service.AIService;
 import com.example.demo.model.Country;
 import com.example.demo.model.GameUpdateListener;
 import com.example.demo.model.Player;
@@ -55,6 +57,8 @@ public class GameController {
     // =========================================================================
     //  Constructor
     // =========================================================================
+
+    private final AIService aiService = new AIService(new CardService());
 
     public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient, Runnable onReturnToMenu) {
 
@@ -521,7 +525,7 @@ public class GameController {
         PauseTransition pause = new PauseTransition(delay);
         pause.setOnFinished(e -> {
             if (gameModel.isGameOver() || !isCurrentPlayerAI()) return;
-            gameModel.getCurrentPlayer().playTurn(gameModel);
+            aiService.playTurn(gameModel.getCurrentPlayer(), gameModel);
             clearSelection();
             checkAndExecuteAITurn();
         });

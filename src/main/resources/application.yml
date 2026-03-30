@@ -1,0 +1,78 @@
+# הגדרות מערכת למשחק Risk
+# הקובץ כתוב בפורמט YAML - פורמט היררכי שנועד לקריאות מקסימלית (מחליף את application.properties)
+
+spring:
+  application:
+    name: Risk
+
+  # --- הגדרות בסיס נתונים (MySQL) ---
+  datasource:
+    url: jdbc:mysql://localhost:3306/risk_db
+    username: root
+    password: admin
+  
+  # --- הגדרות Hibernate (מיפוי אובייקטים לטבלאות) ---
+  jpa:
+    hibernate:
+      ddl-auto: update # מעדכן את הטבלאות ב-DB לפי מחלקות ה-Java
+    show-sql: true # מציג את שאילתות ה-SQL בקונסול (לצורך דיבאג)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# --- הגדרות אסטרטגיות AI ---
+# כל אסטרטגיה מגדירה "אופי" אחר לבוט ע"י שינוי משקלים בחישובי ההיוריסטיקה
+ai:
+  # אסטרטגיה מאוזנת: שילוב של כיבוש יבשות והגנה
+  balanced:
+    weight-win-probability: 1.5
+    weight-continent-bonus: 2.0
+    weight-strategic-value: 1.2
+    weight-expected-casualties: 1.0
+    articulation-point-bonus: 5.0
+    casualties-multiplier: 0.6
+    exposure-penalty-multiplier: 1.5
+    attack-threshold: 0.0
+    min-army-advantage: 2
+    weight-future-threat: -1.5
+    bonus-focus: 1.0
+    progress-focus: 1.0
+    continent-break-multiplier: 1.5
+    resistance-avoidance: 1.5
+    setup-stacking-weight: 0.0
+
+  # אסטרטגיה הגנתית: מעדיפה שמירה על שטחים קיימים וצבירת כוח
+  defensive:
+    weight-win-probability: 1.0
+    weight-continent-bonus: 0.5
+    weight-strategic-value: 3.0
+    weight-expected-casualties: 1.5
+    articulation-point-bonus: 5.0
+    casualties-multiplier: 1.2
+    exposure-penalty-multiplier: 3.0
+    attack-threshold: 0.0
+    min-army-advantage: 4 # יתקוף רק עם יתרון משמעותי
+    weight-future-threat: -3.5
+    bonus-focus: 0.2
+    progress-focus: 2.0
+    continent-break-multiplier: 0.5
+    resistance-avoidance: 3.0
+    setup-stacking-weight: 1.0
+
+  # אסטרטגיה התקפית: סיכון גבוה לטובת כיבוש מהיר של יבשות
+  offensive:
+    weight-win-probability: 2.5
+    weight-continent-bonus: 3.0
+    weight-strategic-value: 0.5
+    weight-expected-casualties: 0.2
+    articulation-point-bonus: 1.0
+    casualties-multiplier: 0.5
+    exposure-penalty-multiplier: 1.0
+    attack-threshold: -1.0
+    min-army-advantage: 1 # מוכן לתקוף גם בסיכון גבוה
+    weight-future-threat: -0.2
+    bonus-focus: 2.0
+    progress-focus: 0.5
+    continent-break-multiplier: 3.0
+    resistance-avoidance: 0.5
+    setup-stacking-weight: 2.0

@@ -1,7 +1,7 @@
 package com.example.demo;
 
 import com.example.demo.controller.GameController;
-import com.example.demo.model.AIAgent.GreedyAI;
+import com.example.demo.factory.AIFactory;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import com.example.demo.model.Player;
 import com.example.demo.model.RiskGame;
@@ -81,10 +81,11 @@ public class RiskApplication extends Application {
 
         if (isServer && springContext != null) {
 
-            // FETCH the strategies dynamically from the Spring context!
+            // FETCH the strategies and factory dynamically from the Spring context!
             HeuristicStrategy balancedStrategy = springContext.getBean("balancedStrategy", HeuristicStrategy.class);
             HeuristicStrategy defensiveStrategy = springContext.getBean("defensiveStrategy", HeuristicStrategy.class);
             HeuristicStrategy offensiveStrategy = springContext.getBean("offensiveStrategy", HeuristicStrategy.class);
+            AIFactory aiFactory = springContext.getBean(AIFactory.class);
 
             for (MainMenu.PlayerSetup setup : playerSetups) {
                 boolean isAI = !setup.type().equals("Human");
@@ -92,9 +93,9 @@ public class RiskApplication extends Application {
 
                 if (isAI) {
                     switch (setup.type()) {
-                        case "AI - Balanced"  -> p.setStrategy(new GreedyAI(balancedStrategy));
-                        case "AI - Defensive" -> p.setStrategy(new GreedyAI(defensiveStrategy));
-                        case "AI - Offensive" -> p.setStrategy(new GreedyAI(offensiveStrategy));
+                        case "AI - Balanced"  -> p.setStrategy(aiFactory.createAI(balancedStrategy));
+                        case "AI - Defensive" -> p.setStrategy(aiFactory.createAI(defensiveStrategy));
+                        case "AI - Offensive" -> p.setStrategy(aiFactory.createAI(offensiveStrategy));
                     }
                 }
                 game.addPlayer(p);
