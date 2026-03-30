@@ -122,7 +122,8 @@ public class DialogManager {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == btnTrade) {
-                int bonusArmies = player.tradeAnyValidSet();
+                Card.Service cardService = new Card.Service();
+                int bonusArmies = cardService.tradeAnyValidSet(player);
                 player.setDraftArmies(player.getDraftArmies()+bonusArmies); // הוספת החיילים לשחקן
 
                 Alert success = new Alert(Alert.AlertType.INFORMATION, "Success! You received " + bonusArmies + " armies!");
