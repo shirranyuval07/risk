@@ -1,7 +1,7 @@
 package com.example.demo;
 
 import com.example.demo.controller.GameController;
-import com.example.demo.factory.AIFactory;
+import com.example.demo.service.AIEngine;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import com.example.demo.model.Player;
 import com.example.demo.model.RiskGame;
@@ -85,7 +85,7 @@ public class RiskApplication extends Application {
             HeuristicStrategy balancedStrategy = springContext.getBean("balancedStrategy", HeuristicStrategy.class);
             HeuristicStrategy defensiveStrategy = springContext.getBean("defensiveStrategy", HeuristicStrategy.class);
             HeuristicStrategy offensiveStrategy = springContext.getBean("offensiveStrategy", HeuristicStrategy.class);
-            AIFactory aiFactory = springContext.getBean(AIFactory.class);
+            AIEngine.Factory aiFactory = springContext.getBean(AIEngine.Factory.class);
 
             for (MainMenu.PlayerSetup setup : playerSetups) {
                 boolean isAI = !setup.type().equals("Human");

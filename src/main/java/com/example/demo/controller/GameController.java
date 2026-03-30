@@ -2,8 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.view.dialog.DialogManager;
 
-import com.example.demo.model.CardService;
-import com.example.demo.service.AIService;
+import com.example.demo.model.Card;
+import com.example.demo.service.AIEngine;
 import com.example.demo.model.Country;
 import com.example.demo.model.GameUpdateListener;
 import com.example.demo.model.Player;
@@ -58,7 +58,7 @@ public class GameController {
     //  Constructor
     // =========================================================================
 
-    private final AIService aiService = new AIService(new CardService());
+    private final AIEngine.Service aiService = new AIEngine.Service(new Card.Service());
 
     public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient, Runnable onReturnToMenu) {
 
