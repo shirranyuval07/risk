@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.manager;
 
 import lombok.extern.slf4j.Slf4j;
 

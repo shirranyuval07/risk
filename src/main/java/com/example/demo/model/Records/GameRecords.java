@@ -1,6 +1,6 @@
 package com.example.demo.model.Records;
 
-import com.example.demo.model.Country;
+import com.example.demo.model.manager.Country;
 
 public interface GameRecords {
 

@@ -1,7 +1,7 @@
 package com.example.demo.view;
 
-import com.example.demo.model.Board;
-import com.example.demo.model.Country;
+import com.example.demo.model.manager.Board;
+import com.example.demo.model.manager.Country;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.NumberBinding;
 import javafx.scene.Cursor;

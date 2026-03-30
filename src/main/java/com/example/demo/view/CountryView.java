@@ -1,6 +1,6 @@
 package com.example.demo.view;
 
-import com.example.demo.model.Country;
+import com.example.demo.model.manager.Country;
 import javafx.geometry.VPos;
 import javafx.scene.Group;
 import javafx.scene.effect.DropShadow;

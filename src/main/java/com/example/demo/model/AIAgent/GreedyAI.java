@@ -1,9 +1,9 @@
 package com.example.demo.model.AIAgent;
 
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
-import com.example.demo.model.RiskGame;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
+import com.example.demo.model.manager.RiskGame;
 import com.example.demo.model.util.MaxPriorityQueue;
 import lombok.extern.slf4j.Slf4j;
 import com.example.demo.model.Records.GameRecords.AttackMove;

@@ -1,7 +1,7 @@
 package com.example.demo.view.dialog;
 
-import com.example.demo.model.Card;
-import com.example.demo.model.Player;
+import com.example.demo.model.manager.Card;
+import com.example.demo.model.manager.Player;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 import javafx.scene.control.*;
 import javafx.scene.effect.Bloom;

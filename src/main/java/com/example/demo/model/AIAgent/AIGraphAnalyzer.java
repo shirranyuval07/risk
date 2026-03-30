@@ -1,7 +1,7 @@
 package com.example.demo.model.AIAgent;
 
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
 
 
 

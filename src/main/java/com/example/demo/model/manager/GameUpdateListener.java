@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.manager;
 
 public interface GameUpdateListener {
     // מופעל כשצריך לעדכן את כמות החיילים/תורות במסך

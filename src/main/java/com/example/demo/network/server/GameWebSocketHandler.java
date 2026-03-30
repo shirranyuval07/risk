@@ -13,7 +13,7 @@ import com.example.demo.model.Records.GameRecords.BattleResult;
 
 import java.util.*;
 
-import static com.example.demo.model.Dice.rollBattle;
+import static com.example.demo.model.manager.Dice.rollBattle;
 
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {

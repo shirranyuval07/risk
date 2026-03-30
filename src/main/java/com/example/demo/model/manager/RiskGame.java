@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.manager;
 
 import com.example.demo.model.States.GameState.SetupState;
 

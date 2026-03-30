@@ -5,9 +5,9 @@ import com.example.demo.model.States.GameState.SetupState;
 
 
 
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
-import com.example.demo.model.RiskGame;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
+import com.example.demo.model.manager.RiskGame;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Background;

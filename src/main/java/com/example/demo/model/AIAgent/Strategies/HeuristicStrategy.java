@@ -2,8 +2,8 @@ package com.example.demo.model.AIAgent.Strategies;
 
 import com.example.demo.model.AIAgent.AIGraphAnalyzer;
 import com.example.demo.model.AIAgent.Rules.HeuristicRule;
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.manager;
 
 import java.util.Arrays;
 import java.util.Collections;

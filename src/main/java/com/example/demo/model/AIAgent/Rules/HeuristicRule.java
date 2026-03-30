@@ -1,9 +1,9 @@
 package com.example.demo.model.AIAgent.Rules;
 
 import com.example.demo.model.AIAgent.AIGraphAnalyzer;
-import com.example.demo.model.Continent;
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
+import com.example.demo.model.manager.Continent;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
 
 @FunctionalInterface
 public interface HeuristicRule {

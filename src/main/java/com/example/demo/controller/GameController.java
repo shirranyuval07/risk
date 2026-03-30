@@ -2,11 +2,11 @@ package com.example.demo.controller;
 
 import com.example.demo.view.dialog.DialogManager;
 
-import com.example.demo.model.Card;
+import com.example.demo.model.manager.Card;
 import com.example.demo.service.AIEngine;
-import com.example.demo.model.Country;
-import com.example.demo.model.GameUpdateListener;
-import com.example.demo.model.Player;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.GameUpdateListener;
+import com.example.demo.model.manager.Player;
 import com.example.demo.view.GameRoot;
 import com.example.demo.model.States.GameState.SetupState;
 import com.example.demo.model.States.GameState.DraftState;
@@ -14,7 +14,7 @@ import com.example.demo.model.States.GameState.AttackState;
 import com.example.demo.model.States.GameState.FortifyState;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 
-import com.example.demo.model.RiskGame;
+import com.example.demo.model.manager.RiskGame;
 import com.example.demo.model.States.*;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.client.RiskWebSocketClient;

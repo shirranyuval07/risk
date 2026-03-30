@@ -1,6 +1,6 @@
 package Model;
 
-import com.example.demo.model.Dice;
+import com.example.demo.model.manager.Dice;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

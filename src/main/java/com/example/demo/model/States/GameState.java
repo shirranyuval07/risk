@@ -1,9 +1,9 @@
 package com.example.demo.model.States;
 
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
 import com.example.demo.model.Records.GameRecords.BattleResult; // שים לב שהנתיב מעודכן לשלב 1
-import com.example.demo.model.RiskGame;
+import com.example.demo.model.manager.RiskGame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

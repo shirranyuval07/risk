@@ -1,6 +1,6 @@
 package com.example.demo.view;
 
-import com.example.demo.model.RiskGame;
+import com.example.demo.model.manager.RiskGame;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

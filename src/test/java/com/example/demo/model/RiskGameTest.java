@@ -1,6 +1,9 @@
 package com.example.demo.model;
 
 import com.example.demo.model.States.GameState;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
+import com.example.demo.model.manager.RiskGame;
 import javafx.scene.paint.Color;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

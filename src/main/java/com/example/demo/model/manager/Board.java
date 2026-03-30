@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.manager;
 
 import com.example.demo.config.BoardConfig;
 import com.example.demo.config.ContinentConfig;

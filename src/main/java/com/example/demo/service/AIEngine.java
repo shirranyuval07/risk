@@ -1,9 +1,9 @@
 package com.example.demo.service;
 
-import com.example.demo.model.Card;
-import com.example.demo.model.Country;
-import com.example.demo.model.Player;
-import com.example.demo.model.RiskGame;
+import com.example.demo.model.manager.Card;
+import com.example.demo.model.manager.Country;
+import com.example.demo.model.manager.Player;
+import com.example.demo.model.manager.RiskGame;
 import com.example.demo.model.States.GameState;
 import com.example.demo.model.AIAgent.BotStrategy;
 import com.example.demo.model.AIAgent.GreedyAI;

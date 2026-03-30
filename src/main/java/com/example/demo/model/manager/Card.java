@@ -1,4 +1,5 @@
-package com.example.demo.model;
+package com.example.demo.model.manager;
+
 import java.util.Collections;
 import java.util.List;
 
