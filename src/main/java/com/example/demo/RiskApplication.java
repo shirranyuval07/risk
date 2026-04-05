@@ -18,7 +18,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
-import com.example.demo.db.service.UserService;
 
 import java.util.List;
 @Slf4j
@@ -33,7 +32,6 @@ public class RiskApplication extends Application {
     private boolean isServer = false;
 
 
-    // REMOVED the @Autowired constructor and the strategy fields at the class level.
     // JavaFX needs the default empty constructor to launch!
 
     @Override
@@ -42,10 +40,10 @@ public class RiskApplication extends Application {
         isServer = params.contains("--server");
 
         if (isServer) {
-            System.out.println("🖥 Starting in SERVER mode — Spring Boot will start.");
+            log.info("🖥 Starting in SERVER mode — Spring Boot will start.");
             springContext = SpringApplication.run(RiskApplication.class);
         } else {
-            System.out.println("🎮 Starting in CLIENT mode — no server will be started.");
+            log.info("🎮 Starting in CLIENT mode — no server will be started.");
         }
     }
 
@@ -67,11 +65,7 @@ public class RiskApplication extends Application {
     }
 
     private void showMainMenu() {
-        UserService userService = (springContext != null)
-                ? springContext.getBean(UserService.class)
-                : null;
-
-        MainMenu mainMenu = new MainMenu(this::startGameWithConfig, userService);
+        MainMenu mainMenu = new MainMenu(this::startGameWithConfig);
         Scene menuScene = new Scene(mainMenu, 1200, 800);
         primaryStage.setScene(menuScene);
     }

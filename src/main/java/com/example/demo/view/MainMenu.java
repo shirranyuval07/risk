@@ -1,7 +1,6 @@
 package com.example.demo.view;
 
 import com.example.demo.view.dialog.DialogManager;
-import com.example.demo.db.entity.User;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.shared.GameMessage;
 import com.example.demo.network.client.RiskWebSocketClient;
@@ -12,15 +11,11 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.util.Pair;
-import lombok.Getter;
-import com.example.demo.db.service.UserService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 
 public class MainMenu extends StackPane {
@@ -33,14 +28,12 @@ public class MainMenu extends StackPane {
 
     private final List<PlayerRow> playerRows = new ArrayList<>();
     private final BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame;
-    private final AuthBox authBox;
 
     // =========================================================================
     //  Constructor
     // =========================================================================
 
-    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame,
-                    UserService userService) {
+    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame) {
         this.onStartGame = onStartGame;
 
         setBackground(new Background(
@@ -51,18 +44,13 @@ public class MainMenu extends StackPane {
 
         VBox mainContent = buildMainContent(networkClient);
 
-        // AuthBox calls back when login/logout changes the player name
-        this.authBox = new AuthBox(userService, networkClient,
-                newName -> playerRows.getFirst().setName(newName));
 
         Button btnRules = buildRulesButton();
 
-        StackPane.setAlignment(authBox, Pos.TOP_LEFT);
-        StackPane.setMargin(authBox, new Insets(20));
         StackPane.setAlignment(btnRules, Pos.TOP_RIGHT);
         StackPane.setMargin(btnRules, new Insets(20));
 
-        getChildren().addAll(mainContent, btnRules, authBox);
+        getChildren().addAll(mainContent, btnRules);
 
         // Listen for server responses to CREATE_ROOM / JOIN_ROOM
         networkClient.setOnMessageReceived(message -> javafx.application.Platform.runLater(() -> {
@@ -176,9 +164,7 @@ public class MainMenu extends StackPane {
                            RiskWebSocketClient networkClient, VBox mainContent) {
         // Here message.content() is the Map we sent from the Server in CREATE_ROOM or JOIN_ROOM
         // We can optionally use the generated index or ID, but for now we rely on the network client's name
-        String myName = (authBox.getCurrentUser() != null)
-                ? authBox.getCurrentUser().getUsername()
-                : networkClient.getPlayerName();
+        String myName = networkClient.getPlayerName();
 
         // If it's a join, we append the assigned index (optional)
         if (!isHost && message.content() != null) {
@@ -222,94 +208,6 @@ public class MainMenu extends StackPane {
         alert.show();
     }
 
-    // =========================================================================
-    //  Inner class: AuthBox — login / signup / logout panel (top-left)
-    // =========================================================================
-
-    @Getter
-    private static class AuthBox extends VBox {
-
-        private User currentUser = null;
-
-        public AuthBox(UserService userService,
-                       RiskWebSocketClient networkClient,
-                       java.util.function.Consumer<String> onNameChanged) {
-            setAlignment(Pos.TOP_LEFT);
-            setMaxWidth(150);
-            setSpacing(15);
-
-            Label userLabel = new Label("Welcome, Guest");
-            userLabel.setTextFill(Color.WHITE);
-            userLabel.setFont(Font.font("Segue UI", FontWeight.BOLD, 16));
-
-            if (userService != null) {
-                buildFullAuthUI(userService, networkClient, userLabel, onNameChanged);
-            } else {
-                buildClientModeUI(userLabel);
-            }
-        }
-
-        private void buildFullAuthUI(UserService userService,
-                                     RiskWebSocketClient networkClient,
-                                     Label userLabel,
-                                     java.util.function.Consumer<String> onNameChanged) {
-            Button loginBtn  = new Button("Login");
-            Button signupBtn = new Button("Sign Up");
-            Button logoutBtn = new Button("Logout");
-            logoutBtn.setVisible(false);
-            logoutBtn.setManaged(false);
-
-            getChildren().addAll(userLabel, loginBtn, signupBtn, logoutBtn);
-
-            signupBtn.setOnAction(e -> {
-                Optional<Pair<String, String>> result = DialogManager.showLoginDialog("Sign Up");
-                result.ifPresent(creds -> {
-                    if (userService.signup(creds.getKey(), creds.getValue())) {
-                        new Alert(Alert.AlertType.INFORMATION, "Registration successful! You can now login.").show();
-                    } else {
-                        new Alert(Alert.AlertType.ERROR, "Username already exists!").show();
-                    }
-                });
-            });
-
-            loginBtn.setOnAction(e -> {
-                Optional<Pair<String, String>> result = DialogManager.showLoginDialog("Login");
-                result.ifPresent(creds -> {
-                    User user = userService.login(creds.getKey(), creds.getValue());
-                    if (user != null) {
-                        currentUser = user;
-                        userLabel.setText("Commander: " + user.getUsername());
-                        networkClient.setPlayerName(user.getUsername());
-                        onNameChanged.accept(user.getUsername());
-
-                        loginBtn.setVisible(false);  loginBtn.setManaged(false);
-                        signupBtn.setVisible(false); signupBtn.setManaged(false);
-                        logoutBtn.setVisible(true);  logoutBtn.setManaged(true);
-                    } else {
-                        new Alert(Alert.AlertType.ERROR, "Invalid username or password!").show();
-                    }
-                });
-            });
-
-            logoutBtn.setOnAction(e -> {
-                currentUser = null;
-                userLabel.setText("Welcome, Guest");
-                networkClient.setPlayerName("Guest");
-                onNameChanged.accept("General 1");
-
-                loginBtn.setVisible(true);  loginBtn.setManaged(true);
-                signupBtn.setVisible(true); signupBtn.setManaged(true);
-                logoutBtn.setVisible(false); logoutBtn.setManaged(false);
-            });
-        }
-
-        private void buildClientModeUI(Label userLabel) {
-            Label clientLabel = new Label("🎮 Client Mode");
-            clientLabel.setTextFill(Color.LIGHTGRAY);
-            clientLabel.setFont(Font.font("Segue UI", FontWeight.NORMAL, 13));
-            getChildren().addAll(userLabel, clientLabel);
-        }
-    }
 
     // =========================================================================
     //  Inner class: LobbyScreen — waiting room after creating / joining a room

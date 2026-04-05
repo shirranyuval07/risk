@@ -44,14 +44,14 @@ public class AIEngine {
                 tradeResult = cardService.tradeAnyValidSet(aiPlayer);
                 if (tradeResult > 0) {
                     aiPlayer.setDraftArmies(aiPlayer.getDraftArmies() + tradeResult);
-                    log.info("🤖 AI " + aiPlayer.getName() + " traded cards for " + tradeResult + " extra armies!");
+                    log.info("🤖 AI {} traded cards for {} extra armies!", aiPlayer.getName(), tradeResult);
                 }
             } while (tradeResult > 0);
 
             // Execute regular game phases (Draft, Attack, Fortify)
             aiPlayer.getStrategy().executeTurn(aiPlayer, game);
 
-            // Auto-advance phases to pass turn to next player
+            // Auto-advance phases to pass turn to the next player
             while (game.getCurrentPlayer() == aiPlayer && !game.isGameOver()) {
                 game.nextPhase();
             }
