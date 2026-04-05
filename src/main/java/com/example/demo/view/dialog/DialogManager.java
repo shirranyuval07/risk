@@ -5,13 +5,9 @@ import com.example.demo.model.manager.Player;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 import javafx.scene.control.*;
 import javafx.scene.effect.Bloom;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.util.Pair;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 // תוסיף כאן את שאר ה-Imports שתצטרך (כמו BattleResult, Player וכו')
 
 public class DialogManager {
@@ -57,84 +53,74 @@ public class DialogManager {
         alert.showAndWait();
     }
 
-    public static Optional<Pair<String, String>> showLoginDialog(String title) {
-        Dialog<Pair<String, String>> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        dialog.setHeaderText("Please enter your credentials:");
 
-        // 2. הוספת כפתורים לחלון (למשל כפתור "אישור" וכפתור "ביטול")
-        // המשימה שלך: ליצור ButtonType עבור אישור (למשל "Submit") ולהוסיף אותו לדיאלוג.
-        ButtonType submitButton = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(submitButton, cancelButton);
+    public static void showCardsDialog(Player player, Runnable onTradeSuccessful) {
+        Dialog<List<Card>> dialog = new Dialog<>();
+        dialog.setTitle("Your Cards");
+        dialog.setHeaderText("Commander " + player.getName() + "'s Hand\nSelect exactly 3 cards to trade:");
 
+        // יצירת כפתורי הדיאלוג
+        ButtonType tradeButtonType = new ButtonType("Trade Selected", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(tradeButtonType, ButtonType.CANCEL);
 
-        TextField usernameField = new TextField();
-        PasswordField passwordField = new PasswordField();
-        GridPane grid = new GridPane();
-        grid.add(new Label("Username:"), 0, 0);
-        grid.add(new Label("Password:"), 0, 1);
-        grid.add(usernameField, 1, 0);
-        grid.add(passwordField, 1, 1);
-        dialog.getDialogPane().setContent(grid);
+        VBox vbox = new VBox(10);
+        List<CheckBox> checkBoxes = new ArrayList<>();
 
+        // יצירת CheckBox עבור כל קלף שיש לשחקן ביד
+        for (Card card : player.getCards()) {
+            CheckBox cb = new CheckBox(card.name());
+            cb.setUserData(card); // שומרים את האובייקט של הקלף מאחורי הקלעים
+            checkBoxes.add(cb);
+            vbox.getChildren().add(cb);
+        }
 
+        if (player.getCards().isEmpty()) {
+            vbox.getChildren().add(new Label("You don't have any cards yet."));
+        }
 
+        dialog.getDialogPane().setContent(vbox);
 
+        // חסימת כפתור הטרייד כברירת מחדל
+        javafx.scene.Node tradeButton = dialog.getDialogPane().lookupButton(tradeButtonType);
+        tradeButton.setDisable(true);
+
+        // הוספת מאזין (Listener) שפותח את הכפתור רק אם נבחרו בדיוק 3 קלפים
+        for (CheckBox cb : checkBoxes) {
+            cb.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+                long count = checkBoxes.stream().filter(CheckBox::isSelected).count();
+                tradeButton.setDisable(count != 3);
+            });
+        }
+
+        // המרת הלחיצה לרשימה של הקלפים שנבחרו
         dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == submitButton) {
-                return new Pair<>(usernameField.getText(), passwordField.getText());
+            if (dialogButton == tradeButtonType) {
+                List<Card> selected = new ArrayList<>();
+                for (CheckBox cb : checkBoxes) {
+                    if (cb.isSelected()) {
+                        selected.add((Card) cb.getUserData());
+                    }
+                }
+                return selected;
             }
             return null;
         });
 
-        return dialog.showAndWait();
-    }
+        // טיפול בתוצאה כשהחלון נסגר
+        dialog.showAndWait().ifPresent(selectedCards -> {
+            Card.Service cardService = new Card.Service();
+            int bonusArmies = cardService.tradeSpecificCards(player, selectedCards);
 
-    public static void showCardsDialog(Player player, Runnable onTradeSuccessful) {
-        int inf = Collections.frequency(player.getCards(), Card.INFANTRY);
-        int cav = Collections.frequency(player.getCards(), Card.CAVALRY);
-        int art = Collections.frequency(player.getCards(), Card.ARTILLERY);
-
-        String content = String.format("""
-                You currently have:
-                %d x Infantry (Soldier)
-                %d x Cavalry (Horse)
-                %d x Artillery (Cannon)
-                
-                Trade Values:
-                3 Infantry = 4 Armies
-                3 Cavalry = 6 Armies
-                3 Artillery = 8 Armies
-                1 of Each = 10 Armies
-                """, inf, cav, art);
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Your Cards");
-        alert.setHeaderText("Commander " + player.getName() + "'s Hand");
-        alert.setContentText(content);
-
-        // אם יש לשחקן סט חוקי, אנחנו מוסיפים כפתור טרייד!
-        ButtonType btnTrade = new ButtonType("Trade Best Set");
-        if (hasValidSet(inf, cav, art)) {
-            alert.getButtonTypes().add(btnTrade);
-        }
-
-        alert.showAndWait().ifPresent(response -> {
-            if (response == btnTrade) {
-                Card.Service cardService = new Card.Service();
-                int bonusArmies = cardService.tradeAnyValidSet(player);
-                player.setDraftArmies(player.getDraftArmies()+bonusArmies); // הוספת החיילים לשחקן
-
+            if (bonusArmies > 0) {
+                player.setDraftArmies(player.getDraftArmies() + bonusArmies);
                 Alert success = new Alert(Alert.AlertType.INFORMATION, "Success! You received " + bonusArmies + " armies!");
                 success.show();
-
-                onTradeSuccessful.run(); // רענון המסך אחרי העסקה
+                onTradeSuccessful.run(); // רענון המסך
+            } else {
+                Alert error = new Alert(Alert.AlertType.ERROR, "Invalid card combination! Trade failed.");
+                error.show();
             }
         });
-    }
-    private static boolean hasValidSet(int inf, int cav, int art) {
-        return (inf > 0 && cav > 0 && art > 0) || inf >= 3 || cav >= 3 || art >= 3;
     }
     public static void showBattleResultDialog(BattleResult result) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

@@ -71,15 +71,25 @@ public class ControlPane extends HBox {
         game.currentStateProperty().addListener((obs, oldState, newState) -> {
             if (newState != null) {
                 phaseLabel.setText("Phase: " + newState.getPhaseName());
+
+                // התיקון: כיבוי כפתור הקלפים אם אנחנו לא בשלב ה-DRAFT
+                btnCards.setDisable(!newState.getPhaseName().equals("DRAFT"));
             }
         });
 
+        // אתחול ראשוני כשהמסך עולה
         if (game.getCurrentPlayer() != null) {
             playerLabel.setText("Player: " + game.getCurrentPlayer().getName());
             armiesLabel.textProperty().bind(game.getCurrentPlayer().draftArmiesProperty().asString("Draft Armies: %d"));
         }
         if (game.getCurrentState() != null) {
             phaseLabel.setText("Phase: " + game.getCurrentState().getPhaseName());
+
+            // התיקון: הגדרה ראשונית של מצב הכפתור
+            btnCards.setDisable(!game.getCurrentState().getPhaseName().equals("DRAFT"));
+        } else {
+            // אם המשחק עדיין לא התחיל או שאין סטייט, נכבה את הכפתור ליתר ביטחון
+            btnCards.setDisable(true);
         }
     }
 

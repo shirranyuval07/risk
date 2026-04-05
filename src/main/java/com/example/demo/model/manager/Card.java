@@ -43,7 +43,41 @@ public enum Card {
 
             return 0; // No valid set
         }
+        /**
+         * Checks if a SPECIFIC selected set of 3 cards is valid and trades them.
+         * @param player The player attempting to trade.
+         * @param selectedCards Exactly 3 cards selected by the player.
+         * @return The number of armies rewarded, or 0 if the set is invalid.
+         */
+        public int tradeSpecificCards(Player player, List<Card> selectedCards) {
+            if (selectedCards.size() != 3) return 0;
 
+            int inf = Collections.frequency(selectedCards, Card.INFANTRY);
+            int cav = Collections.frequency(selectedCards, Card.CAVALRY);
+            int art = Collections.frequency(selectedCards, Card.ARTILLERY);
+
+            int reward = 0;
+
+            // בדיקת חוקיות הסט לפי חוקי Risk
+            if (inf == 1 && cav == 1 && art == 1) {
+                reward = 10;
+            } else if (inf == 3) {
+                reward = 4;
+            } else if (cav == 3) {
+                reward = 6;
+            } else if (art == 3) {
+                reward = 8;
+            }
+
+            // אם הסט חוקי, נמחק את הקלפים הספציפיים מהיד של השחקן
+            if (reward > 0) {
+                for (Card c : selectedCards) {
+                    player.getCards().remove(c);
+                }
+            }
+
+            return reward;
+        }
         private int tradeMatchingCards(List<Card> cards, Card type, int reward) {
             for (int i = 0; i < 3; i++) {
                 cards.remove(type);
