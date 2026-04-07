@@ -51,12 +51,10 @@ public class PlayerStatsPane extends VBox {
                     .filter(c -> c.getOwner() != null && c.getOwner().equals(p))
                     .count();
 
-            int armiesOnBoard = game.getBoard().getCountries().stream()
+            int totalArmies = game.getBoard().getCountries().stream()
                     .filter(c -> c.getOwner() != null && c.getOwner().equals(p))
                     .mapToInt(Country::getArmies)
-                    .sum();
-
-            int totalArmies = armiesOnBoard; // כולל חיילים שעדיין לא הוצבו
+                    .sum(); // כולל חיילים שעדיין לא הוצבו
 
             // בניית הקוביה של השחקן
             VBox playerBox = new VBox(5);

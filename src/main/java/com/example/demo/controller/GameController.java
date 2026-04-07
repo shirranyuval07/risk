@@ -340,10 +340,19 @@ public class GameController {
                     gameView.getMapPane().highlightTargets(targets);
                 }
             }
-        } else {
-            if (clickedCountry.equals(sourceCountry)) {
+        }
+        else
+        {
+            if (clickedCountry.equals(sourceCountry))
+            {
                 clearSelection();
-            } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
+            }
+            else if(!gameModel.getCurrentState().getValidTargets(sourceCountry).contains(clickedCountry))
+            {
+                gameView.getControlPane().setMessage("Invalid target!");
+            }
+            else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()))
+            {
                 promptFortifyAmount(clickedCountry);
             }
         }

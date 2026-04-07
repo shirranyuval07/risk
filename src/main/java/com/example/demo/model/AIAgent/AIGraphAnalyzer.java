@@ -154,7 +154,7 @@ public class AIGraphAnalyzer
             return new FortifyMove(bestSource, bestTarget, bestSource.getArmies() - 1);
         }
 
-        // --- שלב ב' (חדש!): ביצור גבולות. העברה מחזית בטוחה לחזית מסוכנת ---
+        // --- שלב ב' : ביצור גבולות. העברה מחזית בטוחה לחזית מסוכנת ---
         Country safestBorder = null;
         Country mostDangerousBorder = null;
         double lowestThreatRatio = Double.MAX_VALUE;
@@ -198,7 +198,7 @@ public class AIGraphAnalyzer
     }
 
     /**
-     * פונקציית עזר חדשה: סריקת BFS לבדיקה האם קיים נתיב ידידותי בין שתי מדינות
+     * פונקציית עזר: סריקת BFS לבדיקה האם קיים נתיב ידידותי בין שתי מדינות
      */
     private boolean isConnectedBFS(Country start, Country target, Player player) {
         Queue<Country> queue = new LinkedList<>();

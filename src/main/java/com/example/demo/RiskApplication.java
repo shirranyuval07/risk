@@ -16,13 +16,11 @@ import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.List;
 @Slf4j
-@SpringBootApplication(scanBasePackages = {"com.example.demo"})
-@EntityScan(basePackages = "com/example/demo/db")
+@SpringBootApplication
 public class RiskApplication extends Application {
 
     private ConfigurableApplicationContext springContext;

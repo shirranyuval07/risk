@@ -30,6 +30,21 @@ public interface HeuristicRule {
         };
     }
 
+    /**
+     * A heuristic rule that evaluates the potential value of attacking a target country based on the
+     * progress toward conquering a continent, the bonus associated with controlling the continent, and
+     * the resistance posed by enemy forces located in the same continent.
+     *
+     * @param enemyBreakMultiplier the multiplier applied when disrupting an enemy-owned continent to
+     *                             increase the score.
+     * @param bonusFocus           the weight factor for the continent bonus value in the score
+     *                             calculation.
+     * @param progressFocus        the weight factor for the progress toward conquering the continent.
+     * @param resistanceAvoidance  the penalty weight factor for encountering enemy resistance within
+     *                             the continent.
+     * @return a {@code HeuristicRule} instance that computes a score indicating the value of attacking
+     *         the target country based on its continental strategic importance.
+     */
     static HeuristicRule continentProgressRule(double enemyBreakMultiplier, double bonusFocus, double progressFocus, double resistanceAvoidance) {
         return (source, target, currentPlayer, analyzer) -> {
             Continent continent = target.getContinent();
