@@ -1,5 +1,6 @@
 package Model;
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.manager.Dice;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,10 +30,10 @@ public class DiceTest {
     @Test
     public void testRollValuesAreWithinBounds() {
         Dice dice = new Dice();
-        Integer[] result = dice.roll(5);
+        Integer[] result = dice.roll(GameConstants.MAX_ATTACKER_DICE + 2);
 
         for (int val : result) {
-            assertTrue(val >= 1 && val <= 6, "A dice roll value must be between 1 and 6");
+            assertTrue(val >= GameConstants.DICE_MIN_VALUE && val <= GameConstants.DICE_MAX_VALUE, "A dice roll value must be between 1 and 6");
         }
     }
 }

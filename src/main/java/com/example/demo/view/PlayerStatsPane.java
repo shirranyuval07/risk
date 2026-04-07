@@ -1,6 +1,7 @@
 package com.example.demo.view;
 
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.States.GameState.SetupState;
 
 
@@ -20,6 +21,23 @@ import javafx.scene.text.FontWeight;
 
 import java.util.List;
 
+/**
+ * PlayerStatsPane - פאנל סטטיסטיקות הנמצא בצד הימני של ממשק המשחק
+ * 
+ * תפקידיה:
+ * - הצגת רשימת כל השחקנים וסטטיסטיקות שלהם
+ * - עדכון מידע בזמן אמת (binding JavaFX)
+ * - הדגשת השחקן הנוכחי (תור שלו)
+ * - הצגת מספר טריטוריות וחיילים לכל שחקן
+ * - זיהוי שחקנים שהורחקו מהמשחק
+ * 
+ * עיצוב:
+ * - רקע כהה שקוף (כחול-שחור)
+ * - צבע שונה לכל שחקן
+ * - פס צד בצבע שחקן (סימן זיהוי)
+ * 
+ * השימוש: עקיבה אחרי מצב המשחק וסטטיסטיקות
+ */
 public class PlayerStatsPane extends VBox {
     private final RiskGame game;
 
@@ -39,7 +57,7 @@ public class PlayerStatsPane extends VBox {
         getChildren().clear();
 
         Label title = new Label("LEADERBOARD");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, GameConstants.FONT_SIZE_TITLE));
         title.setTextFill(Color.WHITE);
         getChildren().add(title);
 
@@ -57,20 +75,20 @@ public class PlayerStatsPane extends VBox {
                     .sum(); // כולל חיילים שעדיין לא הוצבו
 
             // בניית הקוביה של השחקן
-            VBox playerBox = new VBox(5);
-            playerBox.setPadding(new Insets(10));
+            VBox playerBox = new VBox(GameConstants.UI_SMALL_SPACING);
+            playerBox.setPadding(new Insets(GameConstants.BOX_PADDING));
 
             // עיצוב: פס צד בצבע של השחקן, ורקע מעט מואר אם זה התור שלו
             String borderColor = toHexString(p.getColor());
-            String bgColor = p.equals(game.getCurrentPlayer()) ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)";
+            String bgColor = p.equals(game.getCurrentPlayer()) ? "rgba(255,255,255," + GameConstants.OVERLAY_OPACITY_MEDIUM + ")" : "rgba(255,255,255," + GameConstants.OVERLAY_OPACITY_LOW + ")";
             playerBox.setStyle("-fx-border-color: " + borderColor + "; -fx-border-width: 0 0 0 5; -fx-background-color: " + bgColor + ";");
 
             Label nameLabel = new Label(p.getName());
-            nameLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+            nameLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, GameConstants.FONT_SIZE_HEADER));
             nameLabel.setTextFill(p.getColor().brighter());
 
             Label statsLabel = new Label("Territories: " + territories + "\nTotal Armies: " + totalArmies);
-            statsLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
+            statsLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, GameConstants.FONT_SIZE_BODY));
             statsLabel.setTextFill(Color.LIGHTGRAY);
 
             // טיפול בשחקן שהפסיד (הודח מהמשחק)
@@ -78,7 +96,7 @@ public class PlayerStatsPane extends VBox {
             {
                 nameLabel.setText(p.getName() + " (ELIMINATED)");
                 nameLabel.setTextFill(Color.GRAY);
-                playerBox.setStyle("-fx-border-color: gray; -fx-border-width: 0 0 0 5; -fx-background-color: rgba(0,0,0,0.3);");
+                playerBox.setStyle("-fx-border-color: gray; -fx-border-width: 0 0 0 5; -fx-background-color: rgba(0,0,0," + GameConstants.OVERLAY_OPACITY_HIGH + ");");
             }
 
             playerBox.getChildren().addAll(nameLabel, statsLabel);
@@ -89,8 +107,8 @@ public class PlayerStatsPane extends VBox {
     // פונקציית עזר להמרת צבע JavaFX לקוד Hex עבור ה-CSS
     private String toHexString(Color color) {
         return String.format("#%02X%02X%02X",
-                (int) (color.getRed() * 255),
-                (int) (color.getGreen() * 255),
-                (int) (color.getBlue() * 255));
+                (int) (color.getRed() * GameConstants.COLOR_HEX_MAX),
+                (int) (color.getGreen() * GameConstants.COLOR_HEX_MAX),
+                (int) (color.getBlue() * GameConstants.COLOR_HEX_MAX));
     }
 }

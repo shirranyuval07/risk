@@ -1,5 +1,6 @@
 package com.example.demo.model.AIAgent;
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
@@ -9,10 +10,25 @@ import lombok.extern.slf4j.Slf4j;
 import com.example.demo.model.Records.GameRecords.AttackMove;
 import com.example.demo.model.Records.GameRecords.FortifyMove;
 import com.example.demo.model.Records.GameRecords.BattleResult;
-import java.util.HashMap;
+
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * GreedyAI - בוט משחק "חמדן" שמוקד על הרווח מידי
+ * 
+ * אסטרטגיה:
+ * - בשלב Reinforcement: הצבה חיילים בנקודות קריטיות או הגנה
+ * - בשלב Attack: התקפה התוקפנית לנקודות חלשות של אויבים
+ * - בשלב Fortify: תגבור וקירוב חיילים לגבולות
+ * 
+ * תפקידיה:
+ * - בחירת בוט עבור שחקנים מחשב
+ * - ביצוע קבלת החלטות אוטומטית בכל שלב
+ * - אימוץ אסטרטגיה היוריסטית (מותאמת אישית)
+ * 
+ * השימוש: משמשת כעיקור של AI במשחק
+ */
 @Slf4j
 public class GreedyAI implements BotStrategy {
 
@@ -23,9 +39,7 @@ public class GreedyAI implements BotStrategy {
         this.strategy = strategy;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
     //  נקודת כניסה ראשית
-    // ═══════════════════════════════════════════════════════════════════════════
 
     @Override
     public void executeTurn(Player player, RiskGame game) {
@@ -49,31 +63,10 @@ public class GreedyAI implements BotStrategy {
 
     @Override
     public Country findSetUpCountry(Player player, RiskGame game) {
-        double stackingWeight = strategy.getSetupStackingWeight();
-        Country bestCountry = null;
-        double bestScore = -1;
-        for(Country country : player.getOwnedCountries()) {
-            int currentEnemyCount = 0;
-            for(Country neighbor : country.getNeighbors()) {
-                if(neighbor.getOwner() != player)
-                    currentEnemyCount += neighbor.getArmies();
-            }
-            if (currentEnemyCount > 0) {
-                double score = currentEnemyCount + (country.getArmies() * stackingWeight);
-                if (score > bestScore) {
-                    bestCountry = country;
-                    bestScore = score;
-                }
-            }
-        }
-        if(bestCountry == null)
-            return player.getOwnedCountries().getFirst();
-        return bestCountry;
+        return graphAnalyzer.findBestSetupCountry(player, strategy.getSetupStackingWeight());
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  שלב 1 – DRAFT (פיצול נקי)
-    // ═══════════════════════════════════════════════════════════════════════════
+    //  שלב 1 – DRAFT
 
     private void chooseReinforcement(Player player, RiskGame game) {
         boolean isAggressive = strategy.getAttackThreshold() < 0;
@@ -86,17 +79,7 @@ public class GreedyAI implements BotStrategy {
     }
 
     private void executeAggressiveDraft(Player player, RiskGame game) {
-        AttackMove bestPotentialAttack = null;
-        for (Country source : player.getOwnedCountries()) {
-            for (Country target : source.getNeighbors()) {
-                if (target.getOwner() != player) {
-                    double score = strategy.calculateHeuristic(source, target, player, graphAnalyzer);
-                    if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore()) {
-                        bestPotentialAttack = new AttackMove(source, target, score);
-                    }
-                }
-            }
-        }
+        AttackMove bestPotentialAttack = graphAnalyzer.findBestPotentialAttack(player, strategy);
 
         if (bestPotentialAttack != null) {
             while (player.getDraftArmies() > 0) {
@@ -107,27 +90,12 @@ public class GreedyAI implements BotStrategy {
     }
 
     private void executeDefensiveDraft(Player player, RiskGame game) {
-        Map<Country, Double> threatScores = new HashMap<>();
-        double totalThreat = 0.0;
         Set<Country> myBottlenecks = graphAnalyzer.findArticulationPoints(player);
+        Map<Country, Double> threatScores = graphAnalyzer.calculateThreatScores(player, myBottlenecks);
 
-        for (Country country : player.getOwnedCountries()) {
-            int enemyStrength = 0;
-            for (Country neighbor : country.getNeighbors()) {
-                if (neighbor.getOwner() != player) {
-                    enemyStrength += neighbor.getArmies();
-                }
-            }
-
-            if (enemyStrength > 0) {
-                double score = (double) enemyStrength / Math.max(country.getArmies(), 1);
-                if (myBottlenecks.contains(country)) score *= 2.0;
-                threatScores.put(country, score);
-                totalThreat += score;
-            }
-        }
-
+        double totalThreat = threatScores.values().stream().mapToDouble(Double::doubleValue).sum();
         int totalDraftArmies = player.getDraftArmies();
+
         if (totalThreat == 0) {
             Country fallback = findMostThreatenedCountry(player);
             if (fallback != null) {
@@ -143,6 +111,7 @@ public class GreedyAI implements BotStrategy {
             }
         }
 
+        // פיזור שאריות החיילים במדינה המאוימת ביותר
         Country mostThreatened = findMostThreatenedCountry(player);
         while (player.getDraftArmies() > 0 && mostThreatened != null) {
             game.placeArmy(mostThreatened);
@@ -164,12 +133,10 @@ public class GreedyAI implements BotStrategy {
         return best;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
     //  שלב 2 – ATTACK
-    // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseAttack(Player player, RiskGame game) {
-        MaxPriorityQueue<AttackMove> attackQueue = buildAttackQueue(player);
+        MaxPriorityQueue<AttackMove> attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
 
         while (!attackQueue.isEmpty()) {
             AttackMove best = attackQueue.poll();
@@ -184,29 +151,9 @@ public class GreedyAI implements BotStrategy {
             }
 
             if (conquered) {
-                attackQueue = buildAttackQueue(player);
+                attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
             }
         }
-    }
-
-    private MaxPriorityQueue<AttackMove> buildAttackQueue(Player player) {
-        MaxPriorityQueue<AttackMove> queue = new MaxPriorityQueue<>();
-
-        for (Country source : player.getOwnedCountries()) {
-            if (source.getArmies() <= 1) continue;
-
-            for (Country target : source.getNeighbors()) {
-                if (target.getOwner() == player) continue;
-
-                if (source.getArmies() - target.getArmies() < strategy.getMinArmyAdvantage()) continue;
-
-                double score = strategy.calculateHeuristic(source, target, player, graphAnalyzer);
-
-                if (score > strategy.getAttackThreshold())
-                    queue.add(new AttackMove(source, target, score));
-            }
-        }
-        return queue;
     }
 
     private boolean performAttack(AttackMove move, RiskGame game) {
@@ -233,15 +180,13 @@ public class GreedyAI implements BotStrategy {
 
     private boolean isMoveStillValid(AttackMove move, Player player) {
         if (move.source().getOwner() != player) return false;
-        if (move.source().getArmies() <= 1) return false;
+        if (move.source().getArmies() <= GameConstants.MIN_ARMIES_TO_STAY) return false;
         if (move.target().getOwner() == player) return false;
 
         return move.source().getArmies() - move.target().getArmies() >= strategy.getMinArmyAdvantage();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
     //  שלב 3 – FORTIFY
-    // ═══════════════════════════════════════════════════════════════════════════
 
     private void chooseFortify(Player player, RiskGame game) {
         FortifyMove smartMove = graphAnalyzer.calculateBestFortify(player);

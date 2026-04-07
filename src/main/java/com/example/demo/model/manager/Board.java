@@ -3,6 +3,7 @@ package com.example.demo.model.manager;
 import com.example.demo.config.BoardConfig;
 import com.example.demo.config.ContinentConfig;
 import com.example.demo.config.CountryConfig;
+import com.example.demo.config.GameConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,22 @@ import java.io.InputStream;
 import java.util.*;
 
 @Slf4j
+/**
+ * לוח המשחק Risk - ממשו של כל היבשתות, מדינות וקישורים ביניהם
+ * 
+ * תפקידיה:
+ * - טעינת נתוני המפה מ-Board.json (מדינות וקישורים)
+ * - טעינת ויזואליזציה SVG מ-Risk_board.svg
+ * - יצירת אובייקטי יבשתות ומדינות
+ * - חיבור מדינות שכנות (קישורי גבולות)
+ * - חישוב בוני יבשתות לשחקנים
+ * - ניהול קנה מידה וחשבונות ויזואלים
+ * 
+ * השימוש:
+ * - מקור האמת לכל מידע גיאוגרפי
+ * - קבלת רשימות מדינות ויבשתות
+ * - בדיקת בעלות יבשתות שלמות
+ */
 public class Board {
     private final Map<Integer, Country> countries = new HashMap<>();
     @Getter
@@ -32,14 +49,22 @@ public class Board {
 
     private final Map<String, String> rawSvgData = new HashMap<>();
 
-    private final double scale = 1.35;
-    private final double offsetX = -250;
-    private  final double offsetY = -150;
+    private final double scale = GameConstants.MAP_GLOBAL_SCALE;
+    private final double offsetX = GameConstants.MAP_GLOBAL_OFFSET_X;
+    private  final double offsetY = GameConstants.MAP_GLOBAL_OFFSET_Y;
+    
+    /**
+     * בנאי לוח - טעינת כל נתוני המפה מקבצי ה-Resources
+     */
     public Board() {
         loadSvgData();
         loadBoardFromJson();
     }
 
+    /**
+     * טעינת נתוני SVG מהקובץ
+     * מכילה את ויזואליזציה כל מדינה כ-SVG path
+     */
     private void loadSvgData() {
         try (InputStream is = getClass().getResourceAsStream("/Risk_board.svg")){
             if (is == null) {
@@ -195,12 +220,18 @@ public class Board {
         }
     }
 
-    public int calculateContinentBonus(Player p) {
-        int t = 0;
-        for (Continent c : continents)
-            if (c.isOwnedBy(p))
-                t += c.getBonusValue();
-        return t;
+    /**
+     * חישוב בונוס יבשתי - סכום של כל בונוסים של יבשתות שבשלוט השחקן
+     * משמש לחישוב חיילי התגבור בתחילת תור
+     */
+    public int calculateContinentBonus(Player player) {
+        int totalBonus = 0;
+        for (Continent continent : continents) {
+            if (continent.isOwnedBy(player)) {
+                totalBonus += continent.getBonusValue();
+            }
+        }
+        return totalBonus;
     }
 
     public Country getCountry(int id) {

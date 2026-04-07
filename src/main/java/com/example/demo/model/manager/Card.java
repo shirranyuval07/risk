@@ -3,24 +3,51 @@ package com.example.demo.model.manager;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Card - קלף בונוס בהפקת חיילים במשחק Risk
+ * 
+ * סוגי קלפים:
+ * - INFANTRY (חייל רגלי): שווה 1 חיילים
+ * - CAVALRY (פרשים): שווה 5 חיילים
+ * - ARTILLERY (תותחנים): שווה 10 חיילים
+ * 
+ * כללי הערעור:
+ * - 3 קלפים זהים: 4, 6 או 8 חיילים (לפי סוג)
+ * - 1 של כל סוג: 10 חיילים
+ * - סדרת מתבקשת: כל קלף שלאחריו בסדר הופך לאחד
+ * 
+ * הקבלה: כאשר שחקן כובש טריטוריה במהלך פאזת Attack
+ * השימוש: סחירה לחיילים נוספים בהתחלת כל תור
+ */
 public enum Card {
     INFANTRY, // חייל רגלי
     CAVALRY,  // פרשים
     ARTILLERY; // תותחנים
 
+    /**
+     * בחירת קלף אקראי מתוך שלושת הסוגים
+     * @return קלף אקראי
+     */
     public static Card getRandom() {
         return values()[(int) (Math.random() * values().length)];
     }
 
     /**
-     * Service to handle card trading logic according to Risk rules.
+     * שירות סחירת קלפים - ניהול הערעור של קלפים לחיילים
      */
     public static class Service {
 
         /**
-         * Checks if a player has a valid set of cards and trades them for armies.
-         * @param player The player attempting to trade cards.
-         * @return The number of armies rewarded for the set, or 0 if no valid set exists.
+         * בדיקה וסחירה של סט חוקי כלשהו מקלפי השחקן
+         * 
+         * סדר העדיפות:
+         * 1. קלף אחד מכל סוג (10 חיילים)
+         * 2. 3 תותחנים (8 חיילים)
+         * 3. 3 פרשים (6 חיילים)
+         * 4. 3 חיילים רגלים (4 חיילים)
+         * 
+         * @param player השחקן הקורא לסחירה
+         * @return מספר חיילים שהתקבלו, או 0 אם אין סט חוקי
          */
         public int tradeAnyValidSet(Player player) {
             List<Card> cards = player.getCards();
@@ -43,11 +70,13 @@ public enum Card {
 
             return 0; // No valid set
         }
+        
         /**
-         * Checks if a SPECIFIC selected set of 3 cards is valid and trades them.
-         * @param player The player attempting to trade.
-         * @param selectedCards Exactly 3 cards selected by the player.
-         * @return The number of armies rewarded, or 0 if the set is invalid.
+         * בדיקה וסחירה של סט ספציפי שבחר השחקן
+         * 
+         * @param player השחקן הקורא לסחירה
+         * @param selectedCards בדיוק 3 קלפים שבחר השחקן
+         * @return מספר חיילים שהתקבלו, או 0 אם הסט אינו חוקי
          */
         public int tradeSpecificCards(Player player, List<Card> selectedCards) {
             if (selectedCards.size() != 3) return 0;
@@ -78,6 +107,15 @@ public enum Card {
 
             return reward;
         }
+        
+        /**
+         * עוזר: הסרת 3 קלפים זהים וחזרה של הגמול
+         * 
+         * @param cards רשימת קלפי השחקן
+         * @param type סוג הקלף להסרה
+         * @param reward הגמול לחיילים
+         * @return הגמול שהתקבל
+         */
         private int tradeMatchingCards(List<Card> cards, Card type, int reward) {
             for (int i = 0; i < 3; i++) {
                 cards.remove(type);

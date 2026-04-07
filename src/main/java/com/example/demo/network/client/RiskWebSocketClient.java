@@ -11,11 +11,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public class RiskWebSocketClient implements WebSocket.Listener {
+
+    private static final String SERVER_URI = "wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws";
 
     private WebSocket webSocket;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -35,23 +38,32 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     public RiskWebSocketClient(String playerName) {
         this.playerName = playerName;
     }
-    //"wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"
+
     public void connect() {
         HttpClient client = HttpClient.newHttpClient();
-        client.newWebSocketBuilder()
-                .header("ngrok-skip-browser-warning", "true") // חובה: מונע את חסימת האזהרה של ngrok
-                .buildAsync(URI.create("wss://genitourinary-nonburdensome-leola.ngrok-free.dev/risk-ws"), this)
-                .thenAccept(ws -> {
-                    this.webSocket = ws;
-                    log.fine("Client connected and ready for UI commands!");
-                })
-                .exceptionally(ex -> {
-                    log.warning("❌ WebSocket Connection Failed: " + ex.getMessage());
-                    return null;
-                });
+        buildWebSocket(client)
+                .thenAccept(this::onConnectionSuccess)
+                .exceptionally(this::onConnectionFailure);
     }
+
+    private CompletableFuture<WebSocket> buildWebSocket(HttpClient client) {
+        return client.newWebSocketBuilder()
+                .header("ngrok-skip-browser-warning", "true")
+                .buildAsync(URI.create(SERVER_URI), this);
+    }
+
+    private void onConnectionSuccess(WebSocket ws) {
+        this.webSocket = ws;
+        log.fine("Client connected and ready for UI commands!");
+    }
+
+    private Void onConnectionFailure(Throwable ex) {
+        log.warning("❌ WebSocket Connection Failed: " + ex.getMessage());
+        return null;
+    }
+
     public void disconnect() {
-        // קודם כל בודקים שבכלל יש חיבור פעיל כדי לא לקבל שגיאת NullPointer
+// קודם כל בודקים שבכלל יש חיבור פעיל כדי לא לקבל שגיאת NullPointer
         if (this.webSocket != null) {
             try {
                 // שולחים לשרת הודעת סגירה מסודרת.

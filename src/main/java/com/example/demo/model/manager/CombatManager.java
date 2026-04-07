@@ -3,16 +3,46 @@ package com.example.demo.model.manager;
 import lombok.extern.slf4j.Slf4j;
 
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 import java.util.Arrays;
 import java.util.Collections;
 
+/**
+ * מנהל הקרבות - אחראי על כל ההיבטים של קרב בין שתי מדינות
+ * 
+ * תפקידיה:
+ * - הטלת קוביות לשני הצדדים
+ * - השוואת תוצאות והחלטה על הפסדים
+ * - עדכון מספר החיילים לאחר קרב
+ * - בדיקה אם המדינה נכבשה
+ * - ניהול העברת בעלות כשמדינה נכבשת
+ * 
+ * השימוש:
+ * - קריאה כשתוקף בוחר להתקיף מדינה
+ * - עדכון נתוני קרב בממשק
+ */
 @Slf4j
 public class CombatManager {
+    
+    /**
+     * פתרון קרב בודד בין תוקף למגן
+     * 
+     * תהליך:
+     * 1. הטלת קוביות לשני הצדדים (מוגבל ל-3 תוקף, 2 מגן)
+     * 2. השוואת תוצאות בסדר יורד
+     * 3. חישוב הפסדים
+     * 4. עדכון מספר חיילים
+     * 5. בדיקה אם המדינה נכבשה
+     * 
+     * @param attacker המדינה התוקפת
+     * @param defender המדינה המגוננת
+     * @return BattleResult עם כל נתוני הקרב
+     */
     public BattleResult resolveAttack(Country attacker, Country defender)
     {
-        int aDiceCount = Math.min(3, attacker.getArmies() - 1);
-        int dDiceCount = Math.min(2, defender.getArmies());
+        int aDiceCount = Math.min(GameConstants.MAX_ATTACKER_DICE, attacker.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
+        int dDiceCount = Math.min(GameConstants.MAX_DEFENDER_DICE, defender.getArmies());
 
         Integer[] aRolls = Dice.roll(aDiceCount);
         Integer[] dRolls = Dice.roll(dDiceCount);
@@ -43,6 +73,19 @@ public class CombatManager {
         log.info(result);
         return new BattleResult(aRolls,dRolls,aLoss,dLoss,isConquered,minMove,maxMove);
     }
+    
+    /**
+     * ביצוע כיבוש מלא - העברת בעלות מדינה ותנועת חיילים
+     * 
+     * תהליך:
+     * 1. העברת המדינה מהבעלים הישנים לחדשים
+     * 2. העברת חיילים מהתוקף למגן
+     * 3. סימון שהשחקן כיבש טריטוריה (קלף בסוף תור)
+     * 
+     * @param attacker המדינה התוקפת (שמעברת חיילים)
+     * @param defender המדינה שנכבשה (מקבלת חיילים)
+     * @param moveAmount מספר החיילים להעברה
+     */
     public void executeConquest(Country attacker, Country defender, int moveAmount)
     {
         Player oldOwner = defender.getOwner();

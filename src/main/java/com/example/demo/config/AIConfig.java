@@ -46,12 +46,28 @@ public class AIConfig {
     // פונקציית עזר שמונעת שכפול קוד בבניית האובייקט
     //שולחים את הביטוי למבדה המתאים ע"י שימוש בTroopMovementBehavior שנמצא באסטרטגיה
     private HeuristicStrategy.Configurable buildStrategy(AIStrategyProps p, HeuristicStrategy.Configurable.TroopMovementBehavior movement) {
+        HeuristicStrategy.HeuristicWeights weights = new HeuristicStrategy.HeuristicWeights(
+                p.getWeightWinProbability(),
+                p.getWeightContinentBonus(),
+                p.getWeightStrategicValue(),
+                p.getWeightExpectedCasualties(),
+                p.getArticulationPointBonus(),
+                p.getCasualtiesMultiplier(),
+                p.getExposurePenaltyMultiplier()
+        );
+        HeuristicStrategy.ThresholdConfig thresholds = new HeuristicStrategy.ThresholdConfig(
+                p.getAttackThreshold(),
+                p.getMinArmyAdvantage(),
+                p.getSetupStackingWeight()
+        );
         return new HeuristicStrategy.Configurable(
-                p.getWeightWinProbability(), p.getWeightContinentBonus(), p.getWeightStrategicValue(),
-                p.getWeightExpectedCasualties(), p.getArticulationPointBonus(), p.getCasualtiesMultiplier(),
-                p.getExposurePenaltyMultiplier(), p.getAttackThreshold(), p.getMinArmyAdvantage(),
-                p.getWeightFutureThreat(), p.getContinentBreakMultiplier(), p.getBonusFocus(),
-                p.getProgressFocus(), p.getResistanceAvoidance(), p.getSetupStackingWeight(),
+                weights,
+                thresholds,
+                p.getWeightFutureThreat(),
+                p.getContinentBreakMultiplier(),
+                p.getBonusFocus(),
+                p.getProgressFocus(),
+                p.getResistanceAvoidance(),
                 movement
         );
     }

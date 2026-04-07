@@ -1,195 +1,333 @@
 package com.example.demo.model.AIAgent;
 
+import com.example.demo.config.GameConstants;
+import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
+import com.example.demo.model.Records.GameRecords.AttackMove;
+import com.example.demo.model.Records.GameRecords.FortifyMove;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
-
-
-
-import com.example.demo.model.Records.GameRecords.FortifyMove;
+import com.example.demo.model.util.MaxPriorityQueue;
 
 import java.util.*;
 
-public class AIGraphAnalyzer
-{
+/**
+ * מנתח גרף AI - אלגוריתמים גרפיים מתקדמים לקבלת החלטות AI
+ * 
+ * תפקידיה:
+ * - חיפוש מדינות אופטימליות להצבה בשלב Setup
+ * - חיפוש הזדמנויות התקפה הטובות ביותר
+ * - חישוב ניקוד איום לכל מדינה
+ * - בניית תור עדיפויות של התקפות
+ * - מציאת נקודות ביטחון קריטיות בגרף (Articulation Points)
+ * - תכנון הגנה ותגבור (Fortify) אופטימלי
+ * 
+ * אלגוריתמים:
+ * - BFS (Breadth-First Search): למציאת מדינות מחוברות
+ * - DFS (Depth-First Search): למציאת נקודות ביטחון
+ * 
+ * השימוש: משמשת את בוטים (AI players) להחלטות אסטרטגיות
+ */
+public class AIGraphAnalyzer {
+
+
     /**
-     * BFS על תת-גרף מדינות השחקן בלבד.
-     * מחזיר את מדינת החזית (שיש לה לפחות שכן עוין אחד) הקרובה ביותר ל-start.
+     * מוצא את המדינה הטובה ביותר להצבת חיילים בשלב ההתאמה
+     * אלגוריתם: מחפש מדינה עם הכי הרבה אויבים סמוכים ו/או כבר חיילים שם
+     * הניקוד = (כוח אויבים) + (חיילים קיימים × משקל הערימה)
      */
-    public Country findConnectedBorderUsingBFS(Country start, Player player)
-    {
-        Queue<Country> queue    = new LinkedList<>();
-        Set<Country>   visited  = new HashSet<>();
+    public Country findBestSetupCountry(Player player, double stackingWeight) {
+        Country bestCountry = null;
+        double bestScore = -1;
+        
+        // יתור על כל המדינות שבבעלותנו
+        for(Country country : player.getOwnedCountries()) {
+            // חישוב כוח אויבים סמוכים
+            int totalEnemyStrength = calculateTotalEnemyStrength(country, player);
+            
+            if (totalEnemyStrength > 0) {
+                // נוסחת ניקוד: אויבים + חיילים קיימים (בעיתור משקל)
+                double score = totalEnemyStrength + (country.getArmies() * stackingWeight);
+                if (score > bestScore) {
+                    bestCountry = country;
+                    bestScore = score;
+                }
+            }
+        }
+        
+        // חזור על אולטימטום הראשון אם לא נמצא אפשרות טובה
+        return bestCountry != null ? bestCountry : player.getOwnedCountries().getFirst();
+    }
+
+    public AttackMove findBestPotentialAttack(Player player, HeuristicStrategy strategy) {
+        AttackMove bestPotentialAttack = null;
+        for (Country source : player.getOwnedCountries()) {
+            for (Country target : source.getNeighbors()) {
+                if (target.getOwner() != player) {
+                    double score = strategy.calculateHeuristic(source, target, player, this);
+                    if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore()) {
+                        bestPotentialAttack = new AttackMove(source, target, score);
+                    }
+                }
+            }
+        }
+        return bestPotentialAttack;
+    }
+
+    /**
+     * עוזר: חישוב כוח אויבים סמוכים למדינה
+     */
+    private int calculateTotalEnemyStrength(Country country, Player player) {
+        int totalStrength = 0;
+        for(Country neighbor : country.getNeighbors()) {
+            if(neighbor.getOwner() != player) {
+                totalStrength += neighbor.getArmies();
+            }
+        }
+        return totalStrength;
+    }
+
+    /**
+     * חישוב ניקוד איום לכל מדינה בעלותנו
+     * משמש להחלטת היכן להצית חיילים בהגנה
+
+     * ניקוד איום = (כוח אויבים) / (חיילים שלנו)
+     * אם המדינה היא "צוואר בקבוק" - הכפל × 2
+     */
+    public Map<Country, Double> calculateThreatScores(Player player, Set<Country> bottlenecks) {
+        Map<Country, Double> threatScores = new HashMap<>();
+        
+        for (Country country : player.getOwnedCountries()) {
+            // סכום כוח כל אויבי סמוכים
+            int totalEnemyStrength = calculateTotalEnemyStrength(country, player);
+            
+            if (totalEnemyStrength > 0) {
+                // ניקוד בסיס: כוח אויבים / כוחנו
+                double threatScore = (double) totalEnemyStrength / Math.max(country.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
+                
+                // הגדלת חשיבות אם זה "צוואר בקבוק" קריטי (articulation point)
+                if (bottlenecks.contains(country)) {
+                    threatScore *= GameConstants.BOTTLENECK_THREAT_MULTIPLIER;
+                }
+                
+                threatScores.put(country, threatScore);
+            }
+        }
+        return threatScores;
+    }
+
+    public MaxPriorityQueue<AttackMove> buildAttackQueue(Player player, HeuristicStrategy strategy) {
+        MaxPriorityQueue<AttackMove> queue = new MaxPriorityQueue<>();
+
+        for (Country source : player.getOwnedCountries()) {
+            if (source.getArmies() <= 1) continue;
+
+            for (Country target : source.getNeighbors()) {
+                if (target.getOwner() == player) continue;
+
+                if (source.getArmies() - target.getArmies() < strategy.getMinArmyAdvantage()) continue;
+
+                double score = strategy.calculateHeuristic(source, target, player, this);
+
+                if (score > strategy.getAttackThreshold())
+                    queue.add(new AttackMove(source, target, score));
+            }
+        }
+        return queue;
+    }
+
+
+    public Country findConnectedBorderUsingBFS(Country start, Player player) {
+        Queue<Country> queue = new LinkedList<>();
+        Set<Country> visited = new HashSet<>();
 
         queue.add(start);
         visited.add(start);
 
-        while (!queue.isEmpty())
-        {
+        while (!queue.isEmpty()) {
             Country current = queue.poll();
 
-            // חזית: מדינה בשליטתנו עם לפחות שכן עוין אחד
             if (current != start && countEnemyNeighbors(current, player) > 0)
                 return current;
 
-            for (Country neighbor : current.getNeighbors())
-            {
-                if (neighbor.getOwner() == player && !visited.contains(neighbor))
-                {
+            for (Country neighbor : current.getNeighbors()) {
+                if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
                     visited.add(neighbor);
                     queue.add(neighbor);
                 }
             }
         }
-        return null; // לא נמצא נתיב רציף לחזית
+        return null;
     }
-    /** סופר את מספר השכנים העוינים של מדינה נתונה. */
-    public int countEnemyNeighbors(Country c, Player me)
-    {
+
+    public int countEnemyNeighbors(Country c, Player me) {
         int count = 0;
-        for (Country neighbor : c.getNeighbors())
-        {
+        for (Country neighbor : c.getNeighbors()) {
             if (neighbor.getOwner() != me) count++;
         }
         return count;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  אלגוריתם מציאת נקודות חיתוך (Articulation Points) / "צווארי בקבוק"
-    // ═══════════════════════════════════════════════════════════════════════════
+    /**
+     * מוצא נקודות ביטחון קריטיות בגרף המדינות שלנו (Articulation Points)
+     * אלו מדינות שאם נאבדן - הרשת שלנו תתפצל לחלקים בלתי קשורים
+     * שימוש: DFS מעמיק עם מעקב discover time ו-low value
+     * זה עוזר להחלטות הגנה/התקפה - מדינות אלו קריטיות!
+     */
+    public Set<Country> findArticulationPoints(Player player) {
+        Set<Country> criticalPoints = new HashSet<>();
+        Map<Country, Integer> discoveryTime = new HashMap<>();
+        Map<Country, Integer> lowValue = new HashMap<>();
+        Map<Country, Country> parentMap = new HashMap<>();
+        int[] timeCounter = {0};
+
+        // בדוק מכל מדינה שעדיין לא ביקרנו בה
+        for (Country country : player.getOwnedCountries()) {
+            if (!discoveryTime.containsKey(country)) {
+                findArticulationPointsDFS(country, discoveryTime, lowValue, parentMap, criticalPoints, timeCounter, player);
+            }
+        }
+
+        return criticalPoints;
+    }
 
     /**
-     * שלב א': מעטפת האלגוריתם (Tarjan/DFS) לאיתור צווארי בקבוק אסטרטגיים בגרף.
-     * סיבוכיות מקום: O(V) עבור מילוני העזר וסט התוצאות.
+     * DFS עמוק לחיפוש articulation points
+     * מחשב: discovery time ו- low value לכל צומת
+     * articulation point = אם הסרתו תחתוך קשר בגרף
      */
-
-    private void dfsArticulationPoints(Country current, Map<Country, Integer> discoveryTime, Map<Country, Integer> lowValue,
-                                       Map<Country, Country> parent, Set<Country> articulationPoints, int[] time, Player player)
-    {
+    private void findArticulationPointsDFS(Country current, Map<Country, Integer> discoveryTime, Map<Country, Integer> lowValue,
+                                          Map<Country, Country> parentMap, Set<Country> criticalPoints, int[] time, Player player) {
         time[0]++;
         discoveryTime.put(current, time[0]);
         lowValue.put(current, time[0]);
-        int children = 0;
+        int childrenCount = 0;
 
         for (Country neighbor : current.getNeighbors()) {
             if (neighbor.getOwner() == player) {
-
-                // מצב 1: קודקוד שטרם ביקרנו בו (Tree Edge)
+                // אם הכבוד הזה עדיין לא ביקרנו בו
                 if (!discoveryTime.containsKey(neighbor)) {
-                    children++;
-                    parent.put(neighbor, current); // current הוא ההורה של neighbor
-
+                    childrenCount++;
+                    parentMap.put(neighbor, current);
+                    
                     // קריאה רקורסיבית
-                    dfsArticulationPoints(neighbor, discoveryTime, lowValue, parent, articulationPoints, time, player);
-
-                    // עדכון ערך החלחול בחזרה מהרקורסיה
+                    findArticulationPointsDFS(neighbor, discoveryTime, lowValue, parentMap, criticalPoints, time, player);
+                    
+                    // עדכן את ה-low value של הנוכחי
                     lowValue.put(current, Math.min(lowValue.get(current), lowValue.get(neighbor)));
 
-                    // בדיקת צוואר בקבוק (רק אם אנחנו לא שורש העץ!)
-                    if (parent.get(current) != null && lowValue.get(neighbor) >= discoveryTime.get(current))
-                        articulationPoints.add(current);
-                }
-                // מצב 2: קודקוד שכבר ביקרנו בו, והוא לא ההורה שלנו (Back Edge - מצאנו מעגל!)
-                else if (neighbor != parent.get(current))
+                    // בדוק אם הנוכחי הוא articulation point
+                    // תנאי: ההורה לא קיים (root) וה-neighbor לא יכול לחזור לאבא דרך דרך אחרת
+                    if (parentMap.get(current) != null && lowValue.get(neighbor) >= discoveryTime.get(current)) {
+                        criticalPoints.add(current);
+                    }
+                } 
+                // אם כבר ביקרנו - עדכן low value (אבל לא דרך ההורה!)
+                else if (neighbor != parentMap.get(current)) {
                     lowValue.put(current, Math.min(lowValue.get(current), discoveryTime.get(neighbor)));
+                }
             }
         }
 
-        if (parent.get(current) == null && children > 1)
-            articulationPoints.add(current);
-    }
-    public Set<Country> findArticulationPoints(Player player)
-    {
-        Set<Country> articulationPoints = new HashSet<>();
-
-        // מילונים לשמירת מצב הסריקה של כל קודקוד בגרף בזמן O(1)
-        Map<Country, Integer> discoveryTime = new HashMap<>();
-        Map<Country, Integer> lowValue = new HashMap<>();
-        Map<Country, Country> parent = new HashMap<>();
-
-        // טריק ב-Java להעברת מונה לרקורסיה (By Reference)
-        int[] time = {0};
-
-        // סריקת כל המדינות של השחקן - כדי לטפל בגרף עם מספר רכיבי קשירות
-        for (Country c : player.getOwnedCountries())
-        {
-            // אם טרם ביקרנו במדינה זו (אין לה זמן גילוי), נתחיל ממנה סריקת DFS
-            if (!discoveryTime.containsKey(c))
-                dfsArticulationPoints(c, discoveryTime, lowValue, parent, articulationPoints, time, player);
+        // ה-root הוא articulation point אם יש לו 2 children או יותר
+        if (parentMap.get(current) == null && childrenCount > 1) {
+            criticalPoints.add(current);
         }
-
-        return articulationPoints;
     }
+
     /**
-     * פונקציית מעטפת הבודקת האם מדינה ספציפית מהווה צוואר בקבוק (Articulation Point) עבור הבעלים שלה.
-     * הפונקציה משתמשת באלגוריתם Tarjan/DFS הקיים במחלקה.
+     * חישוב המהלך הטוב ביותר להחזקת מדינות בשלב התגבור
+     * אסטרטגיה דו-שלבית:
+     * 1. תחילה - חפש מדינות "תופסות" (מוקפות רק בשלנו) שצריכות העברת חיילים
+     * 2. ואז - העבר מחוזקים לנקודות מסוכנות יותר
      */
     public FortifyMove calculateBestFortify(Player player) {
-        Country bestSource = null;
-        Country bestTarget = null;
-        int maxArmiesToMove = 0;
+        // שלב ראשון: מצא מדינות תופסות שצריכות עזרה
+        FortifyMove trappedCountryMove = findBestTrappedCountryMove(player);
+        if (trappedCountryMove != null) {
+            return trappedCountryMove;
+        }
 
-        // --- שלב א': איתור מדינות כלואות לחלוטין בעורף (הקוד המקורי שלך) ---
+        // שלב שני: אם אין תופסות - העבר מחוזק לחלש
+        return findBestBorderFortification(player);
+    }
+
+    /**
+     * עוזר: מצא מדינות תופסות (מוקפות רק בשלנו)
+     * אלו צריכות העברת חיילים כדי לא יהיו בלתי מגוננות
+     */
+    private FortifyMove findBestTrappedCountryMove(Player player) {
+        Country bestTrappedCountry = null;
+        int maxArmiesInTrapped = 0;
+
         for (Country source : player.getOwnedCountries()) {
-            if (source.getArmies() <= 1) continue;
+            if (source.getArmies() <= GameConstants.MIN_ARMIES_TO_STAY) continue;
 
-            boolean isTrapped = true;
-            for (Country neighbor : source.getNeighbors()) {
-                if (neighbor.getOwner() != player) {
-                    isTrapped = false;
-                    break;
-                }
-            }
-
-            if (isTrapped && source.getArmies() > maxArmiesToMove) {
-                Country closestBorder = findConnectedBorderUsingBFS(source, player);
-                if (closestBorder != null) {
-                    bestSource = source;
-                    bestTarget = closestBorder;
-                    maxArmiesToMove = source.getArmies();
+            // בדוק אם זה "תפוס" - כל הסמוכים שלי
+            if (isCountryTrapped(source, player)) {
+                if (source.getArmies() > maxArmiesInTrapped) {
+                    Country border = findConnectedBorderUsingBFS(source, player);
+                    if (border != null) {
+                        bestTrappedCountry = source;
+                        maxArmiesInTrapped = source.getArmies();
+                    }
                 }
             }
         }
 
-        if (bestSource != null) {
-            return new FortifyMove(bestSource, bestTarget, bestSource.getArmies() - 1);
+        if (bestTrappedCountry != null) {
+            Country border = findConnectedBorderUsingBFS(bestTrappedCountry, player);
+            return new FortifyMove(bestTrappedCountry, border, bestTrappedCountry.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
         }
 
-        // --- שלב ב' : ביצור גבולות. העברה מחזית בטוחה לחזית מסוכנת ---
+        return null;
+    }
+
+    /**
+     * עוזר: בדוק אם מדינה תפוסה (כל הסמוכים שלה הם שלנו)
+     */
+    private boolean isCountryTrapped(Country country, Player player) {
+        for (Country neighbor : country.getNeighbors()) {
+            if (neighbor.getOwner() != player) {
+                return false; // יש אויב סמוך, לא תפוס
+            }
+        }
+        return true; // כל הסמוכים שלנו
+    }
+
+    /**
+     * עוזר: מצא את ההצבעה הטובה ביותר בנתיב הגנה
+     * העבר מ"חוזק" (סכנה נמוכה) ל"חלוש" (סכנה גבוהה)
+     */
+    private FortifyMove findBestBorderFortification(Player player) {
         Country safestBorder = null;
-        Country mostDangerousBorder = null;
-        double lowestThreatRatio = Double.MAX_VALUE;
-        double highestThreatRatio = -1.0;
+        Country mostThreatenedBorder = null;
+        double lowestThreat = Double.MAX_VALUE;
+        double highestThreat = -1.0;
 
-        for (Country c : player.getOwnedCountries()) {
-            int enemyForces = 0;
-            for (Country n : c.getNeighbors()) {
-                if (n.getOwner() != player) enemyForces += n.getArmies();
-            }
+        // מצא את מדינות הגבול + אמוד את הסכנה שלהן
+        for (Country border : player.getOwnedCountries()) {
+            double threatLevel = calculateBorderThreatLevel(border, player);
 
-            if (enemyForces > 0) { // זו מדינת חזית (גבול)
-                double threatRatio = (double) enemyForces / Math.max(c.getArmies(), 1);
-
-                // מחפשים חזית יציבה עם עודף חיילים כדי לקחת ממנה
-                if (threatRatio < lowestThreatRatio && c.getArmies() >= 3) {
-                    lowestThreatRatio = threatRatio;
-                    safestBorder = c;
+            if (threatLevel > 0) {
+                // עדכן את הנמוך ביותר
+                if (threatLevel < lowestThreat && border.getArmies() >= GameConstants.MIN_ARMIES_FOR_FORTIFY) {
+                    lowestThreat = threatLevel;
+                    safestBorder = border;
                 }
-
-                // מחפשים את החזית הכי מאוימת שזקוקה לעזרה
-                if (threatRatio > highestThreatRatio) {
-                    highestThreatRatio = threatRatio;
-                    mostDangerousBorder = c;
+                // עדכן את הגבוה ביותר
+                if (threatLevel > highestThreat) {
+                    highestThreat = threatLevel;
+                    mostThreatenedBorder = border;
                 }
             }
         }
 
-        // אם מצאנו חזית בטוחה וחזית מסוכנת, נבדוק עם BFS אם הן מחוברות ברצף
-        if (safestBorder != null && mostDangerousBorder != null && safestBorder != mostDangerousBorder) {
-            if (isConnectedBFS(safestBorder, mostDangerousBorder, player)) {
-                // מעבירים חיילים, אבל משאירים 2 חיילים כמשמר מינימלי על הגבול הבטוח
-                int armiesToMove = safestBorder.getArmies() - 2;
+        // אם מצאנו זוג טוב - ובדוק שהם מחוברים
+        if (safestBorder != null && mostThreatenedBorder != null && safestBorder != mostThreatenedBorder) {
+            if (isConnectedBFS(safestBorder, mostThreatenedBorder, player)) {
+                int armiesToMove = safestBorder.getArmies() - GameConstants.KEEP_ARMIES_AT_SOURCE;
                 if (armiesToMove > 0) {
-                    return new FortifyMove(safestBorder, mostDangerousBorder, armiesToMove);
+                    return new FortifyMove(safestBorder, mostThreatenedBorder, armiesToMove);
                 }
             }
         }
@@ -198,8 +336,15 @@ public class AIGraphAnalyzer
     }
 
     /**
-     * פונקציית עזר: סריקת BFS לבדיקה האם קיים נתיב ידידותי בין שתי מדינות
+     * עוזר: חישוב רמת הסכנה של מדינה גבול
      */
+    private double calculateBorderThreatLevel(Country border, Player player) {
+        int totalEnemyForce = calculateTotalEnemyStrength(border, player);
+        if (totalEnemyForce == 0) return 0;
+        
+        return (double) totalEnemyForce / Math.max(border.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
+    }
+
     private boolean isConnectedBFS(Country start, Country target, Player player) {
         Queue<Country> queue = new LinkedList<>();
         Set<Country> visited = new HashSet<>();
@@ -209,7 +354,7 @@ public class AIGraphAnalyzer
 
         while (!queue.isEmpty()) {
             Country current = queue.poll();
-            if (current == target) return true; // הגענו ליעד!
+            if (current == target) return true;
 
             for (Country neighbor : current.getNeighbors()) {
                 if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
@@ -218,7 +363,6 @@ public class AIGraphAnalyzer
                 }
             }
         }
-        return false; // אין מסלול בטוח
+        return false;
     }
 }
-

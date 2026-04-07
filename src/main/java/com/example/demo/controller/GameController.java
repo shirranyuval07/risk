@@ -34,9 +34,6 @@ import java.util.function.Consumer;
 @Slf4j
 public class GameController {
 
-    // =========================================================================
-    //  Fields
-    // =========================================================================
 
     private final RiskGame gameModel;
     private final GameRoot gameView;
@@ -54,9 +51,7 @@ public class GameController {
     private final Runnable onReturnToMenu;
 
 
-    // =========================================================================
-    //  Constructor
-    // =========================================================================
+
 
     private final AIEngine.Service aiService = new AIEngine.Service(new Card.Service());
 
@@ -96,9 +91,7 @@ public class GameController {
         checkAndExecuteAITurn();
     }
 
-    // =========================================================================
-    //  UI Listeners — buttons and map clicks
-    // =========================================================================
+
 
     private void initializeUIListeners() {
 
@@ -150,9 +143,7 @@ public class GameController {
         });
     }
 
-    // =========================================================================
-    //  Network Listeners — incoming messages from the server
-    // =========================================================================
+
 
     private void initializeNetworkListeners() {
         networkClient.setOnMessageReceived(message ->
@@ -218,9 +209,6 @@ public class GameController {
         );
     }
 
-    // =========================================================================
-    //  Phase Routing — decides which handler to call based on current phase
-    // =========================================================================
 
     private void handleCountryClick(Country clickedCountry) {
         Consumer<Country> handler = phaseClickHandlers.get(gameModel.getCurrentState().getClass());
@@ -229,9 +217,7 @@ public class GameController {
         }
     }
 
-    // =========================================================================
-    //  SETUP Phase
-    // =========================================================================
+
 
     private void handleSetupClick(Country country) {
         if (isMultiplayer) {
@@ -252,9 +238,7 @@ public class GameController {
         }
     }
 
-    // =========================================================================
-    //  DRAFT Phase
-    // =========================================================================
+
 
     private void handleDraftClick(Country country) {
         if (isMultiplayer) {
@@ -270,9 +254,7 @@ public class GameController {
         gameModel.placeArmy(country);
     }
 
-    // =========================================================================
-    //  NEXT PHASE / NEXT TURN
-    // =========================================================================
+
 
     private void handleNextPhaseRequest() {
         if (isMultiplayer) {
@@ -324,9 +306,6 @@ public class GameController {
         clearSelection();
     }
 
-    // =========================================================================
-    //  FORTIFY Phase
-    // =========================================================================
 
     private void handleFortifyClick(Country clickedCountry) {
         if (sourceCountry == null) {
@@ -396,9 +375,6 @@ public class GameController {
         checkAndExecuteAITurn();
     }
 
-    // =========================================================================
-    //  ATTACK Phase
-    // =========================================================================
 
     private void handleAttackClick(Country clickedCountry) {
         if (sourceCountry == null) {
@@ -508,9 +484,6 @@ public class GameController {
         return dialog.showAndWait().orElse(maxMove);
     }
 
-    // =========================================================================
-    //  AI Turn Management
-    // =========================================================================
 
     private void checkAndExecuteAITurn() {
         if (gameModel.isGameOver()) {
@@ -541,9 +514,8 @@ public class GameController {
         return pause;
     }
 
-    // =========================================================================
+
     //  Helpers
-    // =========================================================================
 
     private boolean isMyTurn() {
         return !isMultiplayer ||

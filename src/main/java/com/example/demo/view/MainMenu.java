@@ -4,6 +4,7 @@ import com.example.demo.view.dialog.DialogManager;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.shared.GameMessage;
 import com.example.demo.network.client.RiskWebSocketClient;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -53,7 +54,7 @@ public class MainMenu extends StackPane {
         getChildren().addAll(mainContent, btnRules);
 
         // Listen for server responses to CREATE_ROOM / JOIN_ROOM
-        networkClient.setOnMessageReceived(message -> javafx.application.Platform.runLater(() -> {
+        networkClient.setOnMessageReceived(message -> Platform.runLater(() -> {
             switch (message.type()) {
                 case ROOM_CREATED      -> openLobby(message, true,  networkClient, mainContent);
                 case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, mainContent);

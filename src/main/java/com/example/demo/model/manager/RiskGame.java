@@ -1,10 +1,7 @@
 package com.example.demo.model.manager;
 
 import com.example.demo.model.States.GameState.SetupState;
-
-
-
-
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.States.GameState;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 import javafx.beans.property.ObjectProperty;
@@ -16,6 +13,22 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 @Slf4j
+/**
+ * משחק Risk - בקר מרכזי על כל היבטי המשחק
+ * 
+ * תפקידיה:
+ * - ניהול זרימת המשחק (שלבים, תורות, פאזות)
+ * - רשימת שחקנים וניהול תור נוכחי
+ * - לוח המשחק וניהול מדינות
+ * - קרא להודעות ב-UI (observers pattern)
+ * - ניהול מצב המשחק (setup, reinforcement, attack, fortify)
+ * 
+ * השימוש:
+ * - נקודת התחלה של משחק חדש
+ * - מעבר בין תורות ופאזות
+ * - ניהול התקפות ופורטיפיקציות
+ * - בדיקת תנאי ניצחון
+ */
 public class RiskGame {
     @Getter
     private final Board board;
@@ -134,7 +147,7 @@ public class RiskGame {
         Player p = getCurrentPlayer();
         currentPlayerProperty.set(p);
 
-        int reinforcement = Math.max(3, p.getOwnedCountries().size() / 3);
+        int reinforcement = Math.max(GameConstants.MIN_REINFORCEMENT, p.getOwnedCountries().size() / GameConstants.REINFORCEMENT_DIVISOR);
         reinforcement += board.calculateContinentBonus(p);
 
         p.setDraftArmies(reinforcement);
