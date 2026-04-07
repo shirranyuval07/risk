@@ -13,9 +13,6 @@ public interface HeuristicRule {
      */
     double evaluate(Country source, Country target, Player currentPlayer, AIGraphAnalyzer analyzer);
 
-    // ==========================================
-    // רשימת החוקים (Lambdas) מרוכזים כאן
-    // ==========================================
 
     static HeuristicRule futureThreatRule() {
         return (source, target, currentPlayer, analyzer) -> {
@@ -83,6 +80,15 @@ public interface HeuristicRule {
                 }
             }
             return score;
+        };
+    }
+    // חוק הגנתי: מחפש את המטרה החלשה ביותר (1-2 חיילים) רק כדי להשיג קלף בתור הנוכחי
+    static HeuristicRule cardFarmingRule() {
+        return (source, target, currentPlayer, analyzer) -> {
+            if (target.getArmies() <= 2 && source.getArmies() >= 4) {
+                return 50.0; // מעודד מאוד התקפה קלה ומהירה
+            }
+            return 0; // מונע ממתקפות מסוכנות יותר
         };
     }
 }

@@ -98,7 +98,7 @@ public interface HeuristicStrategy {
             this.setupStackingWeight = setupStackingWeight;
         }
 
-        protected void addRule(HeuristicRule rule, double weight) {
+        public void addRule(HeuristicRule rule, double weight) {
             dynamicRules.put(rule, weight);
         }
 

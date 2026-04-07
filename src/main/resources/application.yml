@@ -23,43 +23,43 @@ spring:
 # --- הגדרות אסטרטגיות AI ---
 # כל אסטרטגיה מגדירה "אופי" אחר לבוט ע"י שינוי משקלים בחישובי ההיוריסטיקה
 ai:
-  # אסטרטגיה מאוזנת: שילוב של כיבוש יבשות והגנה
   balanced:
     weight-win-probability: 1.5
-    weight-continent-bonus: 2.0
-    weight-strategic-value: 1.2
-    weight-expected-casualties: 1.0
-    articulation-point-bonus: 5.0
-    casualties-multiplier: 0.6
-    exposure-penalty-multiplier: 1.5
-    attack-threshold: 0.0
-    min-army-advantage: 2
-    weight-future-threat: -1.5
-    bonus-focus: 1.0
-    progress-focus: 1.0
-    continent-break-multiplier: 1.5
-    resistance-avoidance: 1.5
-    setup-stacking-weight: 0.0
-
-  # אסטרטגיה הגנתית: מעדיפה שמירה על שטחים קיימים וצבירת כוח
-  defensive:
-    weight-win-probability: 1.0
-    weight-continent-bonus: 0.5
-    weight-strategic-value: 3.0
-    weight-expected-casualties: 1.5
+    weight-continent-bonus: 1.0
+    weight-strategic-value: 1.5
+    weight-expected-casualties: 2.5
     articulation-point-bonus: 5.0
     casualties-multiplier: 1.2
-    exposure-penalty-multiplier: 3.0
-    attack-threshold: 0.0
-    min-army-advantage: 4 # יתקוף רק עם יתרון משמעותי
-    weight-future-threat: -3.5
-    bonus-focus: 0.2
-    progress-focus: 2.0
+    exposure-penalty-multiplier: 2.0
+    attack-threshold: 0.72
+    min-army-advantage: 2
+    weight-future-threat: 0.5
+    bonus-focus: 0.8
+    progress-focus: 0.5
     continent-break-multiplier: 0.5
-    resistance-avoidance: 3.0
-    setup-stacking-weight: 1.0
+    resistance-avoidance: 1.0
+    setup-stacking-weight: 3.0
 
-  # אסטרטגיה התקפית: סיכון גבוה לטובת כיבוש מהיר של יבשות
+
+  defensive:
+    weight-win-probability: 0.2
+    weight-continent-bonus: 0.5
+    weight-strategic-value: 2.0
+    weight-expected-casualties: 5.0
+    articulation-point-bonus: 15.0
+    casualties-multiplier: 2.0
+    exposure-penalty-multiplier: 10.0
+    attack-threshold: 0.88
+    min-army-advantage: 4
+    weight-future-threat: 0.0
+    bonus-focus: 0.0
+    progress-focus: 0.0
+    continent-break-multiplier: 0.0
+    resistance-avoidance: 2.0
+    setup-stacking-weight: 20.0
+
+
+
   offensive:
     weight-win-probability: 2.5
     weight-continent-bonus: 3.0
@@ -69,7 +69,7 @@ ai:
     casualties-multiplier: 0.5
     exposure-penalty-multiplier: 1.0
     attack-threshold: -1.0
-    min-army-advantage: 1 # מוכן לתקוף גם בסיכון גבוה
+    min-army-advantage: 1
     weight-future-threat: -0.2
     bonus-focus: 2.0
     progress-focus: 0.5

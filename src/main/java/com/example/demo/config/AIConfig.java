@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import com.example.demo.model.AIAgent.Rules.HeuristicRule;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,8 +28,13 @@ public class AIConfig {
 
     @Bean
     public HeuristicStrategy.Configurable defensiveStrategy() {
-        return buildStrategy(props.getDefensive(),
+        HeuristicStrategy.Configurable strategy = buildStrategy(props.getDefensive(),
                 (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies / 2)));
+        
+        // Add the card farming rule only to the defensive strategy
+        strategy.addRule(com.example.demo.model.AIAgent.Rules.HeuristicRule.cardFarmingRule(), 2.0);
+
+        return strategy;
     }
 
     @Bean
