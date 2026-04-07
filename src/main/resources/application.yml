@@ -10,7 +10,7 @@ spring:
     url: jdbc:mysql://localhost:3306/risk_db
     username: root
     password: admin
-  
+
   # --- הגדרות Hibernate (מיפוי אובייקטים לטבלאות) ---
   jpa:
     hibernate:
@@ -31,7 +31,7 @@ ai:
     articulation-point-bonus: 5.0
     casualties-multiplier: 1.2
     exposure-penalty-multiplier: 2.0
-    attack-threshold: 0.72
+    attack-threshold: 0.2
     min-army-advantage: 2
     weight-future-threat: 0.5
     bonus-focus: 0.8
@@ -42,15 +42,15 @@ ai:
 
 
   defensive:
-    weight-win-probability: 0.2
+    weight-win-probability: 2.0
     weight-continent-bonus: 0.5
     weight-strategic-value: 2.0
-    weight-expected-casualties: 5.0
+    weight-expected-casualties: 2.0
     articulation-point-bonus: 15.0
     casualties-multiplier: 2.0
-    exposure-penalty-multiplier: 10.0
-    attack-threshold: 0.88
-    min-army-advantage: 4
+    exposure-penalty-multiplier: 3.0
+    attack-threshold: 0.2
+    min-army-advantage: 2
     weight-future-threat: 0.0
     bonus-focus: 0.0
     progress-focus: 0.0
