@@ -1,21 +1,15 @@
 package com.example.demo.config;
 
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 /**
  * GameConstants - קבועים מרכזיים לכל המשחק Risk
- * 
- * מטרה:
- * - ריכוז של כל ערכים מספריים בקובץ אחד
- * - הוצאת magic numbers מהקוד
- * - קלות בהתאמה של פרמטרי משחק
- * - עקביות בכל הקוד
- * 
- * ניתן לשנות קבועים אלה להתאמת:
- * - רמות קושי ודיוק משחק
- * - פרמטרי ממשק (padding, fonts, sizes)
- * - נתוני AI ואסטרטגיות
- * 
- * השימוש: import ושימוש בכל מחלקה בפרויקט
+ ...existing code...
  */
+@Getter
+@Component
 public final class GameConstants {
     
     // Prevent instantiation
@@ -51,6 +45,13 @@ public final class GameConstants {
     /** Minimum armies a defending country can have during attack consideration */
     public static final int MIN_ARMIES_FOR_DEFENSE_CHECK = 1;
 
+    /** Starting armies for setup phase*/
+    public static final int STARTING_ARMIES = 50;
+
+    /** Max Players in a game */
+    public static final int MAX_PLAYERS = 6;
+    
+    
     // ==================== MAP DISPLAY CONSTANTS ====================
     /** Scale factor for the global map display */
     public static final double MAP_GLOBAL_SCALE = 1.35;
@@ -149,6 +150,10 @@ public final class GameConstants {
     
     /** Armies to keep when moving armies to border */
     public static final int KEEP_ARMIES_AT_SOURCE = 2;
+    
+    
+    @Value("${game.balanced-attack-threshold:0.2}")
+    public static double BALANCED_ATTACK_THRESHOLD;
 
     // ==================== EASY WIN BONUS CONSTANTS ====================
     /** Base multiplier for easy win bonuses (scales all endgame bonuses) */
@@ -162,11 +167,13 @@ public final class GameConstants {
     
     /** Min enemy neighbors to qualify for endgame bonus (must be surrounded) */
     public static final int EASY_WIN_MIN_NEIGHBORS = 2;
-    
+    /** Max enemy neighbors to qualify for endgame bonus (must be surrounded) */
+    public static final int EASY_WIN_MAX_NEIGHBORS = 4;
+
     /** Max armies for endgame bonus (too strong = doesn't get bonus) */
     public static final int EASY_WIN_ARMY_THRESHOLD = 50;
     
-    /** Multiplier for strong endgame position (1-2 territories + surrounded + weak) */
+    /** Multiplier for strong endgame position (1-2 territories + surrounded and weak) */
     public static final double EASY_WIN_STRONG_POSITION_MULTIPLIER = 10.0;
     
     /** Multiplier for final territory (guaranteed win soon) */

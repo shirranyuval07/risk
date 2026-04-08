@@ -35,6 +35,8 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     @Setter
     private Consumer<GameMessage> onMessageReceived;
 
+    private final CompletableFuture<WebSocket> connectionReady = new CompletableFuture<>();
+
     public RiskWebSocketClient(String playerName) {
         this.playerName = playerName;
     }
@@ -46,6 +48,10 @@ public class RiskWebSocketClient implements WebSocket.Listener {
                 .exceptionally(this::onConnectionFailure);
     }
 
+    public CompletableFuture<WebSocket> waitForConnection() {
+        return connectionReady;
+    }
+
     private CompletableFuture<WebSocket> buildWebSocket(HttpClient client) {
         return client.newWebSocketBuilder()
                 .header("ngrok-skip-browser-warning", "true")
@@ -55,10 +61,12 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     private void onConnectionSuccess(WebSocket ws) {
         this.webSocket = ws;
         log.fine("Client connected and ready for UI commands!");
+        connectionReady.complete(ws);
     }
 
     private Void onConnectionFailure(Throwable ex) {
         log.warning("❌ WebSocket Connection Failed: " + ex.getMessage());
+        connectionReady.completeExceptionally(ex);
         return null;
     }
 

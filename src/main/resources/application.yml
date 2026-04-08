@@ -20,6 +20,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+# --- הגדרות משחק (Game Constants) ---
+game:
+  balanced-attack-threshold: 0.2
+
 # --- הגדרות אסטרטגיות AI ---
 # כל אסטרטגיה מגדירה "אופי" אחר לבוט ע"י שינוי משקלים בחישובי ההיוריסטיקה
 ai:

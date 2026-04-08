@@ -16,17 +16,17 @@ import java.util.Set;
 
 /**
  * GreedyAI - בוט משחק "חמדן" שמוקד על הרווח מידי
- * 
+
  * אסטרטגיה:
  * - בשלב Reinforcement: הצבה חיילים בנקודות קריטיות או הגנה
  * - בשלב Attack: התקפה התוקפנית לנקודות חלשות של אויבים
  * - בשלב Fortify: תגבור וקירוב חיילים לגבולות
- * 
+
  * תפקידיה:
  * - בחירת בוט עבור שחקנים מחשב
  * - ביצוע קבלת החלטות אוטומטית בכל שלב
  * - אימוץ אסטרטגיה היוריסטית (מותאמת אישית)
- * 
+
  * השימוש: משמשת כעיקור של AI במשחק
  */
 @Slf4j
@@ -40,7 +40,11 @@ public class GreedyAI implements BotStrategy {
     }
 
     //  נקודת כניסה ראשית
-
+    /**
+     * @param game - מופע המשחק הנוכחי
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     *               טענת יציאה: הפונקציה אחראית על ביצוע כל התור של שחקן ממוחשב.
+     * */
     @Override
     public void executeTurn(Player player, RiskGame game) {
         if (player.getOwnedCountries().isEmpty()) {
@@ -62,70 +66,91 @@ public class GreedyAI implements BotStrategy {
     }
 
     @Override
-    public Country findSetUpCountry(Player player, RiskGame game) {
+    public Country findSetUpCountry(Player player, RiskGame game)
+    {
         return graphAnalyzer.findBestSetupCountry(player, strategy.getSetupStackingWeight());
     }
 
     //  שלב 1 – DRAFT
-
-    private void chooseReinforcement(Player player, RiskGame game) {
-        boolean isAggressive = strategy.getAttackThreshold() < 0;
-
-        if (isAggressive) {
+    private void chooseReinforcement(Player player, RiskGame game)
+    {
+        boolean isAggressive = strategy.getAttackThreshold() < GameConstants.BALANCED_ATTACK_THRESHOLD;
+        if (isAggressive)
             executeAggressiveDraft(player, game);
-        } else {
+
+        else
             executeDefensiveDraft(player, game);
-        }
     }
-
-    private void executeAggressiveDraft(Player player, RiskGame game) {
+    /**
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     * @param game - מופע המשחק הנוכחי
+     * טענת יציאה: הפונקציה ממוקדת בהצבת חיילים באופן תוקפני על נקודות התקפה פוטנציאליות, תוך ניצול כל החיילים הזמינים כדי למקסם את הלחץ על היריבים.
+     * */
+    private void executeAggressiveDraft(Player player, RiskGame game)
+    {
         AttackMove bestPotentialAttack = graphAnalyzer.findBestPotentialAttack(player, strategy);
-
-        if (bestPotentialAttack != null) {
-            while (player.getDraftArmies() > 0) {
+        if (bestPotentialAttack != null)
+        {
+            while (player.getDraftArmies() > 0)
                 game.placeArmy(bestPotentialAttack.source());
-            }
+
             log.info("[AI DRAFT] Offensive Spearhead: Dumped all armies on {}", bestPotentialAttack.source().getName());
         }
     }
-
-    private void executeDefensiveDraft(Player player, RiskGame game) {
+    /**
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     * @param game - מופע המשחק הנוכחי
+     * טענת יציאה: הפונקציה מתמקדת בהגנה על נקודות תורפה קריטיות על ידי ניתוח גרפי של המפה, זיהוי נקודות בוטלנק והערכת סכנות,
+     *            והצבת חיילים באופן פרופורציונלי כדי לחזק את ההגנה על נקודות אלו,
+     *             תוך שמירה על איזון בין ההגנה לבין הצורך לשמור חיילים למתקפות עתידיות. אם אין איומים מובהקים, היא תתמקד בהגנה על הנקודה המאוימת ביותר.
+     * */
+    private void executeDefensiveDraft(Player player, RiskGame game)
+    {
         Set<Country> myBottlenecks = graphAnalyzer.findArticulationPoints(player);
         Map<Country, Double> threatScores = graphAnalyzer.calculateThreatScores(player, myBottlenecks);
 
         double totalThreat = threatScores.values().stream().mapToDouble(Double::doubleValue).sum();
         int totalDraftArmies = player.getDraftArmies();
-
-        if (totalThreat == 0) {
+        //אם אין איום מוצאים את המדינה שהיא הכי מאוימת ושמים את כל החיילים בה.
+        if (totalThreat == 0)
+        {
             Country fallback = findMostThreatenedCountry(player);
-            if (fallback != null) {
+            if (fallback != null)
                 while (player.getDraftArmies() > 0) game.placeArmy(fallback);
-            }
+
             return;
         }
-
-        for (Map.Entry<Country, Double> entry : threatScores.entrySet()) {
+        //מחלקים את החיילים לפי האיום שמסביבם
+        for (Map.Entry<Country, Double> entry : threatScores.entrySet())
+        {
             int armiesForThisCountry = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
-            for (int i = 0; i < armiesForThisCountry; i++) {
+
+            for (int i = 0; i < armiesForThisCountry; i++)
                 if (player.getDraftArmies() > 0) game.placeArmy(entry.getKey());
-            }
+
         }
 
         // פיזור שאריות החיילים במדינה המאוימת ביותר
         Country mostThreatened = findMostThreatenedCountry(player);
-        while (player.getDraftArmies() > 0 && mostThreatened != null) {
+        while (player.getDraftArmies() > 0 && mostThreatened != null)
             game.placeArmy(mostThreatened);
-        }
-    }
 
-    private Country findMostThreatenedCountry(Player player) {
+    }
+    /**
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     *               טענת יציאה: הפונקציה סורקת את המדינות של השחקן שהתקבל ומחשבת את כמות האיום שיש על המדינה.
+     *               היא מחזירה את המדינה שיש כלפיה הכי הרבה איום (מספר צבאות גדול)
+     * */
+    private Country findMostThreatenedCountry(Player player)
+    {
         Country best = null;
         int maxEnemies = -1;
 
-        for (Country c : player.getOwnedCountries()) {
+        for (Country c : player.getOwnedCountries())
+        {
             int enemies = graphAnalyzer.countEnemyNeighbors(c, player);
-            if (enemies > maxEnemies ||
-                    (enemies == maxEnemies && best != null && c.getArmies() < best.getArmies())) {
+            if (enemies > maxEnemies || (enemies == maxEnemies && best != null && c.getArmies() < best.getArmies()))
+            {
                 maxEnemies = enemies;
                 best = c;
             }
@@ -134,11 +159,18 @@ public class GreedyAI implements BotStrategy {
     }
 
     //  שלב 2 – ATTACK
-
+    /**
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     * @param game - מופע המשחק הנוכחי
+     * טענת יציאה: הפונקציה בונה תור התקפה מבוסס על הערכות היוריסטיות של כל התקפה אפשרית,
+     *             ומבצעת את ההתקפות בסדר יורד של ציון עד שהן לא רלוונטיות יותר או שהן מובילות לכיבוש.
+     *            היא מתמקדת בהתקפות עם יתרון צבאי משמעותי ומעדכנת את תור ההתקפה לאחר כל כיבוש כדי לנצל הזדמנויות חדשות שנוצרו.
+     * */
     private void chooseAttack(Player player, RiskGame game) {
         MaxPriorityQueue<AttackMove> attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
 
-        while (!attackQueue.isEmpty()) {
+        while (!attackQueue.isEmpty())
+        {
             AttackMove best = attackQueue.poll();
 
             if (!isMoveStillValid(best, player))
@@ -146,16 +178,22 @@ public class GreedyAI implements BotStrategy {
 
             boolean conquered = false;
 
-            while (isMoveStillValid(best, player) && !conquered) {
+            while (isMoveStillValid(best, player) && !conquered)
                 conquered = performAttack(best, game);
-            }
 
-            if (conquered) {
+
+            if (conquered)
                 attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
-            }
+
         }
     }
-
+    /**
+     * @param game - מופע המשחק הנוכחי
+     * @param move - מהלך התקפה שמכיל את המדינה התוקפת, המדינה המותקפת, והציון היוריסטי של המהלך
+     * טענת יציאה: הפונקציה אחראית על ביצוע התקפה אחת בין שתי מדינות בהתאם למהלך שנבחר.
+     *            היא מדווחת על התוצאה של ההתקפה, כולל האם נכבשה המדינה המותקפת, ומטפלת בכיבוש על ידי העברת חיילים בהתאם לאסטרטגיה שנבחרה.
+     *             היא מחזירה אמת אם ההתקפה הובילה לכיבוש, ושקר אחרת.
+     * */
     private boolean performAttack(AttackMove move, RiskGame game) {
         log.info("[AI ATTACK] {} ({}) → {} ({}) | Score: {}",
                 move.source().getName(), move.source().getArmies(),
@@ -163,7 +201,8 @@ public class GreedyAI implements BotStrategy {
                 String.format("%.2f", move.heuristicScore()));
 
         BattleResult result = game.attack(move.source(), move.target());
-        if (result != null && result.conquered()) {
+        if (result != null && result.conquered())
+        {
             int amountToMove = this.strategy.getTroopsToMoveAfterConquest(
                     move.source(),
                     move.target(),
@@ -172,13 +211,20 @@ public class GreedyAI implements BotStrategy {
             );
             game.handleConquest(move.source(), move.target(), amountToMove);
         }
-        log.info("[AI RESULT] {}", result);
-
         assert result != null;
+
+        log.info("[AI RESULT] {}", result.conquered() ? "Conquered!" : "Failed to conquer.");
         return result.conquered();
     }
-
-    private boolean isMoveStillValid(AttackMove move, Player player) {
+    /**
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     * @param move - מהלך התקפה שמכיל את המדינה התוקפת, המדינה המותקפת, והציון היוריסטי של המהלך
+     * טענת יציאה: הפונקציה בודקת אם מהלך התקפה שנבחר עדיין תקף בהתחשב בשינויים שקרו במפה מאז שהמהלך נבחר.
+     *             היא בודקת אם המדינה התוקפת עדיין שייכת לשחקן, אם יש מספיק חיילים לבצע התקפה,
+     *             אם המדינה המותקפת עדיין שייכת לאויב, ואם היתרון הצבאי עדיין עומד בדרישות האסטרטגיה. היא מחזירה אמת אם המהלך עדיין תקף, ושקר אחרת.
+     * */
+    private boolean isMoveStillValid(AttackMove move, Player player)
+    {
         if (move.source().getOwner() != player) return false;
         if (move.source().getArmies() <= GameConstants.MIN_ARMIES_TO_STAY) return false;
         if (move.target().getOwner() == player) return false;
@@ -187,16 +233,26 @@ public class GreedyAI implements BotStrategy {
     }
 
     //  שלב 3 – FORTIFY
-
-    private void chooseFortify(Player player, RiskGame game) {
+    /**
+     * @param player - השחקן הממלא את התפקיד של ה-AI
+     * @param game - מופע המשחק הנוכחי
+     * טענת יציאה: הפונקציה אחראית על חיזוק הגבולות של השחקן על ידי זיהוי חיילים "כלואים" במדינות פנימיות שאין להם דרך להתקדם או לתקוף,
+     *             ומעבר שלהם למדינות גבוליות שיכולות לתמוך בהתקפות עתידיות או בהגנה.
+     *            היא משתמשת בניתוח גרפי כדי לזהות את החיילים הללו ומבצעת את המעבר בהתאם,
+     *            תוך דיווח על הפעולה שבוצעה. אם אין חיילים כלואים, היא מדווחת על כך ומדלגת על שלב החיזוק.
+     * */
+    private void chooseFortify(Player player, RiskGame game)
+    {
         FortifyMove smartMove = graphAnalyzer.calculateBestFortify(player);
 
-        if (smartMove != null) {
+        if (smartMove != null)
+        {
             game.fortify(smartMove.source(), smartMove.target(), smartMove.armiesToMove());
             log.info("[AI FORTIFY] Moved {} armies from {} (Trapped) to {} (Border)",
                     smartMove.armiesToMove(), smartMove.source().getName(), smartMove.target().getName());
-        } else {
-            log.info("[AI FORTIFY] No trapped armies to move. Skipping fortify.");
         }
+        else
+            log.info("[AI FORTIFY] No trapped armies to move. Skipping fortify.");
+
     }
 }

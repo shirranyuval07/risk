@@ -1,6 +1,7 @@
 package com.example.demo.model.Records;
 
 import com.example.demo.model.manager.Country;
+import lombok.ToString;
 
 public interface GameRecords {
 
@@ -10,7 +11,6 @@ public interface GameRecords {
             return Double.compare(this.heuristicScore, o.heuristicScore);
         }
     }
-
     record BattleResult(
             Integer[] attackerRolls, // מערך קוביות התוקף (עד 3)
             Integer[] defenderRolls, // מערך קוביות המגן (עד 2)

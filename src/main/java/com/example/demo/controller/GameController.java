@@ -20,15 +20,14 @@ import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.client.RiskWebSocketClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -63,7 +62,6 @@ public class GameController {
         this.isMultiplayer = (networkClient != null);
         this.onReturnToMenu = onReturnToMenu;
 
-        // בתוך הבנאי של GameController:
         gameModel.addGameUpdateListener(new GameUpdateListener() {
             @Override
             public void onStatsUpdated() {
@@ -92,15 +90,18 @@ public class GameController {
     }
 
 
-
+    /**
+     * טענת יציאה: הפונקציה מכניסה למפה של ההנדלרים את השלבי משחק, הפעולות התואמות.
+     * מאתחלת מאזינים עבור: לחיצה על המפה, לחיצה על כפתור השלב הבא, לחיצה על כפתור ההדלקת שמות, לחיצה על כפתור הקלפים, לחיצה על כפתור חזרה למסך הראשי.
+     * */
     private void initializeUIListeners() {
-
+        //הצבה במפה של הסוג שלב, הפעולה שמטפלת בו.
         phaseClickHandlers.put(SetupState.class, this::handleSetupClick);
         phaseClickHandlers.put(DraftState.class, this::handleDraftClick);
         phaseClickHandlers.put(AttackState.class, this::handleAttackClick);
         phaseClickHandlers.put(FortifyState.class, this::handleFortifyClick);
 
-        // Map click — route to the correct phase handler
+        // Map click — הקלקה על מדינה במפה תשלח את המדינה ללוגיקה שתואמת את שלב המשחק הנוכחי
         gameView.getMapPane().setOnCountryClick(clickedCountry -> {
             if (isCurrentPlayerAI()) return;
             if (isMultiplayer && !isMyTurn()) {
@@ -144,10 +145,15 @@ public class GameController {
     }
 
 
-
+    /**
+     * טענת יציאה: ברגע שהתקבלה הודעה, מוודאים שלא מפריעים לthread הראשי בכך שקוראים לפעולה Platform.runLater().
+     * הודעה מתקבלת בצורת GameMessage, שמכילה סוג הודעה (GameAction) וpayload שהוא מפה של מחרוזות לאובייקטים (כי כל סוג הודעה יכול להביא איתו מידע שונה).
+     * בודקים מה סוג ההודעה בעזרת switch - case. על פי סוג ההודעה קוראים לפונקציה המתאימה. אם ההודעה לא נוגעת לפעולת משחק ישירה מתעלמים ממנה.
+     * קוראים למאזין הזה רק אם המשחק הוא רב משתתפים.
+     * */
     private void initializeNetworkListeners() {
         networkClient.setOnMessageReceived(message ->
-                javafx.application.Platform.runLater(() -> {
+                Platform.runLater(() -> {
 
                     Map<String, Object> payload = message.content();
 
@@ -161,12 +167,12 @@ public class GameController {
 
                         case SETUP_PLACE -> {
                             String countryId = String.valueOf(payload.get("SetupPlaceID"));
-                            executeSetupLocal(getCountry(countryId));
+                            executePlacementLocal(getCountry(countryId));
                         }
 
                         case DRAFT -> {
                             String countryId = String.valueOf(payload.get("targetCountryId"));
-                            executeDraftLocal(getCountry(countryId));
+                            executePlacementLocal(getCountry(countryId));
                         }
 
                         case NEXT_TURN -> {
@@ -209,6 +215,13 @@ public class GameController {
         );
     }
 
+    /**
+     * טענת כניסה: מקבלת מדינה שלחצו עליה
+     * טענת יציאה: הפעולה לוקחת את המצב משחק הנוכחי ומוציאה מהמפה של ההנדלרים את הפעולה הנדרשת.
+     * אם הפעולה לא null עוברים לפעולה המבוקשת
+     *
+     * @param clickedCountry המדינה שלחצו עליה
+     */
 
     private void handleCountryClick(Country clickedCountry) {
         Consumer<Country> handler = phaseClickHandlers.get(gameModel.getCurrentState().getClass());
@@ -218,18 +231,43 @@ public class GameController {
     }
 
 
-
+    /**
+     * טענת כניסה: מדינה שהשחקן בחר לשים בה חייל
+     * טענת יציאה: הפעולה בודקת אם המשחק הוא רב משתתפים. אם הוא כן תיצור payload שמכיל את המזהה של המדינה ותשלח לכל המשתתפים את ההודעה בשביל שיוכלו להיווצר השינוי אצלם במסך
+     * אחרת תקרא לפעולה שמבצעת שינוי לוקלי בשלב הsetup
+     * @param country המדינה שהשחקן בחר לשים בה חייל
+     * */
     private void handleSetupClick(Country country) {
         if (isMultiplayer) {
             Map<String, Object> payload = new HashMap<>();
             payload.put("SetupPlaceID", country.getId());
             networkClient.sendAction(GameAction.SETUP_PLACE, networkClient.getRoomId(), payload);
         } else {
-            executeSetupLocal(country);
+            executePlacementLocal(country);
+        }
+    }
+    /**
+     * טענת כניסה: מדינה שהשחקן בחר לשים בה חייל
+     * טענת יציאה: הפעולה בודקת אם המשחק הוא רב משתתפים. אם הוא כן תיצור payload שמכיל את המזהה של המדינה ותשלח לכל המשתתפים את ההודעה בשביל שיוכלו להיווצר השינוי אצלם במסך
+     * אחרת תקרא לפעולה שמבצעת שינוי לוקלי בשלב draft
+     * @param country המדינה שהשחקן בחר לשים בה חייל
+     * */
+    private void handleDraftClick(Country country) {
+        if (isMultiplayer) {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("targetCountryId", country.getId());
+            networkClient.sendAction(GameAction.DRAFT, networkClient.getRoomId(), payload);
+        } else {
+            executePlacementLocal(country);
         }
     }
 
-    private void executeSetupLocal(Country country) {
+    /**
+     * טענת כניסה:מדינה שהשחקן בחר לשים בה חייל
+     * טענת יציאה: המודל מנסה להציב מדינה עבור השלב הזה ומציג הודעה מתאימה. לאחר מכן בודק אם זה תור של AI
+     * @param country המדינה שהשחקן בחר לשים בה חייל
+     * */
+    private void executePlacementLocal(Country country) {
         if (gameModel.placeArmy(country)) {
             gameView.getControlPane().setMessage("Placed army on " + country.getName());
             checkAndExecuteAITurn();
@@ -239,23 +277,9 @@ public class GameController {
     }
 
 
-
-    private void handleDraftClick(Country country) {
-        if (isMultiplayer) {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("targetCountryId", country.getId());
-            networkClient.sendAction(GameAction.DRAFT, networkClient.getRoomId(), payload);
-        } else {
-            executeDraftLocal(country);
-        }
-    }
-
-    private void executeDraftLocal(Country country) {
-        gameModel.placeArmy(country);
-    }
-
-
-
+    /**
+     * טענת יציאה: הפונקציה מטפלת בבקשה לעבור לשלב הבא של המשחק.
+     * */
     private void handleNextPhaseRequest() {
         if (isMultiplayer) {
             Map<String, Object> payload = new HashMap<>();
@@ -264,25 +288,32 @@ public class GameController {
             executeNextPhaseLocal();
         }
     }
-
+    /**
+     * טענת יציאה: הפונקציה מעבירה את המשחק לשלב הבא שלו.
+     * */
     private void executeNextPhaseLocal() {
         boolean wasFortify = gameModel.getCurrentState() instanceof FortifyState;
 
         gameModel.nextPhase();
         clearSelection();
 
-        if (isMultiplayer && gameModel.getCurrentState() instanceof DraftState && !wasFortify) {
+        if (isMultiplayer && gameModel.getCurrentState() instanceof DraftState && !wasFortify)
             broadcastNextTurnIfNeeded();
-        }
 
-        if (isCurrentPlayerAI()) {
+
+        if (isCurrentPlayerAI())
             checkAndExecuteAITurn();
-        } else if (gameModel.getCurrentState() instanceof DraftState
-                && gameModel.getCurrentPlayer().getDraftArmies() > 0) {
+
+        else if (gameModel.getCurrentState() instanceof DraftState
+                && gameModel.getCurrentPlayer().getDraftArmies() > 0)
+        {
             gameView.getControlPane().setMessage("You have armies left to place!");
         }
     }
-
+    /**
+     * טענת יציאה: הפונקציה בודקת מי השחקן הבא בתור.
+     * אם השחקן הבא הוא לא אני, שולחת לכל המשתתפים הודעה עם שם השחקן החדש וכמות החיילים שיש לו להניח בשלב הדראפט, כדי שכולם יעודכנו על השינוי בתור.
+     * */
     private void broadcastNextTurnIfNeeded() {
         Player newCurrentPlayer = gameModel.getCurrentPlayer();
         if (!newCurrentPlayer.getName().equals(networkClient.getPlayerName())) {
@@ -292,7 +323,13 @@ public class GameController {
             networkClient.sendAction(GameAction.NEXT_TURN, networkClient.getRoomId(), payload);
         }
     }
-
+    /**
+     *       טענת יציאה: הפונקציה מבצעת מעבר לתור הבא בלוקאלי, על ידי קריאה לפונקציה של המודל שמעבירה את המשחק לתור הבא.
+     *      * לאחר מכן היא מעדכנת את כמות החיילים שיש לשחקן החדש להניח בשלב הדראפט,
+     *      *                  כדי שהמסך יציג את המידע הנכון. לבסוף היא מנקה את הבחירות במפה כדי שהשחקן החדש יתחיל עם מסך נקי.
+     * @param draftArmies כמות החיילים שיש לשחקן החדש להניח בשלב הדראפט
+     * @param playerName שם השחקן החדש בתור, כדי שנוכל לעדכן את כמות החיילים שלו לשים בשלב הדראפט
+     * */
     private void executeNextTurnLocal(String playerName, int draftArmies) {
         gameModel.nextTurn();
 
@@ -306,7 +343,15 @@ public class GameController {
         clearSelection();
     }
 
-
+    /**
+     * טענת יציאה: הפונקציה מטפלת בלחיצה על מדינה בשלב הפורטיפיי.
+     * אם זו הלחיצה הראשונה, בודקת אם אפשר לחזק מהמדינה הזו (שייכת לשחקן ויש בה יותר מחייל אחד).
+     * אם אפשר, שומרת את המדינה כמקור ומדגישה את היעדים האפשריים.
+     * אם זו לא הלחיצה הראשונה, בודקת אם הלחיצה היא על אותה מדינה (במקרה הזה מנקה את הבחירה),
+     * או על מדינה לא חוקית (מציגה הודעת שגיאה),
+     * או על מדינה חוקית (במקרה הזה קוראת לפונקציה שמבקשת מהשחקן כמה חיילים הוא רוצה להזיז ומבצעת את ההעברה).
+     * @param clickedCountry המדינה שהשחקן לחץ עליה בשלב הפורטיפיי
+     * */
     private void handleFortifyClick(Country clickedCountry) {
         if (sourceCountry == null) {
             if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())
@@ -336,7 +381,10 @@ public class GameController {
             }
         }
     }
-
+    /**
+     *           טענת יציאה: הפונקציה אחראית להציג דיאלוג עבור כמות המדינות להעביר בשלב הfortify.
+     * @param destination המדינה שהשחקן רוצה לחזק
+     * */
     private void promptFortifyAmount(Country destination) {
         int maxMove = sourceCountry.getArmies() - 1;
         TextInputDialog dialog = new TextInputDialog();
@@ -367,7 +415,12 @@ public class GameController {
             }
         });
     }
-
+    /**
+     * @param amount כמות החיילים שהשחקן רוצה להעביר בין המדינות בשלב הפורטיפיי
+     * @param dst המדינה שהשחקן רוצה לחזק
+     * @param src המדינה שממנה השחקן רוצה להעביר חיילים
+     * טענת יציאה: הפונקציה מבצעת את ההעברה של החיילים בין המדינות בשלב הפורטיפיי.
+     * */
     private void executeFortifyLocal(Country src, Country dst, int amount) {
         String resultMsg = gameModel.fortify(src, dst, amount);
         gameView.getControlPane().setMessage(resultMsg);
@@ -375,70 +428,97 @@ public class GameController {
         checkAndExecuteAITurn();
     }
 
-
+    /**
+     * @param clickedCountry המדינה שהשחקן לחץ עליה בשלב האטאק
+     *                       טענת יציאה: הפונקציה מטפלת בלחיצה על מדינה בשלב האטאק.
+     * אם זו הלחיצה הראשונה, בודקת אם אפשר לתקוף מהמדינה הזו (שייכת לשחקן ויש בה יותר מחייל אחד).
+     * אם אפשר, שומרת את המדינה כמקור ומדגישה את היעדים האפשריים.
+     *                       אם זו לא לחיצה ראשונה, בודקת אם אפשר לבצע תקיפה ואם כן מבצעת אחרת מנקה את הבחירות.
+     * */
     private void handleAttackClick(Country clickedCountry) {
-        if (sourceCountry == null) {
-            if (canAttackFrom(clickedCountry)) {
+        if (sourceCountry == null)
+        {
+            if (canAttackFrom(clickedCountry))
+            {
                 setSelection(clickedCountry, "Select target for " + clickedCountry.getName());
                 Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
-                if (targets.isEmpty()) {
+                if (targets.isEmpty())
                     gameView.getControlPane().setMessage("No valid targets to attack from here!");
-                } else {
+                else
                     gameView.getMapPane().highlightTargets(targets);
-                }
             }
-        } else {
-            if (clickedCountry.equals(sourceCountry)) {
+        }
+        else
+        {
+            if (clickedCountry.equals(sourceCountry))
                 clearSelection();
-            } else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())) {
+            else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()))
                 clearSelection();
-            } else {
+            else
+            {
                 performAttack(sourceCountry, clickedCountry);
                 clearSelection();
             }
         }
     }
-
+    /**
+     * @param attacker המדינה שממנה מתבצעת התקיפה
+     * @param defender המדינה שמותקפת
+     * טענת יציאה: הפונקציה מבצעת את ההתקפה בין המדינות בשלב האטאק.
+     * אם המשחק הוא רב משתתפים, הפונקציה יוצרת payload עם המידע על התקיפה ושולחת לכל המשתתפים את ההתקפה
+     *                 אחרת רק תבצע את ההתקפה לוקאלית ותציג את התוצאה בדיאלוג.
+     * */
     private void performAttack(Country attacker, Country defender) {
-        if (isMultiplayer) {
+        if (isMultiplayer)
+        {
             Map<String, Object> payload = new HashMap<>();
             payload.put("ATTACK_REQ", attacker.getId());
             payload.put("DESTINATION_ID", defender.getId());
             payload.put("ATTACKER_ARMIES", attacker.getArmies());
             payload.put("DEFENDER_ARMIES", defender.getArmies());
-
             networkClient.sendAction(GameAction.ATTACK_REQ, networkClient.getRoomId(), payload);
-        } else {
+        }
+        else
+        {
             BattleResult result = gameModel.attack(attacker, defender);
-            if (result != null) {
+            if (result != null)
                 applyBattleResult(attacker, defender, result);
-            } else {
+            else
                 gameView.getControlPane().setMessage("Attack failed or invalid.");
-            }
+
         }
     }
-
+    /**
+     * @param attacker המדינה שממנה מתבצעת התקיפה
+     * @param defender המדינה שמותקפת
+     * @param result תוצאת הקרב בין המדינות
+     * טענת יציאה: הפונקציה מטפלת בתוצאות הקרב בין המדינות בשלב האטאק.
+     * אם המשחק הוא רב משתתפים, הפונקציה תעדכן את כמות החיילים של המדינות בהתאם לתוצאות הקרב, ותציג את התוצאה בדיאלוג רק אם אני התוקף.
+     * אם התוקף כבש את המגן, הפונקציה תציג דיאלוג שיבקש מהתוקף כמה חיילים הוא רוצה להזיז לכיבוש,
+     *               ותבצע את הכיבוש בהתאם לתוצאה שהתקבלה מהתוקף. אם המשחק הוא לא רב משתתפים, הפונקציה רק תבצע את השינויים לוקאלית ותציג את התוצאה בדיאלוג.
+     * */
     private void applyBattleResult(Country attacker, Country defender, BattleResult result) {
-        if (isMultiplayer) {
+        if (isMultiplayer)
+        {
             attacker.removeArmies(result.attackerLosses());
             defender.removeArmies(result.defenderLosses());
         }
-        boolean iAmTheAttacker = !isMultiplayer ||
-                attacker.getOwner().getName().equals(networkClient.getPlayerName());
+        boolean iAmTheAttacker = !isMultiplayer || attacker.getOwner().getName().equals(networkClient.getPlayerName());
 
-        if (iAmTheAttacker) {
+        if (iAmTheAttacker)
             DialogManager.showBattleResultDialog(result);
-        }
 
-        if (result.conquered()) {
-            int minMove = isMultiplayer ? result.minMove() : 1;
-            int maxMove = isMultiplayer ? result.maxMove() : attacker.getArmies() - 1;
 
-            if (iAmTheAttacker) {
+        if (result.conquered())
+        {
+            int minMove = result.minMove();
+            int maxMove = result.maxMove();
+            if (iAmTheAttacker)
+            {
                 int chosenAmount = showConquestMoveDialog(defender, minMove, maxMove);
                 gameModel.handleConquest(attacker, defender, chosenAmount);
-
-                if (isMultiplayer) {
+                if (isMultiplayer)
+                {
                     Map<String, Object> payload = new HashMap<>();
                     payload.put("CONQUEST_MOVE", attacker.getId());
                     payload.put("CONQUEST_DESTINATION", defender.getId());
@@ -448,35 +528,47 @@ public class GameController {
                     pendingConquestHandled = true;
                     networkClient.sendAction(GameAction.CONQUEST_MOVE, networkClient.getRoomId(), payload);
                 }
-            } else {
-                gameModel.handleConquest(attacker, defender, minMove);
             }
+            else
+                gameModel.handleConquest(attacker, defender, minMove);
 
             gameView.getControlPane().setMessage("Territory Conquered!");
-
-        } else {
-            gameView.getControlPane().setMessage("Attack completed.");
         }
-    }
+        else
+            gameView.getControlPane().setMessage("Attack completed.");
 
+    }
+    /**
+     * @param attacker המדינה שממנה מתבצעת התקיפה
+     * @param defender המדינה שמותקפת
+     * @param minMove כמות החיילים המינימלית שהשחקן חייב להזיז אם כבש את המגן
+     * @param totalMove כמות החיילים שהשחקן בחר להזיז לכיבוש אם כבש את המגן
+     * טענת יציאה: הפונקציה מטפלת בתנועת החיילים לאחר שמדינה נכבשה.
+     * */
     private void applyConquestMove(Country attacker, Country defender, int minMove, int totalMove) {
-        if (pendingConquestHandled) {
+        if (pendingConquestHandled)
+        {
             pendingConquestHandled = false;
             return;
         }
         int extra = totalMove - minMove;
-        if (extra > 0) {
+        if (extra > 0)
+        {
             attacker.removeArmies(extra);
             defender.addArmies(extra);
         }
     }
-
+    /**
+     * @param minMove כמות החיילים המינימלית שהשחקן חייב להזיז אם כבש את המגן
+     * @param maxMove כמות החיילים המקסימלית שהשחקן יכול להזיז אם כבש את המגן (תלויה בכמות החיילים שהיו בתוקף לפני הקרב)
+     * @param conquered המדינה שהשחקן כבש
+     * טענת יציאה: הפונקציה מציגה דיאלוג שמבקש מהשחקן לבחור כמה חיילים הוא רוצה להזיז לכיבוש המדינה שנכבשה.
+     * */
     private static int showConquestMoveDialog(Country conquered, int minMove, int maxMove) {
-        java.util.List<Integer> choices = new java.util.ArrayList<>();
+        List<Integer> choices = new ArrayList<>();
         for (int i = minMove; i <= maxMove; i++) choices.add(i);
 
-        javafx.scene.control.ChoiceDialog<Integer> dialog =
-                new javafx.scene.control.ChoiceDialog<>(maxMove, choices);
+        ChoiceDialog<Integer> dialog = new ChoiceDialog<>(maxMove, choices);
         dialog.setTitle("Victory!");
         dialog.setHeaderText("You conquered " + conquered.getName());
         dialog.setContentText("Choose how many armies to move:");
@@ -484,21 +576,29 @@ public class GameController {
         return dialog.showAndWait().orElse(maxMove);
     }
 
-
-    private void checkAndExecuteAITurn() {
-        if (gameModel.isGameOver()) {
-            gameView.getControlPane().setMessage(
-                    "🏆 GAME OVER! Winner: " + gameModel.getCurrentPlayer().getName() + " 🏆");
+    /**
+     * טענת יציאה: הפונקציה בודקת אם המשחק הגיע למצב שבו שחקן AI צריך לשחק את תורו, ואם כן מפעילה את ה-AI לבצע את המהלך שלו.
+     * הפונקציה בונה דיליי בשביל שהשחקן לא יעשה את התור שלו מהר מדי.
+     * */
+    private void checkAndExecuteAITurn()
+    {
+        if (gameModel.isGameOver())
+        {
+            gameView.getControlPane().setMessage("🏆 GAME OVER! Winner: " + gameModel.getCurrentPlayer().getName() + " 🏆");
             gameView.getControlPane().showGameOverState();
             return;
         }
 
-        if (isCurrentPlayerAI()) {
+        if (isCurrentPlayerAI())
+        {
             PauseTransition pause = buildAIPause();
             pause.play();
         }
     }
-
+    /**
+     * טענת יציאה: פונקצית עזר בשביל לבנות דיליי של שנייה בכל שלב במשחק (חוץ מהשלב הראשון שרוצים שה AI יגיב מהר)
+     * וברגע שנגמר בדיליי, אם המשחק לא נגמר מבקשים מה AI service לשחק את התור. לאחר מכן מנקים את הבחירות ובודקים אם זה שוב תור של AI.
+     * */
     private @NonNull PauseTransition buildAIPause() {
         Duration delay = (gameModel.getCurrentState() instanceof SetupState)
                 ? Duration.seconds(0.05)

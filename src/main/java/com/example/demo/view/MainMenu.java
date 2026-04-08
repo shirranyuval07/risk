@@ -40,11 +40,7 @@ public class MainMenu extends StackPane {
         setBackground(new Background(
                 new BackgroundFill(Color.rgb(8, 16, 35), CornerRadii.EMPTY, Insets.EMPTY)));
 
-        RiskWebSocketClient networkClient = new RiskWebSocketClient("Guest");
-        networkClient.connect();
-
-        VBox mainContent = buildMainContent(networkClient);
-
+        VBox mainContent = buildMainContent();
 
         Button btnRules = buildRulesButton();
 
@@ -52,26 +48,13 @@ public class MainMenu extends StackPane {
         StackPane.setMargin(btnRules, new Insets(20));
 
         getChildren().addAll(mainContent, btnRules);
-
-        // Listen for server responses to CREATE_ROOM / JOIN_ROOM
-        networkClient.setOnMessageReceived(message -> Platform.runLater(() -> {
-            switch (message.type()) {
-                case ROOM_CREATED      -> openLobby(message, true,  networkClient, mainContent);
-                case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, mainContent);
-                case ERROR -> {
-                    Map<String, Object> payload =  message.content();
-                    showError(payload != null ? (String) payload.get("RoomNotFound") : "Unknown Error");
-                }
-                default -> {}
-            }
-        }));
     }
 
-    // =========================================================================
-    //  Building the main content
-    // =========================================================================
 
-    private VBox buildMainContent(RiskWebSocketClient networkClient) {
+    //  Building the main content
+
+
+    private VBox buildMainContent() {
         VBox content = new VBox(30);
         content.setAlignment(Pos.CENTER);
         content.setPadding(new Insets(50));
@@ -84,7 +67,7 @@ public class MainMenu extends StackPane {
                 title,
                 buildPlayerRows(),
                 buildLocalStartButton(),
-                buildMultiplayerButtons(networkClient)
+                buildMultiplayerButtons()
         );
         return content;
     }
@@ -123,30 +106,55 @@ public class MainMenu extends StackPane {
         return btn;
     }
 
-    private HBox buildMultiplayerButtons(RiskWebSocketClient networkClient) {
+    private HBox buildMultiplayerButtons() {
         Button createBtn = styledButton("CREATE ROOM", "#0055e1", 16);
         Button joinBtn   = styledButton("JOIN ROOM",   "#e18f3c", 16);
 
-        createBtn.setOnAction(e -> {
-            Map<String, Object> payload = new HashMap<>();
-            networkClient.sendAction(GameAction.CREATE_ROOM, "", payload);
-        });
-
-        joinBtn.setOnAction(e -> {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("Join Room");
-            dialog.setHeaderText("Enter the 4-character Room Code:");
-            dialog.showAndWait().ifPresent(code -> {
-                if (!code.trim().isEmpty()) {
-                    Map<String, Object> payload = new HashMap<>();
-                    networkClient.sendAction(GameAction.JOIN_ROOM, code.toUpperCase(), payload);
-                }
-            });
-        });
+        createBtn.setOnAction(e -> initializeNetworkAndAction(GameAction.CREATE_ROOM, ""));
+        joinBtn.setOnAction(e -> promptJoinRoom());
 
         HBox box = new HBox(20, createBtn, joinBtn);
         box.setAlignment(Pos.CENTER);
         return box;
+    }
+
+    private void promptJoinRoom() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Join Room");
+        dialog.setHeaderText("Enter the 4-character Room Code:");
+        dialog.showAndWait().ifPresent(code -> {
+            if (!code.trim().isEmpty()) {
+                initializeNetworkAndAction(GameAction.JOIN_ROOM, code.toUpperCase());
+            }
+        });
+    }
+
+    private void initializeNetworkAndAction(GameAction action, String roomId) {
+        // Connect network only when needed (creating or joining a room)
+        RiskWebSocketClient networkClient = new RiskWebSocketClient("Guest");
+        
+        // Set up a message listener BEFORE connecting
+        networkClient.setOnMessageReceived(message -> Platform.runLater(() -> {
+            switch (message.type()) {
+                case ROOM_CREATED      -> openLobby(message, true,  networkClient, (VBox) getChildren().getFirst());
+                case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, (VBox) getChildren().getFirst());
+                case ERROR -> {
+                    Map<String, Object> payload = message.content();
+                    showError(payload != null ? (String) payload.get("RoomNotFound") : "Unknown Error");
+                }
+                default -> {}
+            }
+        }));
+
+        // Connect and wait for the connection to be ready, then send action
+        networkClient.connect();
+        networkClient.waitForConnection().thenRun(() -> {
+            Map<String, Object> payload = new HashMap<>();
+            networkClient.sendAction(action, roomId, payload);
+        }).exceptionally(ex -> {
+            showError("Failed to connect to server: " + ex.getMessage());
+            return null;
+        });
     }
 
     private Button buildRulesButton() {
@@ -210,9 +218,8 @@ public class MainMenu extends StackPane {
     }
 
 
-    // =========================================================================
     //  Inner class: LobbyScreen — waiting room after creating / joining a room
-    // =========================================================================
+
 
     private static class LobbyScreen extends VBox {
 
@@ -294,9 +301,7 @@ public class MainMenu extends StackPane {
         }
     }
 
-    // =========================================================================
     //  Inner class: PlayerRow — one row in the player configuration table
-    // =========================================================================
 
     static class PlayerRow extends HBox {
         private final TextField   nameField;

@@ -1,13 +1,15 @@
 package com.example.demo.model.AIAgent.Strategies;
 
 /**
- * Calculates win probability for Risk battles using:
- * 1. Pre-computed Markov chain probabilities for small armies (≤10)
- * 2. Mathematical approximations for medium armies (11-50)
- * 3. Law of Large Numbers simplification for massive armies (>50)
- * Based on research by Jason Osborne (2003) and Harris Georgiou (2004).
+ * מחשבת הסתברות ניצחון לקרבות Risk באמצעות:
+ * 1. הסתברויות שרשרת מרקוב מחושבות מראש לצבאות קטנים (≤10)
+ * 2. קירובים מתמטיים לצבאות בינוניים (11-50)
+ * 3. פישוט חוק המספרים הגדולים לצבאות ענקיים (>50)
+ * מבוסס על מחקר של Jason Osborne (2003) ו-Harris Georgiou (2004).
+
  */
-class WinProbabilityCalculator {
+class WinProbabilityCalculator
+{
 
     private static final int MASSIVE_ARMY_THRESHOLD = 50;
     
@@ -52,55 +54,67 @@ class WinProbabilityCalculator {
     };
 
     /**
-     * Estimates win probability for an attack.
-     * @param attackerArmies Total armies in attacking country
-     * @param defenderArmies Total armies in defending country
-     * @return Probability between 0.0 and 1.0
-     */
-    public double estimate(int attackerArmies, int defenderArmies) {
-        int actualAttackers = attackerArmies - 1; // One must stay behind
+     * @param attackerArmies מספר הצבאות התוקפים (כולל זה שנשאר מאחור)
+     * @param defenderArmies מספר הצבאות המגנים
+     *                       טענת יציאה: הפונקציה מחזירה את ההסתברות ניצחון על פי המחקר של מרקוב.
+     * */
+    public double estimate(int attackerArmies, int defenderArmies)
+    {
+        int actualAttackers = attackerArmies - 1; // אחד חייב להישאר מאחורה.
 
         if (actualAttackers <= 0) return PROBABILITY_IMPOSSIBLE;
         if (defenderArmies <= 0) return PROBABILITY_CERTAIN;
 
-        // Small battles: use exact Markov chain probabilities
         if (canUseLookupTable(actualAttackers, defenderArmies)) {
             return MARKOV_PROBABILITIES[actualAttackers][defenderArmies];
         }
 
         double ratio = (double) actualAttackers / defenderArmies;
 
-        // Massive battles: Law of Large Numbers applies
         if (isMassiveBattle(actualAttackers, defenderArmies)) {
             return estimateMassiveBattleProbability(ratio);
         }
 
-        // Medium battles: use ratio-based approximation
         return estimateMediumBattleProbability(ratio);
     }
-
+    /**
+     * @param attackers מספר התוקפים (כולל זה שנשאר מאחור)
+     * @param defenders מספר המגנים
+     *                       טענת יציאה: הפונקציה מחזירה אמת אם ניתן להשתמש בטבלת ההסתברויות של מרקוב, אחרת שקר.
+     * */
     private boolean canUseLookupTable(int attackers, int defenders) {
         return attackers < MARKOV_PROBABILITIES.length 
             && defenders < MARKOV_PROBABILITIES[0].length;
     }
-
+    /**
+     * @param attackers מספר התוקפים (כולל זה שנשאר מאחור)
+     * @param defenders מספר המגנים
+     *                       טענת יציאה: הפונקציה מחזירה אמת אם מדובר בקרב עם צבאות גדולים מאוד (אחד מהם מעל סף מסוים), אחרת שקר.
+     * */
     private boolean isMassiveBattle(int attackers, int defenders) {
         return attackers > MASSIVE_ARMY_THRESHOLD || defenders > MASSIVE_ARMY_THRESHOLD;
     }
-
+    /**
+     * @param ratio היחס בין מספר התוקפים למגנים
+     *                       טענת יציאה: הפונקציה מחזירה את ההסתברות ניצחון לקרב עם צבאות גדולים מאוד על פי קירוב ליניארי בין נקודות סף מוגדרות,
+     *                       כאשר מעל סף מסוים נחשב כמעט בטוח ונמוך מסף מסוים נחשב כמעט בלתי אפשרי.
+     * */
     private double estimateMassiveBattleProbability(double ratio) {
         if (ratio > CERTAIN_WIN_RATIO) return PROBABILITY_NEAR_CERTAIN;
         if (ratio < CERTAIN_LOSS_RATIO) return PROBABILITY_NEAR_IMPOSSIBLE;
-        // Transition zone for closely matched massive armies
         return PROBABILITY_EVEN + ((ratio - TRANSITION_ZONE_CENTER) * TRANSITION_ZONE_MULTIPLIER);
     }
-
+    /**
+     * @param ratio היחס בין מספר התוקפים למגנים
+     *                       טענת יציאה: הפונקציה מחזירה את ההסתברות ניצחון לקרב עם צבאות בינוניים על פי קירוב ליניארי בין נקודות סף מוגדרות,
+     *                       כאשר מעל יחס מסוים נחשב יתרון גבוה, יחס מסוים נחשב יתרון מתון, יחס שווה נחשב שוויון,
+     *                       ויחס מתחת לשוויון נחשב חיסרון עם ירידה ליניארית מתחת לשוויון עד נקודת סף מינימלית שבה ההסתברות מגיעה למינום סביר.
+     * */
     private double estimateMediumBattleProbability(double ratio) {
         if (ratio >= HIGH_ADVANTAGE_RATIO) return PROBABILITY_HIGH;
         if (ratio >= MODERATE_ADVANTAGE_RATIO) return PROBABILITY_MODERATE;
         if (ratio >= EQUILIBRIUM_RATIO) return PROBABILITY_EVEN;
-    
-        // Below equilibrium: probability drops linearly
+
         return Math.max(PROBABILITY_MINIMUM, PROBABILITY_EVEN - ((EQUILIBRIUM_RATIO - ratio) * BELOW_EQUILIBRIUM_MULTIPLIER));
     }
 }
