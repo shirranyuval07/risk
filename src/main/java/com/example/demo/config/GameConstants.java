@@ -1,15 +1,8 @@
 package com.example.demo.config;
 
-import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 /**
  * GameConstants - קבועים מרכזיים לכל המשחק Risk
- ...existing code...
  */
-@Getter
-@Component
 public final class GameConstants {
     
     // Prevent instantiation
@@ -151,9 +144,8 @@ public final class GameConstants {
     /** Armies to keep when moving armies to border */
     public static final int KEEP_ARMIES_AT_SOURCE = 2;
     
-    
-    @Value("${game.balanced-attack-threshold:0.2}")
-    public static double BALANCED_ATTACK_THRESHOLD;
+    /** Balanced strategy attack threshold */
+    public static final double BALANCED_ATTACK_THRESHOLD = 0.2;
 
     // ==================== EASY WIN BONUS CONSTANTS ====================
     /** Base multiplier for easy win bonuses (scales all endgame bonuses) */
@@ -167,6 +159,7 @@ public final class GameConstants {
     
     /** Min enemy neighbors to qualify for endgame bonus (must be surrounded) */
     public static final int EASY_WIN_MIN_NEIGHBORS = 2;
+
     /** Max enemy neighbors to qualify for endgame bonus (must be surrounded) */
     public static final int EASY_WIN_MAX_NEIGHBORS = 4;
 
