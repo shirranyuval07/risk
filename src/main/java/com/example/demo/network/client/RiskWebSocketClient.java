@@ -42,6 +42,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     }
 
     public void connect() {
+        log.info("🔌 Attempting to connect to: " + SERVER_URI);
         HttpClient client = HttpClient.newHttpClient();
         buildWebSocket(client)
                 .thenAccept(this::onConnectionSuccess)
@@ -61,6 +62,8 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     private void onConnectionSuccess(WebSocket ws) {
         this.webSocket = ws;
         log.fine("Client connected and ready for UI commands!");
+        // Request the first message from the server
+        ws.request(1);
         connectionReady.complete(ws);
     }
 
@@ -96,6 +99,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
 
             GameMessage msg = new GameMessage(type, roomId, this.playerName, content);
             String jsonMessage = objectMapper.writeValueAsString(msg);
+            log.info("📤 Sending action: " + type + " to room: " + roomId);
             webSocket.sendText(jsonMessage, true);
         } catch (Exception e) {
             log.severe("Error sending message: " + e.getMessage());
@@ -111,6 +115,7 @@ public class RiskWebSocketClient implements WebSocket.Listener {
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
         try {
             GameMessage msg = objectMapper.readValue(data.toString(), GameMessage.class);
+            log.info("📨 Received message: " + msg.type() + " from room: " + msg.roomId());
 
             // כשהודעה מגיעה, אנחנו מעבירים אותה לחוט של ה-UI כדי שיעדכן את המסך
             if (onMessageReceived != null) {
@@ -118,9 +123,11 @@ public class RiskWebSocketClient implements WebSocket.Listener {
             }
 
         } catch (Exception e) {
-            log.severe("Error parsing received JSON");
+            log.severe("Error parsing received JSON: " + e.getMessage());
         }
-        return WebSocket.Listener.super.onText(webSocket, data, last);
+        // Request more messages from the server
+        webSocket.request(1);
+        return CompletableFuture.completedFuture(null);
     }
 
 }
