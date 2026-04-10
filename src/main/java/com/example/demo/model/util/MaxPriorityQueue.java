@@ -57,7 +57,8 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
     // תיקון הערימה כלפי מעלה
     private void heapifyUp(int index)
     {
-        while (index > 0)
+        boolean shouldContinue = true;
+        while (index > 0 && shouldContinue)
         {
             int parentIndex = getParentIndex(index);
             // אם הנוכחי גדול מהאבא שלו, נחליף ביניהם
@@ -67,7 +68,7 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
                 index = parentIndex;
             }
             else
-                break;
+                shouldContinue = false;
         }
     }
 
@@ -76,7 +77,8 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
     {
         int size = heap.size();
 
-        while (true)
+        boolean shouldContinue = true;
+        while (shouldContinue)
         {
             int leftIndex = getLeftChildIndex(index);
             int rightIndex = getRightChildIndex(index);
@@ -89,11 +91,13 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
                 largestIndex = rightIndex;
 
             if (largestIndex == index)
-                break;
-
-            // החלפה עם הילד הגדול ביותר
-            swap(index, largestIndex);
-            index = largestIndex;
+                shouldContinue = false;
+            else
+            {
+                // החלפה עם הילד הגדול ביותר
+                swap(index, largestIndex);
+                index = largestIndex;
+            }
         }
     }
 

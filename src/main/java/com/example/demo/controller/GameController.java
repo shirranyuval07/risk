@@ -330,18 +330,20 @@ public class GameController {
      * @param draftArmies כמות החיילים שיש לשחקן החדש להניח בשלב הדראפט
      * @param playerName שם השחקן החדש בתור, כדי שנוכל לעדכן את כמות החיילים שלו לשים בשלב הדראפט
      * */
-    private void executeNextTurnLocal(String playerName, int draftArmies) {
-        gameModel.nextTurn();
+     private void executeNextTurnLocal(String playerName, int draftArmies) {
+         gameModel.nextTurn();
 
-        for (Player p : gameModel.getPlayers()) {
-            if (p.getName().equals(playerName)) {
-                p.setDraftArmies(draftArmies);
-                break;
-            }
-        }
+         boolean playerFound = false;
+         for (Player p : gameModel.getPlayers()) {
+             if (p.getName().equals(playerName)) {
+                 p.setDraftArmies(draftArmies);
+                 playerFound = true;
+                 break;
+             }
+         }
 
-        clearSelection();
-    }
+         clearSelection();
+     }
 
     /**
      * טענת יציאה: הפונקציה מטפלת בלחיצה על מדינה בשלב הפורטיפיי.

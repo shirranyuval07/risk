@@ -77,7 +77,6 @@ public class GreedyAI implements BotStrategy {
         boolean isAggressive = strategy.getAttackThreshold() < GameConstants.BALANCED_ATTACK_THRESHOLD;
         if (isAggressive)
             executeAggressiveDraft(player, game);
-
         else
             executeDefensiveDraft(player, game);
     }
@@ -162,31 +161,32 @@ public class GreedyAI implements BotStrategy {
     /**
      * @param player - השחקן הממלא את התפקיד של ה-AI
      * @param game - מופע המשחק הנוכחי
-     * טענת יציאה: הפונקציה בונה תור התקפה מבוסס על הערכות היוריסטיות של כל התקפה אפשרית,
+     * טענת יציאה: הפונקציה בונה תור קדימויות התקפה מבוסס על הערכות היוריסטיות של כל התקפה אפשרית,
      *             ומבצעת את ההתקפות בסדר יורד של ציון עד שהן לא רלוונטיות יותר או שהן מובילות לכיבוש.
      *            היא מתמקדת בהתקפות עם יתרון צבאי משמעותי ומעדכנת את תור ההתקפה לאחר כל כיבוש כדי לנצל הזדמנויות חדשות שנוצרו.
      * */
-    private void chooseAttack(Player player, RiskGame game) {
-        MaxPriorityQueue<AttackMove> attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
+     private void chooseAttack(Player player, RiskGame game) {
+         MaxPriorityQueue<AttackMove> attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
 
-        while (!attackQueue.isEmpty())
-        {
-            AttackMove best = attackQueue.poll();
+         while (!attackQueue.isEmpty())
+         {
+             AttackMove best = attackQueue.poll();
 
-            if (!isMoveStillValid(best, player))
-                continue;
+             boolean isValidMove = isMoveStillValid(best, player);
+             if (!isValidMove)
+                 continue;
 
-            boolean conquered = false;
+             boolean conquered = false;
 
-            while (isMoveStillValid(best, player) && !conquered)
-                conquered = performAttack(best, game);
+             while (isMoveStillValid(best, player) && !conquered)
+                 conquered = performAttack(best, game);
 
 
-            if (conquered)
-                attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
+             if (conquered)
+                 attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
 
-        }
-    }
+         }
+     }
     /**
      * @param game - מופע המשחק הנוכחי
      * @param move - מהלך התקפה שמכיל את המדינה התוקפת, המדינה המותקפת, והציון היוריסטי של המהלך

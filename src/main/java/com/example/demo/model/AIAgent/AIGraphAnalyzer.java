@@ -146,28 +146,31 @@ public class AIGraphAnalyzer {
      * אלגוריתם: עבור כל מדינה שבבעלותנו, בדוק את השכנים שלה. אם השכן שייך לאויב, חשב את ניקוד ההתקפה לפי האסטרטגיה.
      *                 אם הניקוד גבוה מהסף שהוגדר באסטרטגיה, הוסף את ההתקפה לתור העדיפויות. בסוף, החזר את התור עם כל ההתקפות הממוינות לפי ניקוד.
      * */
-    public MaxPriorityQueue<AttackMove> buildAttackQueue(Player player, HeuristicStrategy strategy)
-    {
-        MaxPriorityQueue<AttackMove> queue = new MaxPriorityQueue<>();
+     public MaxPriorityQueue<AttackMove> buildAttackQueue(Player player, HeuristicStrategy strategy)
+     {
+         MaxPriorityQueue<AttackMove> queue = new MaxPriorityQueue<>();
 
-        for (Country source : player.getOwnedCountries())
-        {
-            if (source.getArmies() <= 1) continue;
+         for (Country source : player.getOwnedCountries())
+         {
+             boolean hasEnoughArmies = source.getArmies() > 1;
+             if (!hasEnoughArmies) continue;
 
-            for (Country target : source.getNeighbors())
-            {
-                if (target.getOwner() == player) continue;
+             for (Country target : source.getNeighbors())
+             {
+                 boolean isEnemyTerritory = target.getOwner() != player;
+                 if (!isEnemyTerritory) continue;
 
-                if (source.getArmies() - target.getArmies() < strategy.getMinArmyAdvantage()) continue;
+                 boolean hasMinAdvantage = source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage();
+                 if (!hasMinAdvantage) continue;
 
-                double score = strategy.calculateHeuristic(source, target, player, this);
+                 double score = strategy.calculateHeuristic(source, target, player, this);
 
-                if (score > strategy.getAttackThreshold())
-                    queue.add(new AttackMove(source, target, score));
-            }
-        }
-        return queue;
-    }
+                 if (score > strategy.getAttackThreshold())
+                     queue.add(new AttackMove(source, target, score));
+             }
+         }
+         return queue;
+     }
 
     /**
      * @param start - מדינה התחלה שבבעלותנו
@@ -328,38 +331,39 @@ public class AIGraphAnalyzer {
       אם מצאת מדינה כזו, בנה את המהלך להעברת חיילים מהתופסת לגבול המחובר שלה.
       אם לא מצאת אף מדינה תופסת שצריכה חיזוק, החזר null כדי לעבור לשלב השני של האסטרטגיה.
      */
-    private FortifyMove findBestTrappedCountryMove(Player player)
-    {
-        Country bestTrappedCountry = null;
-        int maxArmiesInTrapped = 0;
+     private FortifyMove findBestTrappedCountryMove(Player player)
+     {
+         Country bestTrappedCountry = null;
+         int maxArmiesInTrapped = 0;
 
-        for (Country source : player.getOwnedCountries())
-        {
-            if (source.getArmies() <= GameConstants.MIN_ARMIES_TO_STAY) continue;
+         for (Country source : player.getOwnedCountries())
+         {
+             boolean hasEnoughArmies = source.getArmies() > GameConstants.MIN_ARMIES_TO_STAY;
+             if (!hasEnoughArmies) continue;
 
-            // בדוק אם זה "תפוס" - כל הסמוכים שלי
-            if (isCountryTrapped(source, player))
-            {
-                if (source.getArmies() > maxArmiesInTrapped)
-                {
-                    Country border = findConnectedBorderUsingBFS(source, player);
-                    if (border != null)
-                    {
-                        bestTrappedCountry = source;
-                        maxArmiesInTrapped = source.getArmies();
-                    }
-                }
-            }
-        }
+             // בדוק אם זה "תפוס" - כל הסמוכים שלי
+             if (isCountryTrapped(source, player))
+             {
+                 if (source.getArmies() > maxArmiesInTrapped)
+                 {
+                     Country border = findConnectedBorderUsingBFS(source, player);
+                     if (border != null)
+                     {
+                         bestTrappedCountry = source;
+                         maxArmiesInTrapped = source.getArmies();
+                     }
+                 }
+             }
+         }
 
-        if (bestTrappedCountry != null)
-        {
-            Country border = findConnectedBorderUsingBFS(bestTrappedCountry, player);
-            return new FortifyMove(bestTrappedCountry, border, bestTrappedCountry.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
-        }
+         if (bestTrappedCountry != null)
+         {
+             Country border = findConnectedBorderUsingBFS(bestTrappedCountry, player);
+             return new FortifyMove(bestTrappedCountry, border, bestTrappedCountry.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
+         }
 
-        return null;
-    }
+         return null;
+     }
 
     /**
      * @param player - השחקן שלנו
