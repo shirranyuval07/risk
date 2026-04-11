@@ -56,19 +56,13 @@ public interface HeuristicRule {
             Player enemy = target.getOwner();
 
             if (enemy != null)
-            {
-                boolean enemyOwnsContinent = true;
-                for (Country c : continent.getCountries())
-                {
-                    if (c.getOwner() != enemy)
-                    {
-                        enemyOwnsContinent = false;
-                        break;
-                    }
-                }
-                if (enemyOwnsContinent)
-                    score += continent.getBonusValue() * enemyBreakMultiplier;
-            }
+             {
+                 boolean enemyOwnsContinent = continent.getCountries().stream()
+                     .allMatch(c -> c.getOwner() == enemy);
+                 
+                 if (enemyOwnsContinent)
+                     score += continent.getBonusValue() * enemyBreakMultiplier;
+             }
             return score;
         };
     }

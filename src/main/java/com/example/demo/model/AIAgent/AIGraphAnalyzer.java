@@ -69,7 +69,7 @@ public class AIGraphAnalyzer {
      * @param player - השחקן שלנו
      * @param strategy - אסטרטגיית חישוב ניקוד התקפה (יכול להיות שונה לפי סוג הבוט)
      * טענת יציאה: מוצא את ההתקפה הפוטנציאלית הטובה ביותר לפי האסטרטגיה הנתונה
-     * אלגוריתם: עבור כל מדינה שבבעלותנו, בדוק את השכנים שלה. אם השכן שייך לאויב, חשב את ניקוד ההתקפה לפי האסטרטגיה. שמור את ההתקפה עם הניקוד הגבוה ביותר.
+     * אלגוריתם: עבור כל מדינה שבבעלותנו, בדוק את השכנים שלה. אם הש neighbor שייך לאויב, חשב את ניקוד ההתקפה לפי האסטרטגיה. שמור את ההתקפה עם הניקוד הגבוה ביותר.
      * */
     public AttackMove findBestPotentialAttack(Player player, HeuristicStrategy strategy) {
         AttackMove bestPotentialAttack = null;
@@ -93,7 +93,7 @@ public class AIGraphAnalyzer {
      * @param player - השחקן שלנו
      * @param country - המדינה שאנו רוצים לחשב את האיום שלה
      * טענת יציאה: מחזיר את סכום כוח האויבים הסמוכים למדינה נתונה
-     * אלגוריתם: עבור כל שכני המדינה, אם השכן שייך לאויב, הוסף את כמות החיילים שלו לסכום הכולל. החזר את הסכום בסוף.
+     * אלגוריתם: עבור כל שכני המדינה, אם הש neighbor שייך לאויב, הוסף את כמות החיילים שלו לסכום הכולל. החזר את הסכום בסוף.
      * עוזר: חישוב כוח אויבים סמוכים למדינה
      */
     private int calculateTotalEnemyStrength(Country country, Player player)
@@ -152,21 +152,21 @@ public class AIGraphAnalyzer {
 
          for (Country source : player.getOwnedCountries())
          {
-             boolean hasEnoughArmies = source.getArmies() > 1;
-             if (!hasEnoughArmies) continue;
-
-             for (Country target : source.getNeighbors())
+             // Only process countries with enough armies
+             if (source.getArmies() > 1)
              {
-                 boolean isEnemyTerritory = target.getOwner() != player;
-                 if (!isEnemyTerritory) continue;
+                 for (Country target : source.getNeighbors())
+                 {
+                     // Only attack enemy territories with sufficient advantage
+                     if (target.getOwner() != player && 
+                         source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage())
+                     {
+                         double score = strategy.calculateHeuristic(source, target, player, this);
 
-                 boolean hasMinAdvantage = source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage();
-                 if (!hasMinAdvantage) continue;
-
-                 double score = strategy.calculateHeuristic(source, target, player, this);
-
-                 if (score > strategy.getAttackThreshold())
-                     queue.add(new AttackMove(source, target, score));
+                         if (score > strategy.getAttackThreshold())
+                             queue.add(new AttackMove(source, target, score));
+                     }
+                 }
              }
          }
          return queue;
@@ -190,8 +190,10 @@ public class AIGraphAnalyzer {
             if (current != start && countEnemyNeighbors(current, player) > 0)
                 return current;
 
-            for (Country neighbor : current.getNeighbors()) {
-                if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
+            for (Country neighbor : current.getNeighbors())
+            {
+                if (neighbor.getOwner() == player && !visited.contains(neighbor))
+                {
                     visited.add(neighbor);
                     queue.add(neighbor);
                 }
@@ -338,19 +340,20 @@ public class AIGraphAnalyzer {
 
          for (Country source : player.getOwnedCountries())
          {
-             boolean hasEnoughArmies = source.getArmies() > GameConstants.MIN_ARMIES_TO_STAY;
-             if (!hasEnoughArmies) continue;
-
-             // בדוק אם זה "תפוס" - כל הסמוכים שלי
-             if (isCountryTrapped(source, player))
+             // Only process countries with enough armies to move
+             if (source.getArmies() > GameConstants.MIN_ARMIES_TO_STAY)
              {
-                 if (source.getArmies() > maxArmiesInTrapped)
+                 // Check if this country is trapped (all neighbors are ours)
+                 if (isCountryTrapped(source, player))
                  {
-                     Country border = findConnectedBorderUsingBFS(source, player);
-                     if (border != null)
+                     if (source.getArmies() > maxArmiesInTrapped)
                      {
-                         bestTrappedCountry = source;
-                         maxArmiesInTrapped = source.getArmies();
+                         Country border = findConnectedBorderUsingBFS(source, player);
+                         if (border != null)
+                         {
+                             bestTrappedCountry = source;
+                             maxArmiesInTrapped = source.getArmies();
+                         }
                      }
                  }
              }

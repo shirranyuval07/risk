@@ -46,7 +46,8 @@ public class GreedyAI implements BotStrategy {
      *               טענת יציאה: הפונקציה אחראית על ביצוע כל התור של שחקן ממוחשב.
      * */
     @Override
-    public void executeTurn(Player player, RiskGame game) {
+    public void executeTurn(Player player, RiskGame game)
+    {
         if (player.getOwnedCountries().isEmpty()) {
             return;
         }
@@ -172,19 +173,18 @@ public class GreedyAI implements BotStrategy {
          {
              AttackMove best = attackQueue.poll();
 
-             boolean isValidMove = isMoveStillValid(best, player);
-             if (!isValidMove)
-                 continue;
+             // Only process valid moves - skip invalid ones
+             if (isMoveStillValid(best, player))
+             {
+                 boolean conquered = false;
 
-             boolean conquered = false;
-
-             while (isMoveStillValid(best, player) && !conquered)
-                 conquered = performAttack(best, game);
+                 while (isMoveStillValid(best, player) && !conquered)
+                     conquered = performAttack(best, game);
 
 
-             if (conquered)
-                 attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
-
+                 if (conquered)
+                     attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
+             }
          }
      }
     /**

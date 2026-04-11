@@ -333,15 +333,14 @@ public class GameController {
      private void executeNextTurnLocal(String playerName, int draftArmies) {
          gameModel.nextTurn();
 
-         boolean playerFound = false;
-         for (Player p : gameModel.getPlayers()) {
-             if (p.getName().equals(playerName)) {
+         for (Player p : gameModel.getPlayers())
+         {
+             if (p.getName().equals(playerName))
+             {
                  p.setDraftArmies(draftArmies);
-                 playerFound = true;
-                 break;
+                 return;
              }
          }
-
          clearSelection();
      }
 
@@ -354,7 +353,8 @@ public class GameController {
      * או על מדינה חוקית (במקרה הזה קוראת לפונקציה שמבקשת מהשחקן כמה חיילים הוא רוצה להזיז ומבצעת את ההעברה).
      * @param clickedCountry המדינה שהשחקן לחץ עליה בשלב הפורטיפיי
      * */
-    private void handleFortifyClick(Country clickedCountry) {
+    private void handleFortifyClick(Country clickedCountry)
+    {
         if (sourceCountry == null) {
             if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())
                     && clickedCountry.getArmies() > 1) {
@@ -387,7 +387,8 @@ public class GameController {
      *           טענת יציאה: הפונקציה אחראית להציג דיאלוג עבור כמות המדינות להעביר בשלב הfortify.
      * @param destination המדינה שהשחקן רוצה לחזק
      * */
-    private void promptFortifyAmount(Country destination) {
+    private void promptFortifyAmount(Country destination)
+    {
         int maxMove = sourceCountry.getArmies() - 1;
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Fortify Territory");
@@ -423,7 +424,8 @@ public class GameController {
      * @param src המדינה שממנה השחקן רוצה להעביר חיילים
      * טענת יציאה: הפונקציה מבצעת את ההעברה של החיילים בין המדינות בשלב הפורטיפיי.
      * */
-    private void executeFortifyLocal(Country src, Country dst, int amount) {
+    private void executeFortifyLocal(Country src, Country dst, int amount)
+    {
         String resultMsg = gameModel.fortify(src, dst, amount);
         gameView.getControlPane().setMessage(resultMsg);
         clearSelection();
@@ -437,7 +439,8 @@ public class GameController {
      * אם אפשר, שומרת את המדינה כמקור ומדגישה את היעדים האפשריים.
      *                       אם זו לא לחיצה ראשונה, בודקת אם אפשר לבצע תקיפה ואם כן מבצעת אחרת מנקה את הבחירות.
      * */
-    private void handleAttackClick(Country clickedCountry) {
+    private void handleAttackClick(Country clickedCountry)
+    {
         if (sourceCountry == null)
         {
             if (canAttackFrom(clickedCountry))
@@ -470,7 +473,8 @@ public class GameController {
      * אם המשחק הוא רב משתתפים, הפונקציה יוצרת payload עם המידע על התקיפה ושולחת לכל המשתתפים את ההתקפה
      *                 אחרת רק תבצע את ההתקפה לוקאלית ותציג את התוצאה בדיאלוג.
      * */
-    private void performAttack(Country attacker, Country defender) {
+    private void performAttack(Country attacker, Country defender)
+    {
         if (isMultiplayer)
         {
             Map<String, Object> payload = new HashMap<>();
@@ -499,7 +503,8 @@ public class GameController {
      * אם התוקף כבש את המגן, הפונקציה תציג דיאלוג שיבקש מהתוקף כמה חיילים הוא רוצה להזיז לכיבוש,
      *               ותבצע את הכיבוש בהתאם לתוצאה שהתקבלה מהתוקף. אם המשחק הוא לא רב משתתפים, הפונקציה רק תבצע את השינויים לוקאלית ותציג את התוצאה בדיאלוג.
      * */
-    private void applyBattleResult(Country attacker, Country defender, BattleResult result) {
+    private void applyBattleResult(Country attacker, Country defender, BattleResult result)
+    {
         if (isMultiplayer)
         {
             attacker.removeArmies(result.attackerLosses());
@@ -547,7 +552,8 @@ public class GameController {
      * @param totalMove כמות החיילים שהשחקן בחר להזיז לכיבוש אם כבש את המגן
      * טענת יציאה: הפונקציה מטפלת בתנועת החיילים לאחר שמדינה נכבשה.
      * */
-    private void applyConquestMove(Country attacker, Country defender, int minMove, int totalMove) {
+    private void applyConquestMove(Country attacker, Country defender, int minMove, int totalMove)
+    {
         if (pendingConquestHandled)
         {
             pendingConquestHandled = false;
@@ -566,7 +572,8 @@ public class GameController {
      * @param conquered המדינה שהשחקן כבש
      * טענת יציאה: הפונקציה מציגה דיאלוג שמבקש מהשחקן לבחור כמה חיילים הוא רוצה להזיז לכיבוש המדינה שנכבשה.
      * */
-    private static int showConquestMoveDialog(Country conquered, int minMove, int maxMove) {
+    private static int showConquestMoveDialog(Country conquered, int minMove, int maxMove)
+    {
         List<Integer> choices = new ArrayList<>();
         for (int i = minMove; i <= maxMove; i++) choices.add(i);
 
