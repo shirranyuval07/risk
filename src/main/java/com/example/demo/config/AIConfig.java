@@ -23,15 +23,17 @@ public class AIConfig {
     @Bean
     public HeuristicStrategy.Configurable balancedStrategy() {
         return buildStrategy(props.getBalanced(),
-                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies - 3)));
+                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies - 3)),
+                HeuristicStrategy.Configurable.DraftBehavior.defensive());
     }
 
     @Bean
     public HeuristicStrategy.Configurable defensiveStrategy() {
         HeuristicStrategy.Configurable strategy = buildStrategy(props.getDefensive(),
-                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies / 2)));
+                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies / 2)),
+                HeuristicStrategy.Configurable.DraftBehavior.defensive());
         
-        // Add the card farming rule only to the defensive strategy
+
         strategy.addRule(com.example.demo.model.AIAgent.Rules.HeuristicRule.cardFarmingRule(), 2.0);
 
         return strategy;
@@ -40,12 +42,16 @@ public class AIConfig {
     @Bean
     public HeuristicStrategy.Configurable offensiveStrategy() {
         return buildStrategy(props.getOffensive(),
-                (totalArmies, minMove, maxMove) -> maxMove);
+                (totalArmies, minMove, maxMove) -> maxMove,
+                HeuristicStrategy.Configurable.DraftBehavior.aggressive());
     }
 
     // פונקציית עזר שמונעת שכפול קוד בבניית האובייקט
     //שולחים את הביטוי למבדה המתאים ע"י שימוש בTroopMovementBehavior שנמצא באסטרטגיה
-    private HeuristicStrategy.Configurable buildStrategy(AIStrategyProps p, HeuristicStrategy.Configurable.TroopMovementBehavior movement) {
+    private HeuristicStrategy.Configurable buildStrategy(AIStrategyProps p,
+                                                         HeuristicStrategy.Configurable.TroopMovementBehavior movement,
+                                                         HeuristicStrategy.Configurable.DraftBehavior draft)
+    {
         HeuristicStrategy.HeuristicWeights weights = new HeuristicStrategy.HeuristicWeights(
                 p.getWeightWinProbability(),
                 p.getWeightContinentBonus(),
@@ -68,7 +74,8 @@ public class AIConfig {
                 p.getBonusFocus(),
                 p.getProgressFocus(),
                 p.getResistanceAvoidance(),
-                movement
+                movement,
+                draft
         );
     }
 }

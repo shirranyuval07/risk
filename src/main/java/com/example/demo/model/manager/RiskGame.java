@@ -11,6 +11,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 @Slf4j
 /*
@@ -242,15 +243,17 @@ public class RiskGame {
     }
 
     // פונקציות עזר שהמודל יפעיל כדי "לצעוק" למאזינים
-    public void notifyStatsUpdated() {
+    private void notifyListeners(Consumer<GameUpdateListener> action) {
         for (GameUpdateListener listener : listeners) {
-            listener.onStatsUpdated();
+            action.accept(listener);
         }
     }
 
+    public void notifyStatsUpdated() {
+        notifyListeners(GameUpdateListener::onStatsUpdated);
+    }
+
     public void notifyGameMessage(String message) {
-        for (GameUpdateListener listener : listeners) {
-            listener.onGameMessage(message);
-        }
+        notifyListeners(l -> l.onGameMessage(message));
     }
 }

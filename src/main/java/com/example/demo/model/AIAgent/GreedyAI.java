@@ -11,9 +11,6 @@ import com.example.demo.model.Records.GameRecords.AttackMove;
 import com.example.demo.model.Records.GameRecords.FortifyMove;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 
-import java.util.Map;
-import java.util.Set;
-
 /**
  * GreedyAI - בוט משחק "חמדן" שמוקד על הרווח מידי
 
@@ -69,93 +66,13 @@ public class GreedyAI implements BotStrategy {
     @Override
     public Country findSetUpCountry(Player player, RiskGame game)
     {
-        return graphAnalyzer.findBestSetupCountry(player, strategy.getSetupStackingWeight());
+        return graphAnalyzer.findBestSetupCountry(player, strategy);
     }
 
-    //  שלב 1 – DRAFT
+    //  שלב 1 – DRAFT (מועבר לאסטרטגיה – כל אסטרטגיה מגדירה התנהגות הצבה משלה)
     private void chooseReinforcement(Player player, RiskGame game)
     {
-        boolean isAggressive = strategy.getAttackThreshold() < GameConstants.BALANCED_ATTACK_THRESHOLD;
-        if (isAggressive)
-            executeAggressiveDraft(player, game);
-        else
-            executeDefensiveDraft(player, game);
-    }
-    /**
-     * @param player - השחקן הממלא את התפקיד של ה-AI
-     * @param game - מופע המשחק הנוכחי
-     * טענת יציאה: הפונקציה ממוקדת בהצבת חיילים באופן תוקפני על נקודות התקפה פוטנציאליות, תוך ניצול כל החיילים הזמינים כדי למקסם את הלחץ על היריבים.
-     * */
-    private void executeAggressiveDraft(Player player, RiskGame game)
-    {
-        AttackMove bestPotentialAttack = graphAnalyzer.findBestPotentialAttack(player, strategy);
-        if (bestPotentialAttack != null)
-        {
-            while (player.getDraftArmies() > 0)
-                game.placeArmy(bestPotentialAttack.source());
-
-            log.info("[AI DRAFT] Offensive Spearhead: Dumped all armies on {}", bestPotentialAttack.source().getName());
-        }
-    }
-    /**
-     * @param player - השחקן הממלא את התפקיד של ה-AI
-     * @param game - מופע המשחק הנוכחי
-     * טענת יציאה: הפונקציה מתמקדת בהגנה על נקודות תורפה קריטיות על ידי ניתוח גרפי של המפה, זיהוי נקודות בוטלנק והערכת סכנות,
-     *            והצבת חיילים באופן פרופורציונלי כדי לחזק את ההגנה על נקודות אלו,
-     *             תוך שמירה על איזון בין ההגנה לבין הצורך לשמור חיילים למתקפות עתידיות. אם אין איומים מובהקים, היא תתמקד בהגנה על הנקודה המאוימת ביותר.
-     * */
-    private void executeDefensiveDraft(Player player, RiskGame game)
-    {
-        Set<Country> myBottlenecks = graphAnalyzer.findArticulationPoints(player);
-        Map<Country, Double> threatScores = graphAnalyzer.calculateThreatScores(player, myBottlenecks);
-
-        double totalThreat = threatScores.values().stream().mapToDouble(Double::doubleValue).sum();
-        int totalDraftArmies = player.getDraftArmies();
-        //אם אין איום מוצאים את המדינה שהיא הכי מאוימת ושמים את כל החיילים בה.
-        if (totalThreat == 0)
-        {
-            Country fallback = findMostThreatenedCountry(player);
-            if (fallback != null)
-                while (player.getDraftArmies() > 0) game.placeArmy(fallback);
-
-            return;
-        }
-        //מחלקים את החיילים לפי האיום שמסביבם
-        for (Map.Entry<Country, Double> entry : threatScores.entrySet())
-        {
-            int armiesForThisCountry = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
-
-            for (int i = 0; i < armiesForThisCountry; i++)
-                if (player.getDraftArmies() > 0) game.placeArmy(entry.getKey());
-
-        }
-
-        // פיזור שאריות החיילים במדינה המאוימת ביותר
-        Country mostThreatened = findMostThreatenedCountry(player);
-        while (player.getDraftArmies() > 0 && mostThreatened != null)
-            game.placeArmy(mostThreatened);
-
-    }
-    /**
-     * @param player - השחקן הממלא את התפקיד של ה-AI
-     *               טענת יציאה: הפונקציה סורקת את המדינות של השחקן שהתקבל ומחשבת את כמות האיום שיש על המדינה.
-     *               היא מחזירה את המדינה שיש כלפיה הכי הרבה איום (מספר צבאות גדול)
-     * */
-    private Country findMostThreatenedCountry(Player player)
-    {
-        Country best = null;
-        int maxEnemies = -1;
-
-        for (Country c : player.getOwnedCountries())
-        {
-            int enemies = graphAnalyzer.countEnemyNeighbors(c, player);
-            if (enemies > maxEnemies || (enemies == maxEnemies && best != null && c.getArmies() < best.getArmies()))
-            {
-                maxEnemies = enemies;
-                best = c;
-            }
-        }
-        return best;
+        strategy.executeDraft(player, game, graphAnalyzer);
     }
 
     //  שלב 2 – ATTACK

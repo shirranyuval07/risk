@@ -60,7 +60,7 @@ ai:
     progress-focus: 0.0
     continent-break-multiplier: 0.0
     resistance-avoidance: 2.0
-    setup-stacking-weight: 20.0
+    setup-stacking-weight: 2.0
 
 
 
@@ -79,4 +79,4 @@ ai:
     progress-focus: 0.5
     continent-break-multiplier: 3.0
     resistance-avoidance: 0.5
-    setup-stacking-weight: 2.0
+    setup-stacking-weight: 20.0

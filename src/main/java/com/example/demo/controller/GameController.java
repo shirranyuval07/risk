@@ -232,34 +232,29 @@ public class GameController {
 
 
     /**
-     * טענת כניסה: מדינה שהשחקן בחר לשים בה חייל
-     * טענת יציאה: הפעולה בודקת אם המשחק הוא רב משתתפים. אם הוא כן תיצור payload שמכיל את המזהה של המדינה ותשלח לכל המשתתפים את ההודעה בשביל שיוכלו להיווצר השינוי אצלם במסך
-     * אחרת תקרא לפעולה שמבצעת שינוי לוקלי בשלב הsetup
+     * טענת כניסה: מדינה שהשחקן בחר לשים בה חייל, מפתח ה-payload לזיהוי המדינה, וסוג הפעולה ברשת
+     * טענת יציאה: אם המשחק רב משתתפים — שולח את מזהה המדינה לכל המשתתפים דרך הרשת.
+     *             אחרת — מבצע הצבה לוקלית ישירות.
      * @param country המדינה שהשחקן בחר לשים בה חייל
+     * @param payloadKey מפתח ה-payload שדרכו נשלח מזהה המדינה
+     * @param action סוג הפעולה ברשת (SETUP_PLACE או DRAFT)
      * */
-    private void handleSetupClick(Country country) {
+    private void handlePlacementClick(Country country, String payloadKey, GameAction action) {
         if (isMultiplayer) {
             Map<String, Object> payload = new HashMap<>();
-            payload.put("SetupPlaceID", country.getId());
-            networkClient.sendAction(GameAction.SETUP_PLACE, networkClient.getRoomId(), payload);
+            payload.put(payloadKey, country.getId());
+            networkClient.sendAction(action, networkClient.getRoomId(), payload);
         } else {
             executePlacementLocal(country);
         }
     }
-    /**
-     * טענת כניסה: מדינה שהשחקן בחר לשים בה חייל
-     * טענת יציאה: הפעולה בודקת אם המשחק הוא רב משתתפים. אם הוא כן תיצור payload שמכיל את המזהה של המדינה ותשלח לכל המשתתפים את ההודעה בשביל שיוכלו להיווצר השינוי אצלם במסך
-     * אחרת תקרא לפעולה שמבצעת שינוי לוקלי בשלב draft
-     * @param country המדינה שהשחקן בחר לשים בה חייל
-     * */
+
+    private void handleSetupClick(Country country) {
+        handlePlacementClick(country, "SetupPlaceID", GameAction.SETUP_PLACE);
+    }
+
     private void handleDraftClick(Country country) {
-        if (isMultiplayer) {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("targetCountryId", country.getId());
-            networkClient.sendAction(GameAction.DRAFT, networkClient.getRoomId(), payload);
-        } else {
-            executePlacementLocal(country);
-        }
+        handlePlacementClick(country, "targetCountryId", GameAction.DRAFT);
     }
 
     /**

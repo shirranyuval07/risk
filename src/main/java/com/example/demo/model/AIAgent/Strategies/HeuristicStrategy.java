@@ -3,8 +3,11 @@ package com.example.demo.model.AIAgent.Strategies;
 import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.AIGraphAnalyzer;
 import com.example.demo.model.AIAgent.Rules.HeuristicRule;
+import com.example.demo.model.AIAgent.Rules.SetupHeuristicRule;
+import com.example.demo.model.Records.GameRecords.AttackMove;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
+import com.example.demo.model.manager.RiskGame;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +28,8 @@ import java.util.Set;
 public interface HeuristicStrategy {
 
     double calculateHeuristic(Country source, Country target, Player player, AIGraphAnalyzer analyzer);
+    double calculateSetupScore(Country country, Player player, AIGraphAnalyzer analyzer);
+    void executeDraft(Player player, RiskGame game, AIGraphAnalyzer analyzer);
     double getAttackThreshold();
     double getMinArmyAdvantage();
     int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove);
@@ -40,6 +45,7 @@ public interface HeuristicStrategy {
         protected final HeuristicWeights weights;
         protected final ThresholdConfig thresholds;
         private final Map<HeuristicRule, Double> dynamicRules = new HashMap<>();
+        private final Map<SetupHeuristicRule, Double> setupRules = new HashMap<>();
 
         // Win Probability Calculator
         private final WinProbabilityCalculator winCalculator = new WinProbabilityCalculator();
@@ -51,6 +57,10 @@ public interface HeuristicStrategy {
 
         public void addRule(HeuristicRule rule, double weight) {
             dynamicRules.put(rule, weight);
+        }
+
+        public void addSetupRule(SetupHeuristicRule rule, double weight) {
+            setupRules.put(rule, weight);
         }
 
         // ===================================================================================
@@ -197,6 +207,19 @@ public interface HeuristicStrategy {
         }
 
         // ===================================================================================
+        // קבוצה 2.5: חישוב ניקוד Setup – שימוש בכללים היוריסטיים להצבת חיילים בשלב ההתחלה
+        // ===================================================================================
+
+        @Override
+        public double calculateSetupScore(Country country, Player player, AIGraphAnalyzer analyzer) {
+            double score = 0;
+            for (var rule : setupRules.entrySet()) {
+                score += rule.getKey().evaluate(country, player, analyzer) * rule.getValue();
+            }
+            return score;
+        }
+
+        // ===================================================================================
         // קבוצה 3: חישובי בונוס ניצחון קל (Easy Win Bonus) - אינסטינקט חיסול שחקנים
         // ===================================================================================
 
@@ -262,17 +285,31 @@ public interface HeuristicStrategy {
      */
     class Configurable extends Abstract {
         private final TroopMovementBehavior movementBehavior;
+        private final DraftBehavior draftBehavior;
 
         public Configurable(HeuristicWeights weights, ThresholdConfig thresholds,
                             double weightFutureThreat, double continentBreakMultiplier,
                             double bonusFocus, double progressFocus, double resistanceAvoidance,
-                            TroopMovementBehavior movementBehavior) {
+                            TroopMovementBehavior movementBehavior, DraftBehavior draftBehavior) {
             super(weights, thresholds);
             this.addRule(HeuristicRule.futureThreatRule(), weightFutureThreat);
             this.addRule(HeuristicRule.continentProgressRule(
                             continentBreakMultiplier, bonusFocus, progressFocus, resistanceAvoidance),
                     weights.continentBonus());
+
+            // Setup heuristic rules – ניקוד מבוסס כללים לשלב ההצבה
+            this.addSetupRule(SetupHeuristicRule.enemyThreatRule(), 1.0);
+            this.addSetupRule(SetupHeuristicRule.stackingRule(), thresholds.setupStackingWeight());
+            this.addSetupRule(SetupHeuristicRule.continentProgressRule(), weights.continentBonus());
+            this.addSetupRule(SetupHeuristicRule.borderCoverageRule(), weights.strategicValue());
+
             this.movementBehavior = movementBehavior;
+            this.draftBehavior = draftBehavior;
+        }
+
+        @Override
+        public void executeDraft(Player player, RiskGame game, AIGraphAnalyzer analyzer) {
+            draftBehavior.execute(player, game, analyzer, this);
         }
 
         @Override
@@ -283,6 +320,51 @@ public interface HeuristicStrategy {
         @FunctionalInterface
         public interface TroopMovementBehavior {
             int calculate(int totalArmies, int minMove, int maxMove);
+        }
+
+        /**
+         * התנהגות הצבת חיילים בשלב ה-Draft – כל אסטרטגיה מקבלת את הלמבדה שלה.
+         * שימוש בסטטיק פקטוריז כדי לספק התנהגויות מוכנות (תוקפנית / הגנתית).
+         */
+        @FunctionalInterface
+        public interface DraftBehavior {
+            void execute(Player player, RiskGame game, AIGraphAnalyzer analyzer, HeuristicStrategy strategy);
+
+            /** הצבה תוקפנית – כל החיילים על נקודת ההתקפה הטובה ביותר */
+            static DraftBehavior aggressive() {
+                return (player, game, analyzer, strategy) -> {
+                    AttackMove best = analyzer.findBestPotentialAttack(player, strategy);
+                    if (best != null)
+                        while (player.getDraftArmies() > 0) game.placeArmy(best.source());
+                };
+            }
+
+            /** הצבה הגנתית – פיזור חיילים לפי איומים ונקודות צוואר-בקבוק */
+            static DraftBehavior defensive() {
+                return (player, game, analyzer, strategy) -> {
+                    Set<Country> bottlenecks = analyzer.findArticulationPoints(player);
+                    Map<Country, Double> threatScores = analyzer.calculateThreatScores(player, bottlenecks);
+                    double totalThreat = threatScores.values().stream().mapToDouble(Double::doubleValue).sum();
+                    int totalDraftArmies = player.getDraftArmies();
+
+                    if (totalThreat == 0) {
+                        Country fallback = analyzer.findMostThreatenedCountry(player);
+                        if (fallback != null)
+                            while (player.getDraftArmies() > 0) game.placeArmy(fallback);
+                        return;
+                    }
+
+                    for (Map.Entry<Country, Double> entry : threatScores.entrySet()) {
+                        int armies = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
+                        for (int i = 0; i < armies; i++)
+                            if (player.getDraftArmies() > 0) game.placeArmy(entry.getKey());
+                    }
+
+                    Country mostThreatened = analyzer.findMostThreatenedCountry(player);
+                    while (player.getDraftArmies() > 0 && mostThreatened != null)
+                        game.placeArmy(mostThreatened);
+                };
+            }
         }
     }
 

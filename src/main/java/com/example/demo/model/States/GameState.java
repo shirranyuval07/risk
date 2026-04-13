@@ -1,5 +1,6 @@
 package com.example.demo.model.States;
 
+import com.example.demo.model.AIAgent.AIGraphAnalyzer;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
 import com.example.demo.model.Records.GameRecords.BattleResult; // שים לב שהנתיב מעודכן לשלב 1
@@ -8,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Set;
 
 // Sealed interface - אנחנו מצהירים מראש מי מממש אותו
@@ -26,6 +25,23 @@ public sealed interface GameState permits
         return "Wrong phase! You are currently in the " + getPhaseName() + " phase.";
     }
 
+    /**
+     * עוזר משותף לשלבי Setup ו-Draft: בודק אם המדינה שייכת לשחקן הנוכחי
+     * ואם יש לו חיילים להניח, ואם כן מוסיף חייל אחד ומפחית את המכסה.
+     * @param country המדינה שבה רוצים להציב חייל
+     * @param game מופע המשחק
+     * @return true אם ההצבה הצליחה, false אחרת
+     */
+    default boolean tryPlaceArmy(Country country, RiskGame game) {
+        Player currentPlayer = game.getCurrentPlayer();
+        if (country.getOwner() != currentPlayer) return false;
+        if (currentPlayer.getDraftArmies() <= 0) return false;
+
+        country.addArmies(1);
+        currentPlayer.decreaseDraftArmies();
+        return true;
+    }
+
     GameState nextPhase();
     Set<Country> getValidTargets(Country source);
     String getPhaseName();
@@ -37,12 +53,7 @@ public sealed interface GameState permits
     record SetupState(RiskGame game) implements GameState {
         @Override
         public boolean placeArmy(Country country) {
-            Player currentPlayer = game.getCurrentPlayer();
-            if (country.getOwner() != currentPlayer) return false;
-            if (currentPlayer.getDraftArmies() <= 0) return false;
-
-            country.addArmies(1);
-            currentPlayer.decreaseDraftArmies();
+            if (!tryPlaceArmy(country, game)) return false;
 
             boolean allArmiesPlaced = game.getPlayers().stream()
                     .allMatch(p -> p.getDraftArmies() <= 0);
@@ -77,13 +88,7 @@ public sealed interface GameState permits
 
         @Override
         public boolean placeArmy(Country country) {
-            Player currentPlayer = game.getCurrentPlayer();
-            if (country.getOwner() != currentPlayer) return false;
-            if (currentPlayer.getDraftArmies() <= 0) return false;
-
-            country.addArmies(1);
-            currentPlayer.decreaseDraftArmies();
-            return true;
+            return tryPlaceArmy(country, game);
         }
 
         @Override
@@ -160,21 +165,9 @@ public sealed interface GameState permits
 
         @Override
         public Set<Country> getValidTargets(Country source) {
-            Queue<Country> queue = new LinkedList<>();
-            HashSet<Country> visited = new HashSet<>();
-            queue.add(source);
-            visited.add(source);
-            while (!queue.isEmpty()) {
-                Country current = queue.poll();
-                for(Country neighbor : current.getNeighbors()) {
-                    if(neighbor.getOwner() == game.getCurrentPlayer() && !visited.contains(neighbor)) {
-                        visited.add(neighbor);
-                        queue.add(neighbor);
-                    }
-                }
-            }
-            visited.remove(source);
-            return visited;
+            Set<Country> reachable = AIGraphAnalyzer.bfsReachableOwned(source, game.getCurrentPlayer());
+            reachable.remove(source);
+            return reachable;
         }
 
         @Override

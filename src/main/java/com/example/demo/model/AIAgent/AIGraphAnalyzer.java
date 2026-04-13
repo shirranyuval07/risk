@@ -31,36 +31,53 @@ public class AIGraphAnalyzer {
 
 
     /**
-     * @param player - השחקן שלנו
-     * @param stackingWeight - משקל לחיילים קיימים (ככל שגבוה יותר, כך נעדיף מדינות עם חיילים כבר שם)
-     *טענת יציאה: מוצא את המדינה הטובה ביותר להצבת חיילים בשלב ההתאמה
-     * אלגוריתם: מחפש מדינה עם הכי הרבה אויבים סמוכים ו/או כבר חיילים שם
-     * הניקוד = (כוח אויבים) + (חיילים קיימים × משקל הערימה)
+     * BFS גנרי – סורק את כל המדינות שבבעלות player הנגישות מ-start
+     * דרך מדינות שבבעלותו בלבד.
+     * @param start מדינת ההתחלה
+     * @param player השחקן שלנו (רק מדינותיו ייסרקו)
+     * @return סט כל המדינות הנגישות (כולל start)
      */
-    public Country findBestSetupCountry(Player player, double stackingWeight)
-    {
-        Country bestCountry = null;
-        double bestScore = -1;
-        
-        // מעבר על כל המדינות שבבעלותנו
-        for(Country country : player.getOwnedCountries())
-        {
-            // חישוב כוח אויבים סמוכים
-            int totalEnemyStrength = calculateTotalEnemyStrength(country, player);
-            
-            if (totalEnemyStrength > 0)
-            {
-                // נוסחת ניקוד: אויבים + חיילים קיימים (בעיתור משקל)
-                double score = totalEnemyStrength + (country.getArmies() * stackingWeight);
-                if (score > bestScore)
-                {
-                    bestCountry = country;
-                    bestScore = score;
+    public static Set<Country> bfsReachableOwned(Country start, Player player) {
+        Queue<Country> queue = new LinkedList<>();
+        Set<Country> visited = new HashSet<>();
+
+        queue.add(start);
+        visited.add(start);
+
+        while (!queue.isEmpty()) {
+            Country current = queue.poll();
+            for (Country neighbor : current.getNeighbors()) {
+                if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
                 }
             }
         }
+        return visited;
+    }
+
+
+    /**
+     * @param player - השחקן שלנו
+     * @param strategy - אסטרטגיית ה-AI המכילה כללי Setup היוריסטיים
+     *טענת יציאה: מוצא את המדינה הטובה ביותר להצבת חיילים בשלב ההתאמה
+     * אלגוריתם: מחשב ניקוד לכל מדינה שבבעלותנו ע"פ כללים היוריסטיים (איום, ערימה, יבשת, כיסוי גבולות)
+     */
+    public Country findBestSetupCountry(Player player, HeuristicStrategy strategy)
+    {
+        Country bestCountry = null;
+        double bestScore = Double.NEGATIVE_INFINITY;
         
-        // חזור על אולטימטום הראשון אם לא נמצא אפשרות טובה
+        for (Country country : player.getOwnedCountries())
+        {
+            double score = strategy.calculateSetupScore(country, player, this);
+            if (score > bestScore)
+            {
+                bestCountry = country;
+                bestScore = score;
+            }
+        }
+        
         return bestCountry != null ? bestCountry : player.getOwnedCountries().getFirst();
     }
 
@@ -178,26 +195,11 @@ public class AIGraphAnalyzer {
      * טענת יציאה: מוצא מדינה גבול מחוברת (עם אויב סמוך) שניתן להגיע אליה מ-start דרך מדינות שבבעלותנו בלבד
      * */
     public Country findConnectedBorderUsingBFS(Country start, Player player) {
-        Queue<Country> queue = new LinkedList<>();
-        Set<Country> visited = new HashSet<>();
+        Set<Country> reachable = bfsReachableOwned(start, player);
 
-        queue.add(start);
-        visited.add(start);
-
-        while (!queue.isEmpty()) {
-            Country current = queue.poll();
-
-            if (current != start && countEnemyNeighbors(current, player) > 0)
-                return current;
-
-            for (Country neighbor : current.getNeighbors())
-            {
-                if (neighbor.getOwner() == player && !visited.contains(neighbor))
-                {
-                    visited.add(neighbor);
-                    queue.add(neighbor);
-                }
-            }
+        for (Country country : reachable) {
+            if (country != start && countEnemyNeighbors(country, player) > 0)
+                return country;
         }
         return null;
     }
@@ -463,28 +465,29 @@ public class AIGraphAnalyzer {
      * */
     private boolean isConnectedBFS(Country start, Country target, Player player)
     {
-        Queue<Country> queue = new LinkedList<>();
-        Set<Country> visited = new HashSet<>();
+        return bfsReachableOwned(start, player).contains(target);
+    }
+    /**
+     * @param player - השחקן שלנו
+     * טענת יציאה: מוצא את המדינה המאוימת ביותר – המדינה עם הכי הרבה שכנים עוינים (ובמקרה שוויון, הכי מעט חיילים)
+     */
+    public Country findMostThreatenedCountry(Player player)
+    {
+        Country best = null;
+        int maxEnemies = -1;
 
-        queue.add(start);
-        visited.add(start);
-
-        while (!queue.isEmpty())
+        for (Country c : player.getOwnedCountries())
         {
-            Country current = queue.poll();
-            if (current == target) return true;
-
-            for (Country neighbor : current.getNeighbors())
+            int enemies = countEnemyNeighbors(c, player);
+            if (enemies > maxEnemies || (enemies == maxEnemies && best != null && c.getArmies() < best.getArmies()))
             {
-                if (neighbor.getOwner() == player && !visited.contains(neighbor))
-                {
-                    visited.add(neighbor);
-                    queue.add(neighbor);
-                }
+                maxEnemies = enemies;
+                best = c;
             }
         }
-        return false;
+        return best;
     }
+
     private record ArticulationPointsDFSContext(
             Country current,
             Map<Country, Integer> discoveryTime,
