@@ -11,7 +11,7 @@ import com.example.demo.model.manager.Player;
  * כאן מעריכים מדינה בודדת שכבר בבעלותנו.
  */
 @FunctionalInterface
-public interface SetupHeuristicRule {
+public interface SetupHeuristicRule extends BaseRule<Country> {
 
     /**
      * @param country  המדינה המוערכת להצבה

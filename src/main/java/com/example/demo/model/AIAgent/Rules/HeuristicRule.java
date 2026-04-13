@@ -7,35 +7,39 @@ import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
 
 @FunctionalInterface
-public interface HeuristicRule {
+public interface HeuristicRule extends BaseRule<HeuristicRule.AttackContext> {
+
+    /** הקשר התקפה – עוטף source + target לתוך אובייקט אחד כדי להתאים לחתימת BaseRule<C> */
+    record AttackContext(Country source, Country target) {}
 
     /**
-     * @return ציון מספרי המייצג את הערך של החוק עבור התקיפה הספציפית
+     * המתודה המופשטת היחידה – מקבלת AttackContext (כנדרש ע"י BaseRule<AttackContext>).
      */
-    double evaluate(Country source, Country target, Player currentPlayer, AIGraphAnalyzer analyzer);
+    @Override
+    double evaluate(AttackContext context, Player currentPlayer, AIGraphAnalyzer analyzer);
 
 
     static HeuristicRule futureThreatRule()
     {
-        return (source, target, currentPlayer, analyzer) ->
+        return (ctx, currentPlayer, analyzer) ->
         {
             int maxThreat = 0;
             // סורקים את כל השכנים של המדינה המותקפת (היעד)
-            for (Country neighbor : target.getNeighbors()) {
+            for (Country neighbor : ctx.target().getNeighbors()) {
                 if (neighbor.getOwner() != currentPlayer && neighbor.getArmies() > maxThreat)
                     maxThreat = neighbor.getArmies();
 
             }
-            return (double) maxThreat / Math.max(source.getArmies(), 1);
+            return (double) maxThreat / Math.max(ctx.source().getArmies(), 1);
         };
     }
 
 
     static HeuristicRule continentProgressRule(double enemyBreakMultiplier, double bonusFocus, double progressFocus, double resistanceAvoidance)
     {
-        return (source, target, currentPlayer, analyzer) ->
+        return (ctx, currentPlayer, analyzer) ->
         {
-            Continent continent = target.getContinent();
+            Continent continent = ctx.target().getContinent();
             int totalCountries = continent.getCountries().size();
             int ownedCountries = 0;
             int enemyArmiesInContinent = 0;
@@ -50,10 +54,10 @@ public interface HeuristicRule {
             double progressRatio = (double) (ownedCountries + 1) / totalCountries;
             double bonusScore = continent.getBonusValue() * bonusFocus;
             double progressScore = (progressRatio * GameConstants.EASY_WIN_ARMY_DIVISOR) * progressFocus;
-            double strengthRatio = (double) enemyArmiesInContinent / Math.max(source.getArmies(), 1);
+            double strengthRatio = (double) enemyArmiesInContinent / Math.max(ctx.source().getArmies(), 1);
             double resistancePenalty = strengthRatio * resistanceAvoidance;
             double score = bonusScore + progressScore - resistancePenalty;
-            Player enemy = target.getOwner();
+            Player enemy = ctx.target().getOwner();
 
             if (enemy != null)
              {
@@ -68,9 +72,9 @@ public interface HeuristicRule {
     }
     static HeuristicRule cardFarmingRule()
     {
-        return (source, target, currentPlayer, analyzer) ->
+        return (ctx, currentPlayer, analyzer) ->
         {
-            if (target.getArmies() <= GameConstants.EASY_WIN_MIN_NEIGHBORS && source.getArmies() >= GameConstants.EASY_WIN_MAX_NEIGHBORS)
+            if (ctx.target().getArmies() <= GameConstants.EASY_WIN_MIN_NEIGHBORS && ctx.source().getArmies() >= GameConstants.EASY_WIN_MAX_NEIGHBORS)
                 return GameConstants.EASY_WIN_ARMY_THRESHOLD; // מעודד מאוד התקפה קלה ומהירה
 
             return GameConstants.EASY_WIN_BONUS_BASE; // מונע ממתקפות מסוכנות יותר

@@ -292,6 +292,13 @@ public class GameController {
         gameModel.nextPhase();
         clearSelection();
 
+        if (gameModel.isGameOver())
+        {
+            gameView.getControlPane().setMessage("🏆 GAME OVER! Winner: " + gameModel.getCurrentPlayer().getName() + " 🏆");
+            gameView.getControlPane().showGameOverState();
+            return;
+        }
+
         if (isMultiplayer && gameModel.getCurrentState() instanceof DraftState && !wasFortify)
             broadcastNextTurnIfNeeded();
 

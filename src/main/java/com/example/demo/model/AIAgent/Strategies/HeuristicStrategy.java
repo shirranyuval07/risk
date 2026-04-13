@@ -2,6 +2,7 @@ package com.example.demo.model.AIAgent.Strategies;
 
 import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.AIGraphAnalyzer;
+import com.example.demo.model.AIAgent.Rules.BaseRule;
 import com.example.demo.model.AIAgent.Rules.HeuristicRule;
 import com.example.demo.model.AIAgent.Rules.SetupHeuristicRule;
 import com.example.demo.model.Records.GameRecords.AttackMove;
@@ -198,12 +199,24 @@ public interface HeuristicStrategy {
          @param analyzer - כלי עזר לניתוח הגרף
          @return ניקוד דינמי שמייצג את ההשפעה של כללים מותאמים אישית על ההתקפה הזו
          */
-        private double computeDynamicScore(Country source, Country target, Player player, AIGraphAnalyzer analyzer) {
+        /**
+         * פונקציה גנרית לחישוב ניקוד כללים – עובדת עם כל סוג BaseRule<C>.
+         * @param context   ההקשר (Country להצבה, AttackContext להתקפה)
+         * @param player    השחקן שלנו
+         * @param analyzer  כלי ניתוח הגרף
+         * @param rules     מפת כללים + משקלים
+         * @return סכום משוקלל של כל הכללים
+         */
+        private <C> double computeScore(C context, Player player, AIGraphAnalyzer analyzer, Map<? extends BaseRule<C>, Double> rules) {
             double score = 0;
-            for (var rule : dynamicRules.entrySet()) {
-                score += rule.getKey().evaluate(source, target, player, analyzer) * rule.getValue();
+            for (var rule : rules.entrySet()) {
+                score += rule.getKey().evaluate(context, player, analyzer) * rule.getValue();
             }
             return score;
+        }
+
+        private double computeDynamicScore(Country source, Country target, Player player, AIGraphAnalyzer analyzer) {
+            return computeScore(new HeuristicRule.AttackContext(source, target), player, analyzer, dynamicRules);
         }
 
         // ===================================================================================
@@ -212,11 +225,7 @@ public interface HeuristicStrategy {
 
         @Override
         public double calculateSetupScore(Country country, Player player, AIGraphAnalyzer analyzer) {
-            double score = 0;
-            for (var rule : setupRules.entrySet()) {
-                score += rule.getKey().evaluate(country, player, analyzer) * rule.getValue();
-            }
-            return score;
+            return computeScore(country, player, analyzer, setupRules);
         }
 
         // ===================================================================================
@@ -236,7 +245,8 @@ public interface HeuristicStrategy {
             int targetArmies = target.getArmies();
 
             // בונוס לכיבוש המדינה האחרונה
-            if (enemyTerritories == 1) {
+            if (enemyTerritories == 1)
+            {
                 double dynamicBonus = GameConstants.EASY_WIN_BONUS_BASE * ((double) GameConstants.EASY_WIN_ARMY_DIVISOR / Math.max(targetArmies, 1));
                 return Math.max(GameConstants.EASY_WIN_FINAL_TERRITORY_MULTIPLIER, dynamicBonus);
             }

@@ -46,9 +46,9 @@ public sealed interface GameState permits
     Set<Country> getValidTargets(Country source);
     String getPhaseName();
 
-    // ==========================================
+
     // כאן מתחילים המימושים (Records)
-    // ==========================================
+
 
     record SetupState(RiskGame game) implements GameState {
         @Override
