@@ -58,6 +58,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler
             {
                 String newRoomId = roomManager.createRoom();
                 roomManager.joinRoom(newRoomId, session);
+                roomManager.setPlayerName(session, gameMsg.sender());
 
                 Map<String, Object> content = new HashMap<>();
                 content.put("roomId", roomManager.getRooms().get(newRoomId).size());
@@ -75,6 +76,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler
                 {
                     int index = roomManager.getRooms().get(gameMsg.roomId()).size();
                     String playerNameWithIndex = gameMsg.sender() + index;
+                    roomManager.setPlayerName(session, playerNameWithIndex);
 
                     content.put("playerID", index);
                     session.sendMessage(new TextMessage(objectMapper.writeValueAsString(

@@ -263,6 +263,7 @@ public class MainMenu extends StackPane {
             Button leaveBtn = styledButton("LEAVE ROOM", "#888888", 16);
             leaveBtn.setOnAction(e -> {
                 networkClient.sendAction(GameAction.LEAVE_ROOM, roomCode, new HashMap<>());
+                networkClient.disconnect();
                 MainMenu mainMenu = (MainMenu)getParent();
                 mainMenu.getChildren().remove(this);          // remove LobbyScreen
                 mainMenu.getChildren().getFirst().setVisible(true); // show the main content again
@@ -297,8 +298,21 @@ public class MainMenu extends StackPane {
                             }
                             case PLAYER_DISCONNECTED ->
                             {
-                                String msg = (String) payload.getOrDefault("content", "A player has disconnected.");
-                                playerList.appendText("⚠ " + msg + "\n");
+                                String disconnectedPlayer = (String) payload.get("playerName");
+                                if (disconnectedPlayer != null) {
+                                    lobbyPlayers.remove(disconnectedPlayer); // הסרת השחקן כדי שלא ייכנס למשחק
+
+                                    // בנייה מחדש של תצוגת הרשימה
+                                    playerList.setText("Players in room:\n");
+                                    for (String p : lobbyPlayers) {
+                                        if (p.equals(myName)) {
+                                            playerList.appendText("- You (" + p + ")\n");
+                                        } else {
+                                            playerList.appendText("- " + p + "\n");
+                                        }
+                                    }
+                                    playerList.appendText("\n⚠ " + disconnectedPlayer + " has left the room.\n");
+                                }
                             }
                             default -> {}
                         }

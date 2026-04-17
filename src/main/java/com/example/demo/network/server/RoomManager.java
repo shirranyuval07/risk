@@ -1,5 +1,6 @@
 package com.example.demo.network.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
@@ -20,6 +21,10 @@ public class RoomManager {
 
     // Also track which room each session belongs to, so we can clean up on disconnect
     private final Map<String, String> sessionToRoom = new ConcurrentHashMap<>();
+    private final Map<String, String> sessionToPlayerName = new ConcurrentHashMap<>();
+    public void setPlayerName(WebSocketSession session, String playerName) {
+        sessionToPlayerName.put(session.getId(), playerName);
+    }
 
     public String createRoom()
     {
@@ -46,29 +51,38 @@ public class RoomManager {
      * Called when a WebSocket connection closes (normally or due to error).
      * Removes the session from its room and cleans up empty rooms.
      */
-    public void handleDisconnect(WebSocketSession session)
-    {
+    public void handleDisconnect(WebSocketSession session) {
         String roomId = sessionToRoom.remove(session.getId());
-        if (roomId == null) return; // session was never in a room
+        String playerName = sessionToPlayerName.remove(session.getId()); // שליפת שם השחקן
+        if (roomId == null) return;
 
         List<WebSocketSession> sessions = rooms.get(roomId);
         if (sessions != null) {
             sessions.remove(session);
-            System.out.println("Player " + session.getId() + " disconnected from room " + roomId);
+            System.out.println("Player " + playerName + " disconnected from room " + roomId);
 
-            // Notify remaining players that someone left
-            String notice = buildDisconnectNotice(roomId);
-            for (WebSocketSession remaining : sessions) {
-                if (remaining.isOpen()) {
-                    try {
-                        remaining.sendMessage(new TextMessage(notice));
-                    } catch (IOException e) {
-                        System.out.println("Error notifying disconnect: " + e.getMessage());
+            // עדכון השחקנים הנותרים לגבי מי בדיוק עזב
+            if (playerName != null && !sessions.isEmpty()) {
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    Map<String, Object> content = new java.util.HashMap<>();
+                    content.put("playerName", playerName);
+
+                    com.example.demo.network.shared.GameMessage noticeMsg = new com.example.demo.network.shared.GameMessage(
+                            com.example.demo.network.shared.GameAction.PLAYER_DISCONNECTED, roomId, "Server", content);
+
+                    String notice = mapper.writeValueAsString(noticeMsg);
+
+                    for (WebSocketSession remaining : sessions) {
+                        if (remaining.isOpen()) {
+                            remaining.sendMessage(new TextMessage(notice));
+                        }
                     }
+                } catch (Exception e) {
+                    System.out.println("Error notifying disconnect: " + e.getMessage());
                 }
             }
 
-            // Clean up the room entirely if it's now empty
             if (sessions.isEmpty()) {
                 rooms.remove(roomId);
                 System.out.println("Room " + roomId + " removed (empty).");
