@@ -15,7 +15,8 @@ public class DialogManager {
     // מונע יצירת מופעים של המחלקה - משתמשים רק במתודות הסטטיות
     private DialogManager() {}
 
-    public static void showRulesDialog() {
+    public static void showRulesDialog()
+    {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Risk Rules");
         alert.setHeaderText("How to Play Risk: Global Conquest");
@@ -54,7 +55,8 @@ public class DialogManager {
     }
 
 
-    public static void showCardsDialog(Player player, Runnable onTradeSuccessful) {
+    public static void showCardsDialog(Player player, Runnable onTradeSuccessful)
+    {
         Dialog<List<Card>> dialog = new Dialog<>();
         dialog.setTitle("Your Cards");
         dialog.setHeaderText("Commander " + player.getName() + "'s Hand\nSelect exactly 3 cards to trade:");
@@ -67,16 +69,17 @@ public class DialogManager {
         List<CheckBox> checkBoxes = new ArrayList<>();
 
         // יצירת CheckBox עבור כל קלף שיש לשחקן ביד
-        for (Card card : player.getCards()) {
+        for (Card card : player.getCards())
+        {
             CheckBox cb = new CheckBox(card.name());
             cb.setUserData(card); // שומרים את האובייקט של הקלף מאחורי הקלעים
             checkBoxes.add(cb);
             vbox.getChildren().add(cb);
         }
 
-        if (player.getCards().isEmpty()) {
+        if (player.getCards().isEmpty())
             vbox.getChildren().add(new Label("You don't have any cards yet."));
-        }
+
 
         dialog.getDialogPane().setContent(vbox);
 
@@ -85,15 +88,18 @@ public class DialogManager {
         tradeButton.setDisable(true);
 
         // הוספת מאזין (Listener) שפותח את הכפתור רק אם נבחרו בדיוק 3 קלפים
-        for (CheckBox cb : checkBoxes) {
-            cb.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+        for (CheckBox cb : checkBoxes)
+        {
+            cb.selectedProperty().addListener((obs, wasSelected, isNowSelected) ->
+            {
                 long count = checkBoxes.stream().filter(CheckBox::isSelected).count();
                 tradeButton.setDisable(count != 3);
             });
         }
 
         // המרת הלחיצה לרשימה של הקלפים שנבחרו
-        dialog.setResultConverter(dialogButton -> {
+        dialog.setResultConverter(dialogButton ->
+        {
             if (dialogButton == tradeButtonType) {
                 List<Card> selected = new ArrayList<>();
                 for (CheckBox cb : checkBoxes) {
@@ -107,22 +113,27 @@ public class DialogManager {
         });
 
         // טיפול בתוצאה כשהחלון נסגר
-        dialog.showAndWait().ifPresent(selectedCards -> {
+        dialog.showAndWait().ifPresent(selectedCards ->
+        {
             Card.Service cardService = new Card.Service();
             int bonusArmies = cardService.tradeSpecificCards(player, selectedCards);
 
-            if (bonusArmies > 0) {
+            if (bonusArmies > 0)
+            {
                 player.setDraftArmies(player.getDraftArmies() + bonusArmies);
                 Alert success = new Alert(Alert.AlertType.INFORMATION, "Success! You received " + bonusArmies + " armies!");
                 success.show();
                 onTradeSuccessful.run(); // רענון המסך
-            } else {
+            }
+            else
+            {
                 Alert error = new Alert(Alert.AlertType.ERROR, "Invalid card combination! Trade failed.");
                 error.show();
             }
         });
     }
-    public static void showBattleResultDialog(BattleResult result) {
+    public static void showBattleResultDialog(BattleResult result)
+    {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Battle Results");
         alert.setHeaderText("The battle is over!");
@@ -143,7 +154,8 @@ public class DialogManager {
         content.getChildren().addAll(aLabel, dLabel, lossesLabel);
 
         // לאחר מכן מוסיפים את רכיב הבונוס רק אם התנאי מתקיים
-        if(result.conquered()) {
+        if(result.conquered())
+        {
             conquered = new Label("Country Conquered!");
             conquered.setEffect(new Bloom());
             // כאן אנו משתמשים ב-add במקום addAll כי זה רק רכיב אחד

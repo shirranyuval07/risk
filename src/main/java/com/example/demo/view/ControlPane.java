@@ -12,7 +12,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import lombok.Getter;
 
-public class ControlPane extends HBox {
+public class ControlPane extends HBox
+{
 
     @Getter private final Button btnNextPhase;
     @Getter private final Button btnCards;
@@ -23,7 +24,8 @@ public class ControlPane extends HBox {
     private final Label phaseLabel;
     private final Label armiesLabel;
 
-    public ControlPane(RiskGame game) {
+    public ControlPane(RiskGame game)
+    {
         setPadding(new Insets(15));
         setSpacing(30);
         setAlignment(Pos.CENTER);
@@ -55,10 +57,13 @@ public class ControlPane extends HBox {
         setupBindings(game);
     }
 
-    private void setupBindings(RiskGame game) {
+    private void setupBindings(RiskGame game)
+    {
         // 1. Listen for Player changes
-        game.currentPlayerProperty().addListener((obs, oldPlayer, newPlayer) -> {
-            if (newPlayer != null) {
+        game.currentPlayerProperty().addListener((obs, oldPlayer, newPlayer) ->
+        {
+            if (newPlayer != null)
+            {
                 playerLabel.setText("Player: " + newPlayer.getName());
 
                 // Unbind from the old player and bind to the NEW player's draft armies!
@@ -68,8 +73,10 @@ public class ControlPane extends HBox {
         });
 
         // 2. Listen for Phase changes
-        game.currentStateProperty().addListener((obs, oldState, newState) -> {
-            if (newState != null) {
+        game.currentStateProperty().addListener((obs, oldState, newState) ->
+        {
+            if (newState != null)
+            {
                 phaseLabel.setText("Phase: " + newState.getPhaseName());
 
                 // התיקון: כיבוי כפתור הקלפים אם אנחנו לא בשלב ה-DRAFT
@@ -78,22 +85,27 @@ public class ControlPane extends HBox {
         });
 
         // אתחול ראשוני כשהמסך עולה
-        if (game.getCurrentPlayer() != null) {
+        if (game.getCurrentPlayer() != null)
+        {
             playerLabel.setText("Player: " + game.getCurrentPlayer().getName());
             armiesLabel.textProperty().bind(game.getCurrentPlayer().draftArmiesProperty().asString("Draft Armies: %d"));
         }
-        if (game.getCurrentState() != null) {
+        if (game.getCurrentState() != null)
+        {
             phaseLabel.setText("Phase: " + game.getCurrentState().getPhaseName());
 
             // התיקון: הגדרה ראשונית של מצב הכפתור
             btnCards.setDisable(!game.getCurrentState().getPhaseName().equals("DRAFT"));
-        } else {
+        }
+        else
+        {
             // אם המשחק עדיין לא התחיל או שאין סטייט, נכבה את הכפתור ליתר ביטחון
             btnCards.setDisable(true);
         }
     }
 
-    private Label createStyledLabel(String text) {
+    private Label createStyledLabel(String text)
+    {
         Label label = new Label(text);
         label.setTextFill(Color.WHITE);
         label.setFont(Font.font("Segue UI", FontWeight.BOLD, 14));

@@ -14,12 +14,14 @@ import javafx.scene.paint.Color;
 import lombok.Getter;
 
 @Getter
-public class GameRoot extends StackPane {
+public class GameRoot extends StackPane
+{
 
     private final MapPane mapPane;
     private final ControlPane controlPane;
     @Getter private final PlayerStatsPane playerStatsPane;
-    public GameRoot(RiskGame game) {
+    public GameRoot(RiskGame game)
+    {
         // הגדרת צבע רקע כהה לכל המסך
         BackgroundFill bgFill = new BackgroundFill(Color.rgb(8, 16, 35), CornerRadii.EMPTY, Insets.EMPTY);
         setBackground(new Background(bgFill));

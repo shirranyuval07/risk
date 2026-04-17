@@ -1,4 +1,4 @@
-package com.example.demo.model.AIAgent;
+package com.example.demo.model.AIAgent.Logic;
 
 import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;

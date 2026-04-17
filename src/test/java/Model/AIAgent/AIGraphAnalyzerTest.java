@@ -1,6 +1,6 @@
 package Model.AIAgent;
 
-import com.example.demo.model.AIAgent.AIGraphAnalyzer;
+import com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
 import org.junit.jupiter.api.Test;

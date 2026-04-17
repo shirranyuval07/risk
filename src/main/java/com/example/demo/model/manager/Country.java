@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * מדינה (טריטוריה) במשחק Risk
- * 
+
  * תפקידיה:
  * - ייצוג טריטוריה על הלוח עם שם, ID וקואורדינטות
  * - ניהול בעלות המדינה (שחקן מסוים)
@@ -22,14 +22,15 @@ import java.util.List;
  * - חיבור למדינות שכנות (גבול משותף)
  * - ויזואליזציה דרך SVGPath
  * - שיוך ליבשת לחישוב בונוס טריטוריות
- * 
+
  * השימוש: מהווה יחידת משחק בסיסית - כל מדינה היא ישות עצמאית
  * שימושים: 
  * - קרא מידע על בעלות וחיילים
  * - עדכן מספר חיילים בקרב/הגנה
  * - מצא שכנים להתקפה/הגנה
  */
-public class Country {
+public class Country
+{
     @Getter
     private final int id;
     @Getter
@@ -61,7 +62,8 @@ public class Country {
      * @param x קואורדינטת X למיקום על המפה
      * @param y קואורדינטת Y למיקום על המפה
      */
-    public Country(int id, String name, int x, int y) {
+    public Country(int id, String name, int x, int y)
+    {
         this.id = id;
         this.name = name;
         this.x = x;
@@ -74,20 +76,20 @@ public class Country {
      * 
      * @param neighbor המדינה השכנה להוספה
      */
-    public void addNeighbor(Country neighbor) {
-        if (!neighbors.contains(neighbor)) {
+    public void addNeighbor(Country neighbor)
+    {
+        if (!neighbors.contains(neighbor))
             neighbors.add(neighbor);
-        }
+
     }
 
-    // --- Property Getters & Setters ---
 
     /**
      * קבלת בעלי המדינה הנוכחי
      * @return השחקן שבעלותו המדינה, או null אם אין בעלים
      */
     public Player getOwner() { return owner.get(); }
-    
+
     /**
      * קביעת בעלי חדש למדינה
      * @param newOwner השחקן החדש שיהיה בעלים

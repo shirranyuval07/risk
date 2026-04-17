@@ -1,4 +1,4 @@
-package com.example.demo.model.AIAgent;
+package com.example.demo.model.AIAgent.Logic;
 
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;

@@ -1,7 +1,8 @@
 package com.example.demo.model.AIAgent.Strategies;
 
+import com.example.demo.config.AIStrategyProps;
 import com.example.demo.config.GameConstants;
-import com.example.demo.model.AIAgent.AIGraphAnalyzer;
+import com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer;
 import com.example.demo.model.AIAgent.Rules.BaseRule;
 import com.example.demo.model.AIAgent.Rules.HeuristicRule;
 import com.example.demo.model.AIAgent.Rules.SetupHeuristicRule;
@@ -293,7 +294,8 @@ public interface HeuristicStrategy {
     /**
      * Configurable implementation with custom troop movement behavior.
      */
-    class Configurable extends Abstract {
+    class Configurable extends Abstract
+    {
         private final TroopMovementBehavior movementBehavior;
         private final DraftBehavior draftBehavior;
 
@@ -327,6 +329,8 @@ public interface HeuristicStrategy {
             return movementBehavior.calculate(source.getArmies(), minMove, maxMove);
         }
 
+
+
         @FunctionalInterface
         public interface TroopMovementBehavior {
             int calculate(int totalArmies, int minMove, int maxMove);
@@ -337,7 +341,8 @@ public interface HeuristicStrategy {
          * שימוש בסטטיק פקטוריז כדי לספק התנהגויות מוכנות (תוקפנית / הגנתית).
          */
         @FunctionalInterface
-        public interface DraftBehavior {
+        public interface DraftBehavior
+        {
             void execute(Player player, RiskGame game, AIGraphAnalyzer analyzer, HeuristicStrategy strategy);
 
             /** הצבה תוקפנית – כל החיילים על נקודת ההתקפה הטובה ביותר */
@@ -376,6 +381,22 @@ public interface HeuristicStrategy {
                 };
             }
         }
+
+        public static Configurable from(AIStrategyProps p,
+                                        TroopMovementBehavior movement,
+                                        DraftBehavior draft)
+        {
+            return new Configurable(
+                    HeuristicWeights.from(p),
+                    ThresholdConfig.from(p),
+                    p.getWeightFutureThreat(),
+                    p.getContinentBreakMultiplier(),
+                    p.getBonusFocus(),
+                    p.getProgressFocus(),
+                    p.getResistanceAvoidance(),
+                    movement,
+                    draft);
+        }
     }
 
     /**
@@ -388,8 +409,20 @@ public interface HeuristicStrategy {
             double expectedCasualties,
             double articulationPointBonus,
             double casualtiesMultiplier,
-            double exposurePenaltyMultiplier
-    ) {}
+            double exposurePenaltyMultiplier)
+    {
+        private static HeuristicWeights from(AIStrategyProps p)
+        {
+            return new HeuristicWeights(
+                    p.getWeightWinProbability(),
+                    p.getWeightContinentBonus(),
+                    p.getWeightStrategicValue(),
+                    p.getWeightExpectedCasualties(),
+                    p.getArticulationPointBonus(),
+                    p.getCasualtiesMultiplier(),
+                    p.getExposurePenaltyMultiplier());
+        }
+    }
 
     /**
      * Encapsulates threshold configuration.
@@ -397,6 +430,14 @@ public interface HeuristicStrategy {
     record ThresholdConfig(
             double attackThreshold,
             double minArmyAdvantage,
-            double setupStackingWeight
-    ) {}
+            double setupStackingWeight)
+    {
+        private static ThresholdConfig from(AIStrategyProps p)
+        {
+            return new ThresholdConfig(
+                    p.getAttackThreshold(),
+                    p.getMinArmyAdvantage(),
+                    p.getSetupStackingWeight());
+        }
+    }
 }

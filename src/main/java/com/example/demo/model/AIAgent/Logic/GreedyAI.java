@@ -1,4 +1,4 @@
-package com.example.demo.model.AIAgent;
+package com.example.demo.model.AIAgent.Logic;
 
 import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
@@ -83,7 +83,8 @@ public class GreedyAI implements BotStrategy {
      *             ומבצעת את ההתקפות בסדר יורד של ציון עד שהן לא רלוונטיות יותר או שהן מובילות לכיבוש.
      *            היא מתמקדת בהתקפות עם יתרון צבאי משמעותי ומעדכנת את תור ההתקפה לאחר כל כיבוש כדי לנצל הזדמנויות חדשות שנוצרו.
      * */
-     private void chooseAttack(Player player, RiskGame game) {
+     private void chooseAttack(Player player, RiskGame game)
+     {
          MaxPriorityQueue<AttackMove> attackQueue = graphAnalyzer.buildAttackQueue(player, strategy);
 
          while (!attackQueue.isEmpty())

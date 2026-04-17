@@ -1,5 +1,5 @@
 package com.example.demo.model.manager;
-import com.example.demo.model.AIAgent.BotStrategy;
+import com.example.demo.model.AIAgent.Logic.BotStrategy;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import lombok.Getter;
@@ -80,7 +80,8 @@ public class Player {
      * @param color צבע השחקן בממשק
      * @param isAI האם זה שחקן מעוצב (אחרת אדם)
      */
-    public Player(String name, Color color, boolean isAI) {
+    public Player(String name, Color color, boolean isAI)
+    {
         this.name = name;
         this.color = color;
         this.isAI = isAI;
@@ -93,8 +94,10 @@ public class Player {
      * 
      * @param c המדינה להוספה
      */
-    public void addCountry(Country c) {
-        if (!ownedCountries.contains(c)) {
+    public void addCountry(Country c)
+    {
+        if (!ownedCountries.contains(c))
+        {
             ownedCountries.add(c);
             c.setOwner(this);
         }

@@ -2,7 +2,8 @@ package com.example.demo.model.util;
 
 import java.util.ArrayList;
 
-public class MaxPriorityQueue<T extends Comparable<T>> {
+public class MaxPriorityQueue<T extends Comparable<T>>
+{
 
     private final ArrayList<T> heap;
 
@@ -10,7 +11,6 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
     {
         this.heap = new ArrayList<>();
     }
-    public int compare(T a, T b) { return a.compareTo(b); }
     // פונקציות עזר לחישוב אינדקסים
     private int getParentIndex(int i) { return (i - 1) / 2; }
     private int getLeftChildIndex(int i) { return 2 * i + 1; }
@@ -44,10 +44,6 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
         return maxItem;
     }
 
-    public T peek()
-    {
-        return heap.isEmpty() ? null : heap.getFirst();
-    }
 
     public boolean isEmpty()
     {
@@ -102,7 +98,8 @@ public class MaxPriorityQueue<T extends Comparable<T>> {
     }
 
     // פונקציית עזר נוחה להחלפת איברים בתוך המערך
-    private void swap(int i, int j) {
+    private void swap(int i, int j)
+    {
         T temp = heap.get(i);
         heap.set(i, heap.get(j));
         heap.set(j, temp);

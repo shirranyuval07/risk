@@ -38,10 +38,12 @@ import java.util.List;
  * 
  * השימוש: עקיבה אחרי מצב המשחק וסטטיסטיקות
  */
-public class PlayerStatsPane extends VBox {
+public class PlayerStatsPane extends VBox
+{
     private final RiskGame game;
 
-    public PlayerStatsPane(RiskGame game) {
+    public PlayerStatsPane(RiskGame game)
+    {
         this.game = game;
         setPadding(new Insets(20));
         setSpacing(15);
@@ -53,7 +55,8 @@ public class PlayerStatsPane extends VBox {
         updateStats();
     }
 
-    public void updateStats() {
+    public void updateStats()
+    {
         getChildren().clear();
 
         Label title = new Label("LEADERBOARD");
@@ -63,7 +66,8 @@ public class PlayerStatsPane extends VBox {
 
         List<Player> players = game.getPlayers();
 
-        for (Player p : players) {
+        for (Player p : players)
+        {
             // חישוב סטטיסטיקות מדויקות מהמודל
             long territories = game.getBoard().getCountries().stream()
                     .filter(c -> c.getOwner() != null && c.getOwner().equals(p))
@@ -105,7 +109,8 @@ public class PlayerStatsPane extends VBox {
     }
 
     // פונקציית עזר להמרת צבע JavaFX לקוד Hex עבור ה-CSS
-    private String toHexString(Color color) {
+    private String toHexString(Color color)
+    {
         return String.format("#%02X%02X%02X",
                 (int) (color.getRed() * GameConstants.COLOR_HEX_MAX),
                 (int) (color.getGreen() * GameConstants.COLOR_HEX_MAX),

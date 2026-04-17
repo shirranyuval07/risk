@@ -21,7 +21,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import java.util.List;
 @Slf4j
 @SpringBootApplication
-public class RiskApplication extends Application {
+public class RiskApplication extends Application
+{
 
     private ConfigurableApplicationContext springContext;
     private Stage primaryStage;
@@ -30,29 +31,35 @@ public class RiskApplication extends Application {
     private boolean isServer = false;
 
 
-    // JavaFX needs the default empty constructor to launch!
 
     @Override
-    public void init() {
+    public void init()
+    {
         List<String> params = getParameters().getRaw();
         isServer = params.contains("--server");
 
-        if (isServer) {
+        if (isServer)
+        {
             log.info("🖥 Starting in SERVER mode — Spring Boot will start.");
             springContext = SpringApplication.run(RiskApplication.class);
-        } else {
-            log.info("🎮 Starting in CLIENT mode — no server will be started.");
         }
+        else
+            log.info("🎮 Starting in CLIENT mode — no server will be started.");
+
     }
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage)
+    {
         this.primaryStage = primaryStage;
 
-        try {
+        try
+        {
             Image icon = new Image("map_background.png");
             primaryStage.getIcons().add(icon);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             log.info("Icon image not found");
         }
 
@@ -62,18 +69,21 @@ public class RiskApplication extends Application {
         primaryStage.show();
     }
 
-    private void showMainMenu() {
+    private void showMainMenu()
+    {
         MainMenu mainMenu = new MainMenu(this::startGameWithConfig);
         Scene menuScene = new Scene(mainMenu, 1200, 800);
         primaryStage.setScene(menuScene);
     }
 
-    private void startGameWithConfig(List<MainMenu.PlayerSetup> playerSetups, RiskWebSocketClient networkClient) {
+    private void startGameWithConfig(List<MainMenu.PlayerSetup> playerSetups, RiskWebSocketClient networkClient)
+    {
         RiskGame game = new RiskGame();
 
-        if (isServer && springContext != null) {
+        if (isServer && springContext != null)
+        {
 
-            // FETCH the strategies and factory dynamically from the Spring context!
+
             HeuristicStrategy balancedStrategy = springContext.getBean("balancedStrategy", HeuristicStrategy.class);
             HeuristicStrategy defensiveStrategy = springContext.getBean("defensiveStrategy", HeuristicStrategy.class);
             HeuristicStrategy offensiveStrategy = springContext.getBean("offensiveStrategy", HeuristicStrategy.class);
@@ -92,17 +102,20 @@ public class RiskApplication extends Application {
                 }
                 game.addPlayer(p);
             }
-        } else {
+        }
+        else
+        {
             // Client mode: all players are Human (no AI beans available)
-            for (MainMenu.PlayerSetup setup : playerSetups) {
+            for (MainMenu.PlayerSetup setup : playerSetups)
+            {
                 Player p = new Player(setup.name(), setup.color(), false);
                 game.addPlayer(p);
             }
         }
 
-        if (networkClient != null) {
+        if (networkClient != null)
             game.setGameSeed(networkClient.getGameSeed());
-        }
+
         game.startGame();
 
         GameRoot root = new GameRoot(game);
@@ -113,9 +126,10 @@ public class RiskApplication extends Application {
     }
 
     @Override
-    public void stop() {
-        if (springContext != null) {
+    public void stop()
+    {
+        if (springContext != null)
             springContext.close();
-        }
+
     }
 }

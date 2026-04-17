@@ -250,7 +250,8 @@ public class MainMenu extends StackPane {
 
             Button startBtn = styledButton("START MULTIPLAYER GAME", "#e13c3c", 20);
             startBtn.setVisible(isHost);
-            startBtn.setOnAction(e -> {
+            startBtn.setOnAction(e ->
+            {
                 long seed = new java.util.Random().nextLong();
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("seed", seed);
@@ -259,23 +260,32 @@ public class MainMenu extends StackPane {
                 networkClient.sendAction(GameAction.START_GAME, roomCode, payload);
             });
 
-            getChildren().addAll(title, subtitle, playerList, startBtn);
+            Button leaveBtn = styledButton("LEAVE ROOM", "#888888", 16);
+            leaveBtn.setOnAction(e -> {
+                networkClient.sendAction(GameAction.LEAVE_ROOM, roomCode, new HashMap<>());
+                MainMenu mainMenu = (MainMenu)getParent();
+                mainMenu.getChildren().remove(this);          // remove LobbyScreen
+                mainMenu.getChildren().getFirst().setVisible(true); // show the main content again
+            });
+
+            getChildren().addAll(title, subtitle, playerList, startBtn,leaveBtn);
 
             // Handle incoming lobby events
             networkClient.setOnMessageReceived(message ->
                     javafx.application.Platform.runLater(() -> {
                         Map<String, Object> payload = message.content();
 
-                        switch (message.type()) {
-                            case PLAYER_JOINED -> {
+                        switch (message.type())
+                        {
+                            case PLAYER_JOINED ->
+                            {
                                 String newPlayer = (String) payload.get("PlayerNameWithID");
                                 lobbyPlayers.add(newPlayer);
                                 playerList.appendText("- " + newPlayer + " has joined!\n");
                             }
 
-                            // אם נוסיף בעתיד PLAYER_DISCONNECTED, נטפל בו פה
-
-                            case GAME_STARTED -> {
+                            case GAME_STARTED ->
+                            {
                                 networkClient.setRoomId(message.roomId());
 
                                 long seed = ((Number) payload.get("seed")).longValue();
@@ -284,6 +294,11 @@ public class MainMenu extends StackPane {
 
                                 networkClient.setGameSeed(seed);
                                 onStartGame.accept(buildPlayerSetups(playersList), networkClient);
+                            }
+                            case PLAYER_DISCONNECTED ->
+                            {
+                                String msg = (String) payload.getOrDefault("content", "A player has disconnected.");
+                                playerList.appendText("⚠ " + msg + "\n");
                             }
                             default -> {}
                         }

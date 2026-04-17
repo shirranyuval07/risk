@@ -1,6 +1,6 @@
 package com.example.demo.model.AIAgent.Rules;
 
-import com.example.demo.model.AIAgent.AIGraphAnalyzer;
+import com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer;
 import com.example.demo.model.manager.Continent;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;

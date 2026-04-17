@@ -9,16 +9,17 @@ import com.example.demo.model.Records.GameRecords.BattleResult;
 
 /**
  * כיתת הקוביות - אחראית על הטלות קוביות במשחק Risk
- * 
+
  * תפקידיה:
  * - הטלת קוביות (1-6) לפי מספר הקוביות הרצוי
  * - מיון התוצאות בסדר יורד (כנדרש בחוקי Risk)
  * - חישוב תוצאות קרב בין תוקף ומגן
  * - הספקת ניתוח הפסדים בקרב
- * 
+
  * השימוש: משמשת למערכת הקרבות וחישובי ההסתברות
  */
-public class Dice {
+public class Dice
+{
     private static Random random = new Random();
 
     /**
@@ -49,7 +50,7 @@ public class Dice {
 
     /**
      * סימולציית קרב מלא בין תוקף ומגן
-     * 
+
      * תהליך:
      * 1. הטלת קוביות לשני הצדדים (מוגבל ל-3 לתוקף, 2 למגן)
      * 2. השוואה של הקוביות בסדר יורד
@@ -60,7 +61,8 @@ public class Dice {
      * @param defenderArmies מספר החיילים של המגן
      * @return BattleResult המכיל תוצאות הקרב וניתוח הפסדים
      */
-    public static BattleResult rollBattle(int attackerArmies, int defenderArmies) {
+    public static BattleResult rollBattle(int attackerArmies, int defenderArmies)
+    {
         int aDiceCount = Math.min(GameConstants.MAX_ATTACKER_DICE, attackerArmies - GameConstants.MIN_ARMIES_TO_STAY);
         int dDiceCount = Math.min(GameConstants.MAX_DEFENDER_DICE, defenderArmies);
 
@@ -73,15 +75,15 @@ public class Dice {
         int comparisons = Math.min(aDiceCount, dDiceCount);
         int aLoss = 0, dLoss = 0;
 
-        for (int i = 0; i < comparisons; i++) {
+        for (int i = 0; i < comparisons; i++)
+        {
             if (aRolls[i] > dRolls[i]) dLoss++;
             else aLoss++;
         }
 
         boolean conquered = (defenderArmies - dLoss) <= 0;
-        int minMove = aDiceCount;
         int maxMove = attackerArmies - 1 - aLoss;
 
-        return new BattleResult(aRolls, dRolls, aLoss, dLoss, conquered, minMove, maxMove);
+        return new BattleResult(aRolls, dRolls, aLoss, dLoss, conquered, aDiceCount, maxMove);
     }
 }

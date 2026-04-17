@@ -14,21 +14,8 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
-/*
- * משחק Risk - בקר מרכזי על כל היבטי המשחק
- * תפקידיה:
- * - ניהול זרימת המשחק (שלבים, תורות, פאזות)
- * - רשימת שחקנים וניהול תור נוכחי
- * - לוח המשחק וניהול מדינות
- * - קרא להודעות ב-UI (observers pattern)
- * - ניהול מצב המשחק (setup, reinforcement, attack, fortify)
- * השימוש:
- * - נקודת התחלה של משחק חדש
- * - מעבר בין תורות ופאזות
- * - ניהול התקפות ופורטיפיקציות
- * - בדיקת תנאי ניצחון
- */
-public class RiskGame {
+public class RiskGame
+{
     @Getter
     private final Board board;
     @Getter

@@ -10,7 +10,8 @@ import java.util.List;
  * יבשת במשחק ריסק – מקבצת מדינות יחד עם בונוס וצבע ייחודי.
  * כל יבשת מוגדרת בגרף העולמי עם צבע נושאי שמשקף את זהותה הגיאוגרפית.
  */
-public class Continent {
+public class Continent
+{
     @Getter
     private final String name;
     @Getter
@@ -19,7 +20,8 @@ public class Continent {
     @Getter
     private final List<Country> countries;
 
-    public Continent(String name, int bonusValue, Color continentColor) {
+    public Continent(String name, int bonusValue, Color continentColor)
+    {
         this.name = name;
         this.bonusValue = bonusValue;
         this.continentColor = continentColor;
@@ -33,11 +35,13 @@ public class Continent {
     public Color getColor() { return continentColor; }
 
     // בודק האם שחקן מסוים שולט בכל המדינות ביבשת הזו
-    public boolean isOwnedBy(Player player) {
-        for (Country c : countries) {
-            if (c.getOwner() != player) {
+    public boolean isOwnedBy(Player player)
+    {
+        for (Country c : countries)
+        {
+            if (c.getOwner() != player)
                 return false;
-            }
+
         }
         return true;
     }

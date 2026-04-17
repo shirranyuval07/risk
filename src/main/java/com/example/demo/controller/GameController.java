@@ -54,7 +54,8 @@ public class GameController {
 
     private final AIEngine.Service aiService = new AIEngine.Service(new Card.Service());
 
-    public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient, Runnable onReturnToMenu) {
+    public GameController(RiskGame model, GameRoot view, RiskWebSocketClient networkClient, Runnable onReturnToMenu)
+    {
 
         this.gameModel = model;
         this.gameView = view;
@@ -62,9 +63,11 @@ public class GameController {
         this.isMultiplayer = (networkClient != null);
         this.onReturnToMenu = onReturnToMenu;
 
-        gameModel.addGameUpdateListener(new GameUpdateListener() {
+        gameModel.addGameUpdateListener(new GameUpdateListener()
+        {
             @Override
-            public void onStatsUpdated() {
+            public void onStatsUpdated()
+            {
                 // כשמגיעה קריאה מהמודל - מעדכנים את המסך!
                 javafx.application.Platform.runLater(() ->
                         gameView.getPlayerStatsPane().updateStats()
@@ -72,7 +75,8 @@ public class GameController {
             }
 
             @Override
-            public void onGameMessage(String message) {
+            public void onGameMessage(String message)
+            {
                 // כשמגיעה הודעה מהמודל - מציגים אותה במסך!
                 javafx.application.Platform.runLater(() ->
                         gameView.getControlPane().setMessage(message)
@@ -82,9 +86,9 @@ public class GameController {
 
         initializeUIListeners();
 
-        if (isMultiplayer) {
+        if (isMultiplayer)
             initializeNetworkListeners();
-        }
+
 
         checkAndExecuteAITurn();
     }
@@ -94,7 +98,8 @@ public class GameController {
      * טענת יציאה: הפונקציה מכניסה למפה של ההנדלרים את השלבי משחק, הפעולות התואמות.
      * מאתחלת מאזינים עבור: לחיצה על המפה, לחיצה על כפתור השלב הבא, לחיצה על כפתור ההדלקת שמות, לחיצה על כפתור הקלפים, לחיצה על כפתור חזרה למסך הראשי.
      * */
-    private void initializeUIListeners() {
+    private void initializeUIListeners()
+    {
         //הצבה במפה של הסוג שלב, הפעולה שמטפלת בו.
         phaseClickHandlers.put(SetupState.class, this::handleSetupClick);
         phaseClickHandlers.put(DraftState.class, this::handleDraftClick);
@@ -102,26 +107,30 @@ public class GameController {
         phaseClickHandlers.put(FortifyState.class, this::handleFortifyClick);
 
         // Map click — הקלקה על מדינה במפה תשלח את המדינה ללוגיקה שתואמת את שלב המשחק הנוכחי
-        gameView.getMapPane().setOnCountryClick(clickedCountry -> {
+        gameView.getMapPane().setOnCountryClick(clickedCountry ->
+        {
             if (isCurrentPlayerAI()) return;
-            if (isMultiplayer && !isMyTurn()) {
+            if (isMultiplayer && !isMyTurn())
+            {
                 gameView.getControlPane().setMessage("It's not your turn!");
                 return;
             }
-            if (clickedCountry != null) {
+            if (clickedCountry != null)
                 handleCountryClick(clickedCountry);
-            }
+
         });
 
         // Next Phase button
-        gameView.getControlPane().getBtnNextPhase().setOnAction(e -> {
+        gameView.getControlPane().getBtnNextPhase().setOnAction(e ->
+        {
             if (isCurrentPlayerAI()) return;
             if (isMultiplayer && !isMyTurn()) return;
             handleNextPhaseRequest();
         });
 
         // Toggle country name labels on the map
-        gameView.getControlPane().getBtnToggleNames().setOnAction(e -> {
+        gameView.getControlPane().getBtnToggleNames().setOnAction(e ->
+        {
             javafx.scene.control.Button btn = gameView.getControlPane().getBtnToggleNames();
             boolean showNames = btn.getText().contains("Show");
             btn.setText(showNames ? "👁 Hide Names" : "👁 Show Names");
@@ -131,15 +140,15 @@ public class GameController {
         // Cards dialog
         gameView.getControlPane().getBtnCards().setOnAction(e ->
                 DialogManager.showCardsDialog(gameModel.getCurrentPlayer(), () ->
-                        gameView.getPlayerStatsPane().updateStats()
-                )
+                        gameView.getPlayerStatsPane().updateStats())
         );
         gameView.getControlPane().getBtnBackToMainMenu().setOnAction(e -> {
-            if (networkClient != null) { networkClient.disconnect(); }
+            if (networkClient != null)
+                networkClient.disconnect();
 
-            if (onReturnToMenu != null) {
+            if (onReturnToMenu != null)
                 onReturnToMenu.run(); // זה מפעיל את הפונקציה showMainMenu מ-RiskApplication!
-            }
+
             log.info("Returning to Main Menu...");
         });
     }
@@ -151,44 +160,51 @@ public class GameController {
      * בודקים מה סוג ההודעה בעזרת switch - case. על פי סוג ההודעה קוראים לפונקציה המתאימה. אם ההודעה לא נוגעת לפעולת משחק ישירה מתעלמים ממנה.
      * קוראים למאזין הזה רק אם המשחק הוא רב משתתפים.
      * */
-    private void initializeNetworkListeners() {
+    private void initializeNetworkListeners()
+    {
         networkClient.setOnMessageReceived(message ->
                 Platform.runLater(() -> {
 
                     Map<String, Object> payload = message.content();
 
-                    if (payload == null) {
+                    if (payload == null)
                         payload = new HashMap<>(); // הגנה מפני payload ריק
-                    }
 
-                    switch (message.type()) {
+
+                    switch (message.type())
+                    {
 
                         case NEXT_PHASE -> executeNextPhaseLocal();
 
-                        case SETUP_PLACE -> {
+                        case SETUP_PLACE ->
+                        {
                             String countryId = String.valueOf(payload.get("SetupPlaceID"));
                             executePlacementLocal(getCountry(countryId));
                         }
 
-                        case DRAFT -> {
+                        case DRAFT ->
+                        {
                             String countryId = String.valueOf(payload.get("targetCountryId"));
                             executePlacementLocal(getCountry(countryId));
                         }
 
-                        case NEXT_TURN -> {
+                        case NEXT_TURN ->
+                        {
                             String playerName = (String) payload.get("NEXT_TURN");
                             int draftArmies = (Integer) payload.get("DRAFT_ARMIES");
                             executeNextTurnLocal(playerName, draftArmies);
                         }
 
-                        case FORTIFY -> {
+                        case FORTIFY ->
+                        {
                             String srcId = String.valueOf(payload.get("FORTIFY"));
                             String destId = String.valueOf(payload.get("DESTINATION_ID"));
                             int amount = (Integer) payload.get("FORTIFY_AMOUNT");
                             executeFortifyLocal(getCountry(srcId), getCountry(destId), amount);
                         }
 
-                        case CONQUEST_MOVE -> {
+                        case CONQUEST_MOVE ->
+                        {
                             String srcId = String.valueOf(payload.get("CONQUEST_MOVE"));
                             String destId = String.valueOf(payload.get("CONQUEST_DESTINATION"));
                             int minMove = (Integer) payload.get("MIN_MOVE");
@@ -196,18 +212,23 @@ public class GameController {
                             applyConquestMove(getCountry(srcId), getCountry(destId), minMove, amount);
                         }
 
-                        case BATTLE_RESULT -> {
-                            try {
+                        case BATTLE_RESULT ->
+                        {
+                            try
+                            {
                                 String attackerId = String.valueOf(payload.get("attackerId"));
                                 String defenderId = String.valueOf(payload.get("defenderId"));
                                 BattleResult result = objectMapper.convertValue(payload.get("battleResult"), BattleResult.class);
                                 applyBattleResult(getCountry(attackerId), getCountry(defenderId), result);
-                            } catch (Exception e) {
+                            }
+                            catch (Exception e)
+                            {
                                 log.error("Failed to parse BattleResult: {}", e.getMessage());
                             }
                         }
 
-                        default -> {
+                        default ->
+                        {
                             // מתעלם מסוגי הודעות אחרות שלא נוגעות למהלך המשחק הישיר כאן (כמו JOIN_ROOM)
                         }
                     }
@@ -223,11 +244,12 @@ public class GameController {
      * @param clickedCountry המדינה שלחצו עליה
      */
 
-    private void handleCountryClick(Country clickedCountry) {
+    private void handleCountryClick(Country clickedCountry)
+    {
         Consumer<Country> handler = phaseClickHandlers.get(gameModel.getCurrentState().getClass());
-        if (handler != null) {
+        if (handler != null)
             handler.accept(clickedCountry);
-        }
+
     }
 
 
@@ -239,21 +261,26 @@ public class GameController {
      * @param payloadKey מפתח ה-payload שדרכו נשלח מזהה המדינה
      * @param action סוג הפעולה ברשת (SETUP_PLACE או DRAFT)
      * */
-    private void handlePlacementClick(Country country, String payloadKey, GameAction action) {
-        if (isMultiplayer) {
+    private void handlePlacementClick(Country country, String payloadKey, GameAction action)
+    {
+        if (isMultiplayer)
+        {
             Map<String, Object> payload = new HashMap<>();
             payload.put(payloadKey, country.getId());
             networkClient.sendAction(action, networkClient.getRoomId(), payload);
-        } else {
-            executePlacementLocal(country);
         }
+        else
+            executePlacementLocal(country);
+
     }
 
-    private void handleSetupClick(Country country) {
+    private void handleSetupClick(Country country)
+    {
         handlePlacementClick(country, "SetupPlaceID", GameAction.SETUP_PLACE);
     }
 
-    private void handleDraftClick(Country country) {
+    private void handleDraftClick(Country country)
+    {
         handlePlacementClick(country, "targetCountryId", GameAction.DRAFT);
     }
 
@@ -262,31 +289,38 @@ public class GameController {
      * טענת יציאה: המודל מנסה להציב מדינה עבור השלב הזה ומציג הודעה מתאימה. לאחר מכן בודק אם זה תור של AI
      * @param country המדינה שהשחקן בחר לשים בה חייל
      * */
-    private void executePlacementLocal(Country country) {
-        if (gameModel.placeArmy(country)) {
+    private void executePlacementLocal(Country country)
+    {
+        if (gameModel.placeArmy(country))
+        {
             gameView.getControlPane().setMessage("Placed army on " + country.getName());
             checkAndExecuteAITurn();
-        } else {
-            gameView.getControlPane().setMessage("Cannot place army here!");
         }
+        else
+            gameView.getControlPane().setMessage("Cannot place army here!");
+
     }
 
 
     /**
      * טענת יציאה: הפונקציה מטפלת בבקשה לעבור לשלב הבא של המשחק.
      * */
-    private void handleNextPhaseRequest() {
-        if (isMultiplayer) {
+    private void handleNextPhaseRequest()
+    {
+        if (isMultiplayer)
+        {
             Map<String, Object> payload = new HashMap<>();
             networkClient.sendAction(GameAction.NEXT_PHASE, networkClient.getRoomId(), payload);
-        } else {
-            executeNextPhaseLocal();
         }
+        else
+            executeNextPhaseLocal();
+
     }
     /**
      * טענת יציאה: הפונקציה מעבירה את המשחק לשלב הבא שלו.
      * */
-    private void executeNextPhaseLocal() {
+    private void executeNextPhaseLocal()
+    {
         boolean wasFortify = gameModel.getCurrentState() instanceof FortifyState;
 
         gameModel.nextPhase();
@@ -306,19 +340,19 @@ public class GameController {
         if (isCurrentPlayerAI())
             checkAndExecuteAITurn();
 
-        else if (gameModel.getCurrentState() instanceof DraftState
-                && gameModel.getCurrentPlayer().getDraftArmies() > 0)
-        {
+        else if (gameModel.getCurrentState() instanceof DraftState && gameModel.getCurrentPlayer().getDraftArmies() > 0)
             gameView.getControlPane().setMessage("You have armies left to place!");
-        }
+
     }
     /**
      * טענת יציאה: הפונקציה בודקת מי השחקן הבא בתור.
      * אם השחקן הבא הוא לא אני, שולחת לכל המשתתפים הודעה עם שם השחקן החדש וכמות החיילים שיש לו להניח בשלב הדראפט, כדי שכולם יעודכנו על השינוי בתור.
      * */
-    private void broadcastNextTurnIfNeeded() {
+    private void broadcastNextTurnIfNeeded()
+    {
         Player newCurrentPlayer = gameModel.getCurrentPlayer();
-        if (!newCurrentPlayer.getName().equals(networkClient.getPlayerName())) {
+        if (!newCurrentPlayer.getName().equals(networkClient.getPlayerName()))
+        {
             Map<String, Object> payload = new HashMap<>();
             payload.put("NEXT_TURN", newCurrentPlayer.getName());
             payload.put("DRAFT_ARMIES", newCurrentPlayer.getDraftArmies());
@@ -332,7 +366,8 @@ public class GameController {
      * @param draftArmies כמות החיילים שיש לשחקן החדש להניח בשלב הדראפט
      * @param playerName שם השחקן החדש בתור, כדי שנוכל לעדכן את כמות החיילים שלו לשים בשלב הדראפט
      * */
-     private void executeNextTurnLocal(String playerName, int draftArmies) {
+     private void executeNextTurnLocal(String playerName, int draftArmies)
+     {
          gameModel.nextTurn();
 
          for (Player p : gameModel.getPlayers())
@@ -357,32 +392,32 @@ public class GameController {
      * */
     private void handleFortifyClick(Country clickedCountry)
     {
-        if (sourceCountry == null) {
+        if (sourceCountry == null)
+        {
             if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer())
-                    && clickedCountry.getArmies() > 1) {
+                    && clickedCountry.getArmies() > 1)
+            {
                 setSelection(clickedCountry, "Move from " + clickedCountry.getName() + ". Select target.");
                 Set<Country> targets = gameModel.getCurrentState().getValidTargets(clickedCountry);
-                if (targets.isEmpty()) {
+                if (targets.isEmpty())
                     gameView.getControlPane().setMessage("No valid targets to fortify from here!");
-                } else {
+
+                else
                     gameView.getMapPane().highlightTargets(targets);
-                }
+
             }
         }
         else
         {
             if (clickedCountry.equals(sourceCountry))
-            {
                 clearSelection();
-            }
+
             else if(!gameModel.getCurrentState().getValidTargets(sourceCountry).contains(clickedCountry))
-            {
                 gameView.getControlPane().setMessage("Invalid target!");
-            }
+
             else if (clickedCountry.getOwner().equals(gameModel.getCurrentPlayer()))
-            {
                 promptFortifyAmount(clickedCountry);
-            }
+
         }
     }
     /**
@@ -398,11 +433,15 @@ public class GameController {
         dialog.setContentText("Enter amount (Max: " + maxMove + "):");
 
         Optional<String> result = dialog.showAndWait();
-        result.ifPresent(input -> {
-            try {
-                if (!input.isEmpty()) {
+        result.ifPresent(input ->
+        {
+            try
+            {
+                if (!input.isEmpty())
+                {
                     int amount = Integer.parseInt(input);
-                    if (isMultiplayer) {
+                    if (isMultiplayer)
+                    {
                         Map<String, Object> payload = new HashMap<>();
                         payload.put("FORTIFY", sourceCountry.getId());
                         payload.put("DESTINATION_ID", destination.getId());
@@ -410,11 +449,14 @@ public class GameController {
 
                         networkClient.sendAction(GameAction.FORTIFY, networkClient.getRoomId(), payload);
                         clearSelection();
-                    } else {
-                        executeFortifyLocal(sourceCountry, destination, amount);
                     }
+                    else
+                        executeFortifyLocal(sourceCountry, destination, amount);
+
                 }
-            } catch (NumberFormatException e) {
+            }
+            catch (NumberFormatException e)
+            {
                 gameView.getControlPane().setMessage("Invalid number!");
                 clearSelection();
             }

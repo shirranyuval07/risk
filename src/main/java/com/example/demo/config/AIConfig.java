@@ -1,29 +1,24 @@
 package com.example.demo.config;
 
-import com.example.demo.model.AIAgent.Rules.HeuristicRule;
 import com.example.demo.model.AIAgent.Strategies.HeuristicStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import lombok.RequiredArgsConstructor;
 
-/*This tell the spring framework that this class contains methods
-annotated with @Bean and that Spring should process them to generate
-beans to be managed by the application context.*/
+
 @Configuration
-/*This is a Lombok annotation that automatically generates a constructor
-for all final fields. In this case,it injects the AIProperties props
-into this class automatically.*/
 @RequiredArgsConstructor
 public class AIConfig {
-    //האובייקט מחזיק מספר משקלים ותכונות שונות שמחולקים ל3 קבוצות - מאוזן, הגנתי, התקפי
-    private final AIProperties props;
 
-    //הבינס רשומים בתוך הApplication context שיוכלו להיות מיושמים לשחקני AI אח"כ
+    private static final int BALANCED_ARMY_RESERVE = 3;
+    private static final double CARD_FARMING_RULE_PRIORITY = 2.0;
+
+    private final AIProperties props;
 
     @Bean
     public HeuristicStrategy.Configurable balancedStrategy() {
         return buildStrategy(props.getBalanced(),
-                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies - 3)),
+                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies - BALANCED_ARMY_RESERVE)),
                 HeuristicStrategy.Configurable.DraftBehavior.defensive());
     }
 
@@ -32,9 +27,8 @@ public class AIConfig {
         HeuristicStrategy.Configurable strategy = buildStrategy(props.getDefensive(),
                 (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies / 2)),
                 HeuristicStrategy.Configurable.DraftBehavior.defensive());
-        
 
-        strategy.addRule(com.example.demo.model.AIAgent.Rules.HeuristicRule.cardFarmingRule(), 2.0);
+        strategy.addRule(com.example.demo.model.AIAgent.Rules.HeuristicRule.cardFarmingRule(), CARD_FARMING_RULE_PRIORITY);
 
         return strategy;
     }
@@ -47,35 +41,9 @@ public class AIConfig {
     }
 
     // פונקציית עזר שמונעת שכפול קוד בבניית האובייקט
-    //שולחים את הביטוי למבדה המתאים ע"י שימוש בTroopMovementBehavior שנמצא באסטרטגיה
     private HeuristicStrategy.Configurable buildStrategy(AIStrategyProps p,
                                                          HeuristicStrategy.Configurable.TroopMovementBehavior movement,
-                                                         HeuristicStrategy.Configurable.DraftBehavior draft)
-    {
-        HeuristicStrategy.HeuristicWeights weights = new HeuristicStrategy.HeuristicWeights(
-                p.getWeightWinProbability(),
-                p.getWeightContinentBonus(),
-                p.getWeightStrategicValue(),
-                p.getWeightExpectedCasualties(),
-                p.getArticulationPointBonus(),
-                p.getCasualtiesMultiplier(),
-                p.getExposurePenaltyMultiplier()
-        );
-        HeuristicStrategy.ThresholdConfig thresholds = new HeuristicStrategy.ThresholdConfig(
-                p.getAttackThreshold(),
-                p.getMinArmyAdvantage(),
-                p.getSetupStackingWeight()
-        );
-        return new HeuristicStrategy.Configurable(
-                weights,
-                thresholds,
-                p.getWeightFutureThreat(),
-                p.getContinentBreakMultiplier(),
-                p.getBonusFocus(),
-                p.getProgressFocus(),
-                p.getResistanceAvoidance(),
-                movement,
-                draft
-        );
+                                                         HeuristicStrategy.Configurable.DraftBehavior draft) {
+        return HeuristicStrategy.Configurable.from(p, movement, draft);
     }
 }

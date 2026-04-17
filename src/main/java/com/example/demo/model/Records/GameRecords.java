@@ -3,9 +3,11 @@ package com.example.demo.model.Records;
 import com.example.demo.model.manager.Country;
 import lombok.ToString;
 
-public interface GameRecords {
+public interface GameRecords
+{
 
-    record AttackMove(Country source, Country target, double heuristicScore) implements Comparable<AttackMove> {
+    record AttackMove(Country source, Country target, double heuristicScore) implements Comparable<AttackMove>
+    {
         @Override
         public int compareTo(AttackMove o) {
             return Double.compare(this.heuristicScore, o.heuristicScore);
@@ -18,8 +20,8 @@ public interface GameRecords {
             int defenderLosses,      // כמות האבדות למגן
             boolean conquered,       // האם הטריטוריה נכבשה?
             int minMove,
-            int maxMove
-    ) {}
+            int maxMove)
+    {}
 
     record FortifyMove(Country source, Country target, int armiesToMove) {}
 }

@@ -5,21 +5,22 @@ import java.util.List;
 
 /**
  * Card - קלף בונוס בהפקת חיילים במשחק Risk
- * 
+
  * סוגי קלפים:
  * - INFANTRY (חייל רגלי): שווה 1 חיילים
  * - CAVALRY (פרשים): שווה 5 חיילים
  * - ARTILLERY (תותחנים): שווה 10 חיילים
- * 
+
  * כללי הערעור:
  * - 3 קלפים זהים: 4, 6 או 8 חיילים (לפי סוג)
  * - 1 של כל סוג: 10 חיילים
  * - סדרת מתבקשת: כל קלף שלאחריו בסדר הופך לאחד
- * 
+
  * הקבלה: כאשר שחקן כובש טריטוריה במהלך פאזת Attack
  * השימוש: סחירה לחיילים נוספים בהתחלת כל תור
  */
-public enum Card {
+public enum Card
+{
     INFANTRY, // חייל רגלי
     CAVALRY,  // פרשים
     ARTILLERY; // תותחנים
@@ -35,11 +36,12 @@ public enum Card {
     /**
      * שירות סחירת קלפים - ניהול הערעור של קלפים לחיילים
      */
-    public static class Service {
-
+    public static class Service
+    {
+        private static final int SET_SIZE = 3;
         /**
          * בדיקה וסחירה של סט חוקי כלשהו מקלפי השחקן
-         * 
+
          * סדר העדיפות:
          * 1. קלף אחד מכל סוג (10 חיילים)
          * 2. 3 תותחנים (8 חיילים)
@@ -49,7 +51,8 @@ public enum Card {
          * @param player השחקן הקורא לסחירה
          * @return מספר חיילים שהתקבלו, או 0 אם אין סט חוקי
          */
-        public int tradeAnyValidSet(Player player) {
+        public int tradeAnyValidSet(Player player)
+        {
             List<Card> cards = player.getCards();
             int inf = Collections.frequency(cards, Card.INFANTRY);
             int cav = Collections.frequency(cards, Card.CAVALRY);
@@ -64,9 +67,9 @@ public enum Card {
             }
 
             // Three of the same
-            if (art >= 3) return tradeMatchingCards(cards, Card.ARTILLERY, 8);
-            if (cav >= 3) return tradeMatchingCards(cards, Card.CAVALRY, 6);
-            if (inf >= 3) return tradeMatchingCards(cards, Card.INFANTRY, 4);
+            if (art >= SET_SIZE) return tradeMatchingCards(cards, Card.ARTILLERY, 8);
+            if (cav >= SET_SIZE) return tradeMatchingCards(cards, Card.CAVALRY, 6);
+            if (inf >= SET_SIZE) return tradeMatchingCards(cards, Card.INFANTRY, 4);
 
             return 0; // No valid set
         }
@@ -79,33 +82,24 @@ public enum Card {
          * @return מספר חיילים שהתקבלו, או 0 אם הסט אינו חוקי
          */
         public int tradeSpecificCards(Player player, List<Card> selectedCards) {
-            if (selectedCards.size() != 3) return 0;
+            if (selectedCards.size() != SET_SIZE) return 0;
 
             int inf = Collections.frequency(selectedCards, Card.INFANTRY);
             int cav = Collections.frequency(selectedCards, Card.CAVALRY);
             int art = Collections.frequency(selectedCards, Card.ARTILLERY);
 
-            int reward = 0;
-
-            // בדיקת חוקיות הסט לפי חוקי Risk
-            if (inf == 1 && cav == 1 && art == 1) {
-                reward = 10;
-            } else if (inf == 3) {
-                reward = 4;
-            } else if (cav == 3) {
-                reward = 6;
-            } else if (art == 3) {
-                reward = 8;
+            if (inf == 1 && cav == 1 && art == 1)
+            {
+                tradeMatchingCards(player.getCards(), Card.INFANTRY, 0);
+                tradeMatchingCards(player.getCards(), Card.CAVALRY, 0);
+                tradeMatchingCards(player.getCards(), Card.ARTILLERY, 0);
+                return 10;
             }
+            if (art == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.ARTILLERY, 8);
+            if (cav == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.CAVALRY, 6);
+            if (inf == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.INFANTRY, 4);
 
-            // אם הסט חוקי, נמחק את הקלפים הספציפיים מהיד של השחקן
-            if (reward > 0) {
-                for (Card c : selectedCards) {
-                    player.getCards().remove(c);
-                }
-            }
-
-            return reward;
+            return 0;
         }
         
         /**
@@ -116,10 +110,11 @@ public enum Card {
          * @param reward הגמול לחיילים
          * @return הגמול שהתקבל
          */
-        private int tradeMatchingCards(List<Card> cards, Card type, int reward) {
-            for (int i = 0; i < 3; i++) {
+        private int tradeMatchingCards(List<Card> cards, Card type, int reward)
+        {
+            for (int i = 0; i < SET_SIZE; i++)
                 cards.remove(type);
-            }
+
             return reward;
         }
     }
