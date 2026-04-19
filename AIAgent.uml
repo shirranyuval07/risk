@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>com.example.demo.model.AIAgent</OriginalElement>
+  <nodes>
+    <node x="-378.9171332586785" y="18.19456886898095">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy</node>
+    <node x="172.53415453527464" y="999.0">com.example.demo.model.AIAgent.Logic.GreedyAI</node>
+    <node x="172.53415453527464" y="740.1903695408735">com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer.ArticulationPointsDFSContext</node>
+    <node x="148.53415453527464" y="-296.24216125419935">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Abstract</node>
+    <node x="-269.99664053751394" y="999.0">com.example.demo.model.AIAgent.Rules.SetupHeuristicRule</node>
+    <node x="-614.6819708846585" y="274.505039193729">com.example.demo.service.AIEngine.Service</node>
+    <node x="116.53415453527464" y="221.8611422172453">com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer</node>
+    <node x="-435.9171332586785" y="-143.49720044792832">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable</node>
+    <node x="-711.3684210526317" y="53.50391937290033">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.ThresholdConfig</node>
+    <node x="-403.9171332586785" y="-388.62038073908167">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable.DraftBehavior</node>
+    <node x="-550.1819708846585" y="451.4736842105263">com.example.demo.service.AIEngine</node>
+    <node x="-328.99664053751394" y="739.7519596864502">com.example.demo.model.AIAgent.Rules.HeuristicRule</node>
+    <node x="-269.99664053751394" y="1188.6240201567748">com.example.demo.model.AIAgent.Strategies.WinProbabilityCalculator</node>
+    <node x="128.09630459126583" y="-445.555431131019">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable.TroopMovementBehavior</node>
+    <node x="-516.5699888017915" y="1090.6240201567748">com.example.demo.model.util.MaxPriorityQueue</node>
+    <node x="-249.49664053751394" y="905.3759798432251">com.example.demo.model.AIAgent.Rules.BaseRule</node>
+    <node x="-638.6819708846585" y="578.4423292273236">com.example.demo.service.AIEngine.Factory</node>
+    <node x="-346.4927211646136" y="298.1321388577827">com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.HeuristicWeights</node>
+    <node x="-328.99664053751394" y="597.1279395296752">com.example.demo.model.AIAgent.Rules.HeuristicRule.AttackContext</node>
+    <node x="172.53415453527464" y="1257.8096304591265">com.example.demo.model.AIAgent.Logic.BotStrategy</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="com.example.demo.model.AIAgent.Rules.SetupHeuristicRule" target="com.example.demo.model.AIAgent.Rules.BaseRule" relationship="INTERFACE_GENERALIZATION">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Abstract" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy" relationship="REALIZATION">
+      <point x="0.0" y="5.015362368937417" />
+      <point x="0.0" y="5.015362368937417" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer.ArticulationPointsDFSContext" target="com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.HeuristicWeights" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable.TroopMovementBehavior" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Rules.HeuristicRule" target="com.example.demo.model.AIAgent.Rules.BaseRule" relationship="INTERFACE_GENERALIZATION">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.service.AIEngine.Factory" target="com.example.demo.service.AIEngine" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.ThresholdConfig" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Abstract" relationship="GENERALIZATION">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable.DraftBehavior" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Configurable" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.service.AIEngine.Service" target="com.example.demo.service.AIEngine" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy.Abstract" target="com.example.demo.model.AIAgent.Strategies.HeuristicStrategy" relationship="INNER_CLASS">
+      <point x="0.0" y="-5.015362368937417" />
+      <point x="0.0" y="-5.015362368937417" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Logic.GreedyAI" target="com.example.demo.model.AIAgent.Logic.BotStrategy" relationship="REALIZATION">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.model.AIAgent.Rules.HeuristicRule.AttackContext" target="com.example.demo.model.AIAgent.Rules.HeuristicRule" relationship="INNER_CLASS">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic" zoom="0.4324455205811138" showDependencies="false" x="462.1332586786075" y="412.5" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Constructors</Category>
+    <Category>Inner Classes</Category>
+    <Category>Methods</Category>
+    <Category>Properties</Category>
+  </Categories>
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+

@@ -94,7 +94,6 @@ public class ControlPane extends HBox
         {
             phaseLabel.setText("Phase: " + game.getCurrentState().getPhaseName());
 
-            // התיקון: הגדרה ראשונית של מצב הכפתור
             btnCards.setDisable(!game.getCurrentState().getPhaseName().equals("DRAFT"));
         }
         else
@@ -115,7 +114,8 @@ public class ControlPane extends HBox
     public void setMessage(String msg) {
         messageLabel.setText(msg);
     }
-    public void showGameOverState() {
+    public void showGameOverState()
+    {
         btnNextPhase.setVisible(false);
         btnNextPhase.setManaged(false);
 

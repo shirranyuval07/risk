@@ -3,12 +3,12 @@ package com.example.demo.view.dialog;
 import com.example.demo.model.manager.Card;
 import com.example.demo.model.manager.Player;
 import com.example.demo.model.Records.GameRecords.BattleResult;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.effect.Bloom;
 import javafx.scene.layout.VBox;
 
 import java.util.*;
-// תוסיף כאן את שאר ה-Imports שתצטרך (כמו BattleResult, Player וכו')
 
 public class DialogManager {
 
@@ -84,7 +84,7 @@ public class DialogManager {
         dialog.getDialogPane().setContent(vbox);
 
         // חסימת כפתור הטרייד כברירת מחדל
-        javafx.scene.Node tradeButton = dialog.getDialogPane().lookupButton(tradeButtonType);
+        Node tradeButton = dialog.getDialogPane().lookupButton(tradeButtonType);
         tradeButton.setDisable(true);
 
         // הוספת מאזין (Listener) שפותח את הכפתור רק אם נבחרו בדיוק 3 קלפים
@@ -100,13 +100,12 @@ public class DialogManager {
         // המרת הלחיצה לרשימה של הקלפים שנבחרו
         dialog.setResultConverter(dialogButton ->
         {
-            if (dialogButton == tradeButtonType) {
+            if (dialogButton == tradeButtonType)
+            {
                 List<Card> selected = new ArrayList<>();
-                for (CheckBox cb : checkBoxes) {
-                    if (cb.isSelected()) {
+                for (CheckBox cb : checkBoxes)
+                    if (cb.isSelected())
                         selected.add((Card) cb.getUserData());
-                    }
-                }
                 return selected;
             }
             return null;
@@ -158,7 +157,6 @@ public class DialogManager {
         {
             conquered = new Label("Country Conquered!");
             conquered.setEffect(new Bloom());
-            // כאן אנו משתמשים ב-add במקום addAll כי זה רק רכיב אחד
             content.getChildren().add(conquered);
         }
 

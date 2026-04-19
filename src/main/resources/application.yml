@@ -5,20 +5,7 @@ spring:
   application:
     name: Risk
 
-  # --- הגדרות בסיס נתונים (MySQL) ---
-  datasource:
-    url: jdbc:mysql://localhost:3306/risk_db
-    username: root
-    password: admin
 
-  # --- הגדרות Hibernate (מיפוי אובייקטים לטבלאות) ---
-  jpa:
-    hibernate:
-      ddl-auto: update # מעדכן את הטבלאות ב-DB לפי מחלקות ה-Java
-    show-sql: true # מציג את שאילתות ה-SQL בקונסול (לצורך דיבאג)
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
 
 # --- הגדרות משחק (Game Constants) ---
 game:

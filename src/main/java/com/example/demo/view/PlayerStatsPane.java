@@ -1,11 +1,5 @@
 package com.example.demo.view;
-
-
 import com.example.demo.config.GameConstants;
-import com.example.demo.model.States.GameState.SetupState;
-
-
-
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
 import com.example.demo.model.manager.RiskGame;
@@ -23,19 +17,19 @@ import java.util.List;
 
 /**
  * PlayerStatsPane - פאנל סטטיסטיקות הנמצא בצד הימני של ממשק המשחק
- * 
+
  * תפקידיה:
  * - הצגת רשימת כל השחקנים וסטטיסטיקות שלהם
  * - עדכון מידע בזמן אמת (binding JavaFX)
  * - הדגשת השחקן הנוכחי (תור שלו)
  * - הצגת מספר טריטוריות וחיילים לכל שחקן
  * - זיהוי שחקנים שהורחקו מהמשחק
- * 
+
  * עיצוב:
  * - רקע כהה שקוף (כחול-שחור)
  * - צבע שונה לכל שחקן
  * - פס צד בצבע שחקן (סימן זיהוי)
- * 
+
  * השימוש: עקיבה אחרי מצב המשחק וסטטיסטיקות
  */
 public class PlayerStatsPane extends VBox
@@ -60,7 +54,7 @@ public class PlayerStatsPane extends VBox
         getChildren().clear();
 
         Label title = new Label("LEADERBOARD");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, GameConstants.FONT_SIZE_TITLE));
+        title.setFont(Font.font("Segue UI", FontWeight.BOLD, GameConstants.FONT_SIZE_TITLE));
         title.setTextFill(Color.WHITE);
         getChildren().add(title);
 
@@ -69,12 +63,9 @@ public class PlayerStatsPane extends VBox
         for (Player p : players)
         {
             // חישוב סטטיסטיקות מדויקות מהמודל
-            long territories = game.getBoard().getCountries().stream()
-                    .filter(c -> c.getOwner() != null && c.getOwner().equals(p))
-                    .count();
+            long territories = p.getOwnedCountries().size();
 
-            int totalArmies = game.getBoard().getCountries().stream()
-                    .filter(c -> c.getOwner() != null && c.getOwner().equals(p))
+            int totalArmies = p.getOwnedCountries().stream()
                     .mapToInt(Country::getArmies)
                     .sum(); // כולל חיילים שעדיין לא הוצבו
 
@@ -88,15 +79,15 @@ public class PlayerStatsPane extends VBox
             playerBox.setStyle("-fx-border-color: " + borderColor + "; -fx-border-width: 0 0 0 5; -fx-background-color: " + bgColor + ";");
 
             Label nameLabel = new Label(p.getName());
-            nameLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, GameConstants.FONT_SIZE_HEADER));
+            nameLabel.setFont(Font.font("Segue UI", FontWeight.BOLD, GameConstants.FONT_SIZE_HEADER));
             nameLabel.setTextFill(p.getColor().brighter());
 
             Label statsLabel = new Label("Territories: " + territories + "\nTotal Armies: " + totalArmies);
-            statsLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, GameConstants.FONT_SIZE_BODY));
+            statsLabel.setFont(Font.font("Segue UI", FontWeight.NORMAL, GameConstants.FONT_SIZE_BODY));
             statsLabel.setTextFill(Color.LIGHTGRAY);
 
             // טיפול בשחקן שהפסיד (הודח מהמשחק)
-            if (territories == 0 && totalArmies == 0 && !(game.getCurrentState() instanceof SetupState))
+            if (territories == 0 && totalArmies == 0)
             {
                 nameLabel.setText(p.getName() + " (ELIMINATED)");
                 nameLabel.setTextFill(Color.GRAY);

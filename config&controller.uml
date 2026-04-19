@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>com.example.demo.config</OriginalElement>
+  <nodes>
+    <node x="-331.0" y="1263.9501698754248">com.example.demo.RiskApplication</node>
+    <node x="67.29048697621738" y="-12.51642129105312">com.example.demo.config.WebSocketConfig</node>
+    <node x="482.30124575311424" y="592.6919592298982">com.example.demo.config.AIConfig</node>
+    <node x="390.5481313703285" y="222.81879954699906">com.example.demo.config.BoardConfig</node>
+    <node x="221.0" y="1263.9501698754248">com.example.demo.Launcher</node>
+    <node x="390.5481313703285" y="855.8210645526615">com.example.demo.config.AIProperties</node>
+    <node x="726.123442808607" y="825.1664779161949">com.example.demo.config.AIStrategyProps</node>
+    <node x="67.29048697621738" y="113.56285390713492">com.example.demo.config.ContinentConfig</node>
+    <node x="-331.0" y="-37.0">com.example.demo.config.GameConstants</node>
+    <node x="-332.5" y="1581.9003397508495">com.example.demo.controller.GameController</node>
+    <node x="97.0" y="711.8210645526615">com.example.demo.config.CountryConfig</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="com.example.demo.RiskApplication" target="com.example.demo.controller.GameController" relationship="CREATE">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.config.AIConfig" target="com.example.demo.config.AIProperties" relationship="TO_ONE">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.config.BoardConfig" target="com.example.demo.config.CountryConfig" relationship="TO_MANY">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.config.AIProperties" target="com.example.demo.config.AIStrategyProps" relationship="TO_ONE">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.config.BoardConfig" target="com.example.demo.config.ContinentConfig" relationship="TO_MANY">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic" zoom="0.31660093223377556" showDependencies="true" x="775.1698754246863" y="1323.6460928652295" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Fields</Category>
+    <Category>Inner Classes</Category>
+    <Category>Methods</Category>
+  </Categories>
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+

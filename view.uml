@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>com.example.demo.view</OriginalElement>
+  <nodes>
+    <node x="335.5695130237825" y="450.6313929784824">com.example.demo.view.MainMenu.LobbyScreen</node>
+    <node x="716.1390260475652" y="437.45232163080397">com.example.demo.view.MainMenu.PlayerSetup</node>
+    <node x="335.55945639864103" y="83.18120045300111">com.example.demo.view.MainMenu</node>
+    <node x="514.059456398641" y="-131.16534541336353">com.example.demo.view.MainMenu.PlayerRow</node>
+    <node x="67.0" y="314.0">com.example.demo.view.GameRoot</node>
+    <node x="-226.80067950169877" y="585.5436013590034">com.example.demo.view.CountryView</node>
+    <node x="72.0" y="-63.169014722536815">com.example.demo.view.ControlPane</node>
+    <node x="-185.80067950169877" y="475.1559456398641">com.example.demo.view.PlayerStatsPane</node>
+    <node x="67.0" y="547.1381653454134">com.example.demo.view.MapPane</node>
+    <node x="391.5695130237825" y="547.1381653454134">com.example.demo.view.dialog.DialogManager</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="com.example.demo.view.GameRoot" target="com.example.demo.view.PlayerStatsPane" relationship="CREATE">
+      <point x="0.0" y="-5.270462766947304" />
+      <point x="-2.842170943040401E-14" y="-5.270462766947304" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu" target="com.example.demo.view.MainMenu.LobbyScreen" relationship="CREATE">
+      <point x="-5.131189001784222" y="0.0" />
+      <point x="-5.131189001784236" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.GameRoot" target="com.example.demo.view.ControlPane" relationship="CREATE">
+      <point x="6.034227866002912" y="0.0" />
+      <point x="6.034227866002908" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu.PlayerRow" target="com.example.demo.view.MainMenu" relationship="INNER_CLASS">
+      <point x="-10.247066633869709" y="0.0" />
+      <point x="-10.247066633869721" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.MapPane" target="com.example.demo.view.CountryView" relationship="TO_MANY">
+      <point x="5.04232007127645" y="0.0" />
+      <point x="5.042320071276443" y="-1.1368683772161603E-13" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu.LobbyScreen" target="com.example.demo.view.MainMenu.PlayerSetup" relationship="CREATE">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.GameRoot" target="com.example.demo.view.MapPane" relationship="CREATE">
+      <point x="5.130895715590054" y="0.0" />
+      <point x="5.130895715590043" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu" target="com.example.demo.view.MainMenu.PlayerRow" relationship="TO_MANY">
+      <point x="0.0" y="0.0" />
+      <point x="0.0" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.GameRoot" target="com.example.demo.view.MapPane" relationship="TO_ONE">
+      <point x="-5.130895715590055" y="0.0" />
+      <point x="-5.130895715590043" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.MapPane" target="com.example.demo.view.CountryView" relationship="CREATE">
+      <point x="-5.04232007127645" y="0.0" />
+      <point x="-5.042320071276443" y="1.1368683772161603E-13" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu.PlayerSetup" target="com.example.demo.view.MainMenu" relationship="INNER_CLASS">
+      <point x="5.437182013286929" y="0.0" />
+      <point x="5.437182013286929" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu" target="com.example.demo.view.MainMenu.PlayerRow" relationship="CREATE">
+      <point x="10.247066633869721" y="0.0" />
+      <point x="10.247066633869709" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.GameRoot" target="com.example.demo.view.ControlPane" relationship="TO_ONE">
+      <point x="-6.034227866002913" y="0.0" />
+      <point x="-6.034227866002908" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu" target="com.example.demo.view.MainMenu.PlayerSetup" relationship="CREATE">
+      <point x="-5.437182013286922" y="0.0" />
+      <point x="-5.437182013286929" y="0.0" />
+    </edge>
+    <edge source="com.example.demo.view.GameRoot" target="com.example.demo.view.PlayerStatsPane" relationship="TO_ONE">
+      <point x="0.0" y="5.27046276694729" />
+      <point x="2.842170943040401E-14" y="5.2704627669473325" />
+    </edge>
+    <edge source="com.example.demo.view.MainMenu.LobbyScreen" target="com.example.demo.view.MainMenu" relationship="INNER_CLASS">
+      <point x="5.131189001784236" y="0.0" />
+      <point x="5.131189001784222" y="0.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic" zoom="0.9764242745930645" showDependencies="true" x="376.7391619479052" y="580.6661155152885" />
+  <SelectedNodes>
+    <node>com.example.demo.view.dialog.DialogManager</node>
+  </SelectedNodes>
+  <Categories>
+    <Category>Fields</Category>
+    <Category>Inner Classes</Category>
+    <Category>Methods</Category>
+    <Category>Properties</Category>
+  </Categories>
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+

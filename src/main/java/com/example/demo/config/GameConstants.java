@@ -26,6 +26,8 @@ public final class GameConstants {
 
 
     // ==================== GAME MECHANICS CONSTANTS ====================
+    public static final int SETUP_ARMIES_PER_TURN = 1;
+
     /** Minimum number of armies required to move from a country (always leave 1 behind) */
     public static final int MIN_ARMIES_TO_STAY = 1;
     
@@ -144,8 +146,7 @@ public final class GameConstants {
     /** Armies to keep when moving armies to border */
     public static final int KEEP_ARMIES_AT_SOURCE = 2;
     
-    /** Balanced strategy attack threshold */
-    public static final double BALANCED_ATTACK_THRESHOLD = 0.2;
+
 
     // ==================== EASY WIN BONUS CONSTANTS ====================
     /** Base multiplier for easy win bonuses (scales all endgame bonuses) */

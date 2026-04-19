@@ -12,7 +12,8 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import lombok.Getter;
 
-public class CountryView {
+public class CountryView
+{
     private final Country model;
     @Getter
     private final SVGPath shape;
@@ -20,7 +21,8 @@ public class CountryView {
     @Getter private final Text armyText;
     @Getter private final Text nameText; // משתנה השם החדש
 
-    public CountryView(Country country, Group shapesLayer, Group symbolsLayer) {
+    public CountryView(Country country, Group shapesLayer, Group symbolsLayer)
+    {
         this.model = country;
 
         // 1. Create Shape
@@ -44,13 +46,15 @@ public class CountryView {
         setupBindings();
     }
 
-    private void setupShapeEffects() {
+    private void setupShapeEffects()
+    {
         shape.setStroke(Color.rgb(15, 15, 15));
         shape.setStrokeWidth(2.0);
         shape.setEffect(new DropShadow(5.0, 3.0, 3.0, Color.rgb(0, 0, 0, 0.5)));
     }
 
-    private void setupSymbolEffects() {
+    private void setupSymbolEffects()
+    {
         armyDisk.setStroke(Color.BLACK);
         armyDisk.setStrokeWidth(1.5);
         armyDisk.setEffect(new DropShadow(3.0, 1.0, 1.0, Color.rgb(0, 0, 0, 0.7)));
@@ -72,40 +76,37 @@ public class CountryView {
         nameText.setVisible(false);
     }
 
-    private void setupBindings() {
-        // MAGIC LINE 1
+    private void setupBindings()
+    {
         armyText.textProperty().bind(model.armiesProperty().asString());
 
-        // MAGIC LINE 2
         armyText.textProperty().addListener((obs, oldVal, newVal) -> {
             armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2);
         });
 
-        // MAGIC LINE 3
         model.ownerProperty().addListener((obs, oldOwner, newOwner) -> {
             updateColors();
         });
 
-        // עדכון ראשוני
         updateColors();
         armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2);
 
-        // מירכוז שם המדינה בדיוק מעל העיגול
         nameText.setX(model.getX() - nameText.getLayoutBounds().getWidth() / 2);
     }
 
-    private void updateColors() {
+    private void updateColors()
+    {
         Color color = (model.getOwner() != null) ? model.getOwner().getColor() : model.getContinent().getColor().desaturate();
         shape.setFill(color);
 
-        if (model.getOwner() != null) {
+        if (model.getOwner() != null)
             armyDisk.setFill(model.getOwner().getColor().darker());
-        } else {
+        else
             armyDisk.setFill(Color.GRAY);
-        }
     }
 
-    public void setHighlight(Color color, double width) {
+    public void setHighlight(Color color, double width)
+    {
         shape.setStroke(color);
         shape.setStrokeWidth(width);
     }

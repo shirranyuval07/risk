@@ -19,10 +19,11 @@ public class RoomManager {
     @Getter
     private final Map<String, List<WebSocketSession>> rooms = new ConcurrentHashMap<>();
 
-    // Also track which room each session belongs to, so we can clean up on disconnect
     private final Map<String, String> sessionToRoom = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToPlayerName = new ConcurrentHashMap<>();
-    public void setPlayerName(WebSocketSession session, String playerName) {
+
+    public void setPlayerName(WebSocketSession session, String playerName)
+    {
         sessionToPlayerName.put(session.getId(), playerName);
     }
 
@@ -39,7 +40,7 @@ public class RoomManager {
         if (rooms.containsKey(roomId))
         {
             rooms.get(roomId).add(session);
-            sessionToRoom.put(session.getId(), roomId); // remember which room this session is in
+            sessionToRoom.put(session.getId(), roomId);
             System.out.println("Player " + session.getId() + " joined room " + roomId);
             return true;
         }
@@ -47,23 +48,22 @@ public class RoomManager {
         return false;
     }
 
-    /**
-     * Called when a WebSocket connection closes (normally or due to error).
-     * Removes the session from its room and cleans up empty rooms.
-     */
-    public void handleDisconnect(WebSocketSession session) {
+
+    public void handleDisconnect(WebSocketSession session)
+    {
         String roomId = sessionToRoom.remove(session.getId());
         String playerName = sessionToPlayerName.remove(session.getId()); // שליפת שם השחקן
         if (roomId == null) return;
 
         List<WebSocketSession> sessions = rooms.get(roomId);
-        if (sessions != null) {
+        if (sessions != null)
+        {
             sessions.remove(session);
             System.out.println("Player " + playerName + " disconnected from room " + roomId);
-
             // עדכון השחקנים הנותרים לגבי מי בדיוק עזב
-            if (playerName != null && !sessions.isEmpty()) {
-                try {
+            if (playerName != null && !sessions.isEmpty())
+                try
+                {
                     ObjectMapper mapper = new ObjectMapper();
                     Map<String, Object> content = new java.util.HashMap<>();
                     content.put("playerName", playerName);
@@ -73,38 +73,32 @@ public class RoomManager {
 
                     String notice = mapper.writeValueAsString(noticeMsg);
 
-                    for (WebSocketSession remaining : sessions) {
-                        if (remaining.isOpen()) {
+                    for (WebSocketSession remaining : sessions)
+                    {
+                        if (remaining.isOpen())
                             remaining.sendMessage(new TextMessage(notice));
-                        }
+
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     System.out.println("Error notifying disconnect: " + e.getMessage());
                 }
-            }
 
-            if (sessions.isEmpty()) {
+            if (sessions.isEmpty())
+            {
                 rooms.remove(roomId);
                 System.out.println("Room " + roomId + " removed (empty).");
             }
         }
     }
 
-    private String buildDisconnectNotice(String roomId)
-    {
-        // Simple JSON — reuses the GameMessage structure
-        return "{\"type\":\"PLAYER_DISCONNECTED\",\"roomId\":\"" + roomId + "\",\"sender\":\"Server\",\"content\":\"A player has disconnected.\"}";
-    }
-
     public void broadcastToRoom(String roomId, String message)
     {
         List<WebSocketSession> sessions = rooms.get(roomId);
         if (sessions != null)
-        {
             for (WebSocketSession session : sessions)
-            {
                 if (session.isOpen())
-                {
                     try
                     {
                         session.sendMessage(new TextMessage(message));
@@ -113,8 +107,5 @@ public class RoomManager {
                     {
                         System.out.println("Error sending message to player " + session.getId() + ": " + e.getMessage());
                     }
-                }
-            }
-        }
     }
 }

@@ -35,7 +35,6 @@ public interface HeuristicStrategy {
     double getAttackThreshold();
     double getMinArmyAdvantage();
     int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove);
-    double getSetupStackingWeight();
 
 
     abstract class Abstract implements HeuristicStrategy {
@@ -52,22 +51,23 @@ public interface HeuristicStrategy {
         // Win Probability Calculator
         private final WinProbabilityCalculator winCalculator = new WinProbabilityCalculator();
 
-        public Abstract(HeuristicWeights weights, ThresholdConfig thresholds) {
+        public Abstract(HeuristicWeights weights, ThresholdConfig thresholds)
+        {
             this.weights = weights;
             this.thresholds = thresholds;
         }
 
-        public void addRule(HeuristicRule rule, double weight) {
+        public void addRule(HeuristicRule rule, double weight)
+        {
             dynamicRules.put(rule, weight);
         }
 
-        public void addSetupRule(SetupHeuristicRule rule, double weight) {
+        public void addSetupRule(SetupHeuristicRule rule, double weight)
+        {
             setupRules.put(rule, weight);
         }
 
-        // ===================================================================================
         // פונקציית החישוב הראשית - המאגדת את כל המרכיבים
-        // ===================================================================================
 
         /**
          @param player - השחקן המבצע את ההתקפה (לבדיקת חשיפה ואסטרטגיות מבוססות שחקן)
@@ -81,7 +81,8 @@ public interface HeuristicStrategy {
          - easyWinBonus: בונוס מיוחד אם ההתקפה היא "קל לנצח" (האויב בודד וחלש מאוד) - זה מעודד בוטים לסיים משחק קרוב לסיום
          */
         @Override
-        public double calculateHeuristic(Country source, Country target, Player player, AIGraphAnalyzer analyzer) {
+        public double calculateHeuristic(Country source, Country target, Player player, AIGraphAnalyzer analyzer)
+        {
             // מרכיבים בסיסיים
             double winProbability = winCalculator.estimate(source.getArmies(), target.getArmies());
             double strategicValue = calculateStrategicValue(target, analyzer);
@@ -99,9 +100,7 @@ public interface HeuristicStrategy {
             return baseScore + dynamicScore + easyWinBonus;
         }
 
-        // ===================================================================================
         // קבוצה 1: חישובי ניקוד בסיס (Base Score) - הסתברות, ערך אסטרטגי וסיכונים
-        // ===================================================================================
 
         /**
          @param cost - עלות צפויה של ההתקפה (כולל הפסדים צפויים ועונש חשיפה)
@@ -110,7 +109,8 @@ public interface HeuristicStrategy {
          @return ניקוד בסיס שמייצג את איכות ההתקפה בהתחשב בגורמים הבסיסיים
          הנוסחה היא: (winProbability × משקל) + (strategicValue × משקל) - (expectedCost × משקל)
          */
-        private double computeBaseScore(double winProb, double stratValue, double cost) {
+        private double computeBaseScore(double winProb, double stratValue, double cost)
+        {
             return (weights.winProbability * winProb)           // כמה סביר שנזכה
                     + (weights.strategicValue * stratValue)       // כמה חשוב המהךף הזה
                     - (weights.expectedCasualties * cost);        // כמה זה יעלה לנו
@@ -121,7 +121,8 @@ public interface HeuristicStrategy {
          @param target - המדינה שמטרתה של ההתקפה
          @return הערך האסטרטגי של היעד, בהתחשב בבידוד ונקודות ביטחון קריטיות
          */
-        private double calculateStrategicValue(Country target, AIGraphAnalyzer analyzer) {
+        private double calculateStrategicValue(Country target, AIGraphAnalyzer analyzer)
+        {
             double isolationBonus = calculateIsolationBonus(target);
             double bottleneckBonus = calculateArticulationBonus(target, analyzer);
             return isolationBonus + bottleneckBonus;
@@ -131,7 +132,8 @@ public interface HeuristicStrategy {
          @param target - המדינה שמטרתה של ההתקפה
          @return בונוס בידוד: מדינות עם מעט אויבים סמוכים הן פחות מסוכנות ולכן בעלות ערך אסטרטגי גבוה יותר
          */
-        private double calculateIsolationBonus(Country target) {
+        private double calculateIsolationBonus(Country target)
+        {
             long enemyNeighborsCount = target.getNeighbors().stream()
                     .filter(neighbor -> neighbor.getOwner() != target.getOwner())
                     .count();
@@ -143,7 +145,8 @@ public interface HeuristicStrategy {
          @param analyzer - כלי עזר לניתוח הגרף של המפה
          @return בונוס נקודת ביטחון (articulation point)
          */
-        private double calculateArticulationBonus(Country target, AIGraphAnalyzer analyzer) {
+        private double calculateArticulationBonus(Country target, AIGraphAnalyzer analyzer)
+        {
             Player targetOwner = target.getOwner();
             if (targetOwner == null) return MINIMUM_BONUS;
 
@@ -157,7 +160,8 @@ public interface HeuristicStrategy {
          @param target - המדינה שמטרתה של ההתקפה
          @return עלות צפויה של ההתקפה, הכוללת הפסדים צפויים ועונש חשיפה
          */
-        private double calculateExpectedCost(Country source, Country target, Player player) {
+        private double calculateExpectedCost(Country source, Country target, Player player)
+        {
             double baseCost = estimateExpectedLoss(target.getArmies(), source.getArmies());
 
             if (isSourceExposedAfterAttack(source, target, player))
@@ -171,7 +175,8 @@ public interface HeuristicStrategy {
          @param defenderArmies - מספר החיילים המגנים
          @return הערכת הפסדים צפויים עבור התוקף
          */
-        private double estimateExpectedLoss(int defenderArmies, int attackerArmies) {
+        private double estimateExpectedLoss(int defenderArmies, int attackerArmies)
+        {
             return ((double) defenderArmies / Math.max(attackerArmies, 1)) * weights.casualtiesMultiplier;
         }
 
@@ -181,7 +186,8 @@ public interface HeuristicStrategy {
          @param player - השחקן המבצע את ההתקפה
          @return האם ההתקפה תחשוף את המקור לאויבים סמוכים שיכולים לתקוף בחזרה
          */
-        private boolean isSourceExposedAfterAttack(Country source, Country target, Player player) {
+        private boolean isSourceExposedAfterAttack(Country source, Country target, Player player)
+        {
             int remainingDefense = source.getArmies() - 1;
 
             return source.getNeighbors().stream()
@@ -189,17 +195,8 @@ public interface HeuristicStrategy {
                     .anyMatch(enemy -> enemy.getArmies() >= remainingDefense);
         }
 
-        // ===================================================================================
         // קבוצה 2: חישובי ניקוד דינמי (Dynamic Score) - חוקים היוריסטיים מותאמים אישית
-        // ===================================================================================
 
-        /**
-         @param player - השחקן המבצע את ההתקפה
-         @param source - המדינה שממנה מתבצעת ההתקפה
-         @param target - המדינה שמטרתה של ההתקפה
-         @param analyzer - כלי עזר לניתוח הגרף
-         @return ניקוד דינמי שמייצג את ההשפעה של כללים מותאמים אישית על ההתקפה הזו
-         */
         /**
          * פונקציה גנרית לחישוב ניקוד כללים – עובדת עם כל סוג BaseRule<C>.
          * @param context   ההקשר (Country להצבה, AttackContext להתקפה)
@@ -208,36 +205,40 @@ public interface HeuristicStrategy {
          * @param rules     מפת כללים + משקלים
          * @return סכום משוקלל של כל הכללים
          */
-        private <C> double computeScore(C context, Player player, AIGraphAnalyzer analyzer, Map<? extends BaseRule<C>, Double> rules) {
+        private <C> double computeScore(C context, Player player, AIGraphAnalyzer analyzer, Map<? extends BaseRule<C>, Double> rules)
+        {
             double score = 0;
-            for (var rule : rules.entrySet()) {
+            for (var rule : rules.entrySet())
                 score += rule.getKey().evaluate(context, player, analyzer) * rule.getValue();
-            }
+
             return score;
         }
 
-        private double computeDynamicScore(Country source, Country target, Player player, AIGraphAnalyzer analyzer) {
+        private double computeDynamicScore(Country source, Country target, Player player, AIGraphAnalyzer analyzer)
+        {
             return computeScore(new HeuristicRule.AttackContext(source, target), player, analyzer, dynamicRules);
         }
 
-        // ===================================================================================
+
         // קבוצה 2.5: חישוב ניקוד Setup – שימוש בכללים היוריסטיים להצבת חיילים בשלב ההתחלה
-        // ===================================================================================
+
 
         @Override
-        public double calculateSetupScore(Country country, Player player, AIGraphAnalyzer analyzer) {
+        public double calculateSetupScore(Country country, Player player, AIGraphAnalyzer analyzer)
+        {
             return computeScore(country, player, analyzer, setupRules);
         }
 
-        // ===================================================================================
+
         // קבוצה 3: חישובי בונוס ניצחון קל (Easy Win Bonus) - אינסטינקט חיסול שחקנים
-        // ===================================================================================
+
 
         /**
          * עוזר: בונוס "קל לנצח" לכשהאויב בודד וחלש מאוד
          * זה מעודד בוטים להסיים משחק קרוב לסיום
          */
-        private double calculateEasyWinBonus(Country target, Player player, AIGraphAnalyzer analyzer) {
+        private double calculateEasyWinBonus(Country target, Player player, AIGraphAnalyzer analyzer)
+        {
             Player targetOwner = target.getOwner();
             if (targetOwner == null) return 0;
 
@@ -264,9 +265,9 @@ public interface HeuristicStrategy {
             return 0;
         }
 
-        // ===================================================================================
+
         // קבוצה 4: הגדרות מינימום, תנועת כוחות ומימושי ממשק נוספים
-        // ===================================================================================
+
 
         @Override
         public double getAttackThreshold() { return thresholds.attackThreshold; }
@@ -274,11 +275,10 @@ public interface HeuristicStrategy {
         @Override
         public double getMinArmyAdvantage() { return thresholds.minArmyAdvantage; }
 
-        @Override
-        public double getSetupStackingWeight() { return thresholds.setupStackingWeight; }
 
         @Override
-        public int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove) {
+        public int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove)
+        {
             boolean sourceIsSafe = source.getNeighbors().stream()
                     .allMatch(n -> n == target || n.getOwner() == source.getOwner());
 
@@ -287,9 +287,9 @@ public interface HeuristicStrategy {
         }
     }
 
-    // ===================================================================================
+
     // מחלקות ורשומות עזר (Configurable, Records)
-    // ===================================================================================
+
 
     /**
      * Configurable implementation with custom troop movement behavior.
@@ -302,7 +302,8 @@ public interface HeuristicStrategy {
         public Configurable(HeuristicWeights weights, ThresholdConfig thresholds,
                             double weightFutureThreat, double continentBreakMultiplier,
                             double bonusFocus, double progressFocus, double resistanceAvoidance,
-                            TroopMovementBehavior movementBehavior, DraftBehavior draftBehavior) {
+                            TroopMovementBehavior movementBehavior, DraftBehavior draftBehavior)
+        {
             super(weights, thresholds);
             this.addRule(HeuristicRule.futureThreatRule(), weightFutureThreat);
             this.addRule(HeuristicRule.continentProgressRule(
@@ -310,9 +311,10 @@ public interface HeuristicStrategy {
                     weights.continentBonus());
 
             // Setup heuristic rules – ניקוד מבוסס כללים לשלב ההצבה
-            this.addSetupRule(SetupHeuristicRule.enemyThreatRule(), 1.0);
+            this.addSetupRule(SetupHeuristicRule.enemyThreatRule(), GameConstants.SETUP_ARMIES_PER_TURN);
             this.addSetupRule(SetupHeuristicRule.stackingRule(), thresholds.setupStackingWeight());
-            this.addSetupRule(SetupHeuristicRule.continentProgressRule(), weights.continentBonus());
+            this.addSetupRule(SetupHeuristicRule.continentProgressRule(continentBreakMultiplier, bonusFocus, progressFocus, resistanceAvoidance),
+                    weights.continentBonus());
             this.addSetupRule(SetupHeuristicRule.borderCoverageRule(), weights.strategicValue());
 
             this.movementBehavior = movementBehavior;
@@ -320,19 +322,22 @@ public interface HeuristicStrategy {
         }
 
         @Override
-        public void executeDraft(Player player, RiskGame game, AIGraphAnalyzer analyzer) {
+        public void executeDraft(Player player, RiskGame game, AIGraphAnalyzer analyzer)
+        {
             draftBehavior.execute(player, game, analyzer, this);
         }
 
         @Override
-        public int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove) {
+        public int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove)
+        {
             return movementBehavior.calculate(source.getArmies(), minMove, maxMove);
         }
 
 
 
         @FunctionalInterface
-        public interface TroopMovementBehavior {
+        public interface TroopMovementBehavior
+        {
             int calculate(int totalArmies, int minMove, int maxMove);
         }
 
@@ -346,30 +351,37 @@ public interface HeuristicStrategy {
             void execute(Player player, RiskGame game, AIGraphAnalyzer analyzer, HeuristicStrategy strategy);
 
             /** הצבה תוקפנית – כל החיילים על נקודת ההתקפה הטובה ביותר */
-            static DraftBehavior aggressive() {
-                return (player, game, analyzer, strategy) -> {
+            static DraftBehavior aggressive()
+            {
+                return (player, game, analyzer, strategy) ->
+                {
                     AttackMove best = analyzer.findBestPotentialAttack(player, strategy);
                     if (best != null)
-                        while (player.getDraftArmies() > 0) game.placeArmy(best.source());
+                        while (player.getDraftArmies() > 0)
+                            game.placeArmy(best.source());
                 };
             }
 
             /** הצבה הגנתית – פיזור חיילים לפי איומים ונקודות צוואר-בקבוק */
-            static DraftBehavior defensive() {
-                return (player, game, analyzer, strategy) -> {
+            static DraftBehavior defensive()
+            {
+                return (player, game, analyzer, strategy) ->
+                {
                     Set<Country> bottlenecks = analyzer.findArticulationPoints(player);
                     Map<Country, Double> threatScores = analyzer.calculateThreatScores(player, bottlenecks);
                     double totalThreat = threatScores.values().stream().mapToDouble(Double::doubleValue).sum();
                     int totalDraftArmies = player.getDraftArmies();
 
-                    if (totalThreat == 0) {
+                    if (totalThreat == 0)
+                    {
                         Country fallback = analyzer.findMostThreatenedCountry(player);
                         if (fallback != null)
                             while (player.getDraftArmies() > 0) game.placeArmy(fallback);
                         return;
                     }
 
-                    for (Map.Entry<Country, Double> entry : threatScores.entrySet()) {
+                    for (Map.Entry<Country, Double> entry : threatScores.entrySet())
+                    {
                         int armies = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
                         for (int i = 0; i < armies; i++)
                             if (player.getDraftArmies() > 0) game.placeArmy(entry.getKey());

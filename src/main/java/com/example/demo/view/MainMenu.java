@@ -1,5 +1,6 @@
 package com.example.demo.view;
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.view.dialog.DialogManager;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.shared.GameMessage;
@@ -19,22 +20,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public class MainMenu extends StackPane {
+public class MainMenu extends StackPane
+{
 
     public record PlayerSetup(String name, Color color, String type) {}
 
-    // =========================================================================
     //  Fields
-    // =========================================================================
 
     private final List<PlayerRow> playerRows = new ArrayList<>();
     private final BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame;
 
-    // =========================================================================
     //  Constructor
-    // =========================================================================
 
-    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame) {
+    public MainMenu(BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame)
+    {
         this.onStartGame = onStartGame;
 
         setBackground(new Background(
@@ -54,7 +53,8 @@ public class MainMenu extends StackPane {
     //  Building the main content
 
 
-    private VBox buildMainContent() {
+    private VBox buildMainContent()
+    {
         VBox content = new VBox(30);
         content.setAlignment(Pos.CENTER);
         content.setPadding(new Insets(50));
@@ -72,7 +72,8 @@ public class MainMenu extends StackPane {
         return content;
     }
 
-    private VBox buildPlayerRows() {
+    private VBox buildPlayerRows()
+    {
         Color[] defaultColors = {
                 Color.rgb(225, 60, 60),
                 Color.rgb(0, 85, 225),
@@ -85,7 +86,8 @@ public class MainMenu extends StackPane {
         VBox box = new VBox(15);
         box.setAlignment(Pos.CENTER);
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < GameConstants.MAX_PLAYERS; i++)
+        {
             PlayerRow row = new PlayerRow(i + 1, defaultColors[i]);
             playerRows.add(row);
             box.getChildren().add(row);
@@ -93,20 +95,23 @@ public class MainMenu extends StackPane {
         return box;
     }
 
-    private Button buildLocalStartButton() {
+    private Button buildLocalStartButton()
+    {
         Button btn = styledButton("START LOCAL CONQUEST", "#2eaa50", 20);
-        btn.setOnAction(e -> {
+        btn.setOnAction(e ->
+        {
             List<PlayerSetup> activePlayers = getActivePlayers();
-            if (activePlayers.size() >= 2) {
+            if (activePlayers.size() >= 2)
                 onStartGame.accept(activePlayers, null);
-            } else {
+            else
                 new Alert(Alert.AlertType.WARNING, "You need at least 2 players to start!").show();
-            }
+
         });
         return btn;
     }
 
-    private HBox buildMultiplayerButtons() {
+    private HBox buildMultiplayerButtons()
+    {
         Button createBtn = styledButton("CREATE ROOM", "#0055e1", 16);
         Button joinBtn   = styledButton("JOIN ROOM",   "#e18f3c", 16);
 
@@ -118,27 +123,31 @@ public class MainMenu extends StackPane {
         return box;
     }
 
-    private void promptJoinRoom() {
+    private void promptJoinRoom()
+    {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Join Room");
         dialog.setHeaderText("Enter the 4-character Room Code:");
-        dialog.showAndWait().ifPresent(code -> {
-            if (!code.trim().isEmpty()) {
+        dialog.showAndWait().ifPresent(code ->
+        {
+            if (!code.trim().isEmpty())
                 initializeNetworkAndAction(GameAction.JOIN_ROOM, code.toUpperCase());
-            }
+
         });
     }
 
-    private void initializeNetworkAndAction(GameAction action, String roomId) {
-        // Connect network only when needed (creating or joining a room)
+    private void initializeNetworkAndAction(GameAction action, String roomId)
+    {
         RiskWebSocketClient networkClient = new RiskWebSocketClient("Guest");
         
-        // Set up a message listener BEFORE connecting
-        networkClient.setOnMessageReceived(message -> Platform.runLater(() -> {
-            switch (message.type()) {
+        networkClient.setOnMessageReceived(message -> Platform.runLater(() ->
+        {
+            switch (message.type())
+            {
                 case ROOM_CREATED      -> openLobby(message, true,  networkClient, (VBox) getChildren().getFirst());
                 case JOIN_ROOM_SUCCESS -> openLobby(message, false, networkClient, (VBox) getChildren().getFirst());
-                case ERROR -> {
+                case ERROR ->
+                {
                     Map<String, Object> payload = message.content();
                     showError(payload != null ? (String) payload.get("RoomNotFound") : "Unknown Error");
                 }
@@ -146,18 +155,20 @@ public class MainMenu extends StackPane {
             }
         }));
 
-        // Connect and wait for the connection to be ready, then send action
         networkClient.connect();
-        networkClient.waitForConnection().thenRun(() -> {
+        networkClient.waitForConnection().thenRun(() ->
+        {
             Map<String, Object> payload = new HashMap<>();
             networkClient.sendAction(action, roomId, payload);
-        }).exceptionally(ex -> {
+        }).exceptionally(ex ->
+        {
             showError("Failed to connect to server: " + ex.getMessage());
             return null;
         });
     }
 
-    private Button buildRulesButton() {
+    private Button buildRulesButton()
+    {
         Button btn = new Button("📖 Rules");
         btn.setStyle("-fx-background-color: #4a6a92; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 5;");
         btn.setCursor(javafx.scene.Cursor.HAND);
@@ -165,22 +176,20 @@ public class MainMenu extends StackPane {
         return btn;
     }
 
-    // =========================================================================
     //  Lobby
-    // =========================================================================
 
     private void openLobby(GameMessage message, boolean isHost,
-                           RiskWebSocketClient networkClient, VBox mainContent) {
-        // Here message.content() is the Map we sent from the Server in CREATE_ROOM or JOIN_ROOM
-        // We can optionally use the generated index or ID, but for now we rely on the network client's name
+                           RiskWebSocketClient networkClient, VBox mainContent)
+    {
+
         String myName = networkClient.getPlayerName();
 
-        // If it's a join, we append the assigned index (optional)
-        if (!isHost && message.content() != null) {
+        if (!isHost && message.content() != null)
+        {
             Map<String, Object> payload = message.content();
-            if (payload.containsKey("playerID")) {
+            if (payload.containsKey("playerID"))
                 myName += payload.get("playerID").toString();
-            }
+
         }
 
         networkClient.setPlayerName(myName);
@@ -189,20 +198,22 @@ public class MainMenu extends StackPane {
         getChildren().add(lobby);
     }
 
-    // =========================================================================
-    //  Helpers
-    // =========================================================================
 
-    private List<PlayerSetup> getActivePlayers() {
+    //  Helpers
+
+
+    private List<PlayerSetup> getActivePlayers()
+    {
         List<PlayerSetup> active = new ArrayList<>();
-        for (PlayerRow row : playerRows) {
+        for (PlayerRow row : playerRows)
             if (!row.getType().equals("None"))
                 active.add(new PlayerSetup(row.getName(), row.getColor(), row.getType()));
-        }
+
         return active;
     }
 
-    private static Button styledButton(String text, String hexColor, int fontSize) {
+    private static Button styledButton(String text, String hexColor, int fontSize)
+    {
         Button btn = new Button(text);
         btn.setFont(Font.font("Segue UI", FontWeight.BOLD, fontSize));
         btn.setStyle("-fx-background-color: " + hexColor + "; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;");
@@ -210,7 +221,8 @@ public class MainMenu extends StackPane {
         return btn;
     }
 
-    private void showError(String message) {
+    private void showError(String message)
+    {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(message);
@@ -218,16 +230,17 @@ public class MainMenu extends StackPane {
     }
 
 
-    //  Inner class: LobbyScreen — waiting room after creating / joining a room
 
 
-    private static class LobbyScreen extends VBox {
+    private static class LobbyScreen extends VBox
+    {
 
         public LobbyScreen(String roomCode,
                            boolean isHost,
                            String myName,
                            RiskWebSocketClient networkClient,
-                           BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame) {
+                           BiConsumer<List<PlayerSetup>, RiskWebSocketClient> onStartGame)
+        {
             setAlignment(Pos.CENTER);
             setSpacing(20);
 
@@ -261,17 +274,16 @@ public class MainMenu extends StackPane {
             });
 
             Button leaveBtn = styledButton("LEAVE ROOM", "#888888", 16);
-            leaveBtn.setOnAction(e -> {
+            leaveBtn.setOnAction(e ->
+            {
                 networkClient.sendAction(GameAction.LEAVE_ROOM, roomCode, new HashMap<>());
                 networkClient.disconnect();
                 MainMenu mainMenu = (MainMenu)getParent();
-                mainMenu.getChildren().remove(this);          // remove LobbyScreen
-                mainMenu.getChildren().getFirst().setVisible(true); // show the main content again
+                mainMenu.getChildren().remove(this);
+                mainMenu.getChildren().getFirst().setVisible(true);
             });
-
             getChildren().addAll(title, subtitle, playerList, startBtn,leaveBtn);
 
-            // Handle incoming lobby events
             networkClient.setOnMessageReceived(message ->
                     javafx.application.Platform.runLater(() -> {
                         Map<String, Object> payload = message.content();
@@ -299,17 +311,19 @@ public class MainMenu extends StackPane {
                             case PLAYER_DISCONNECTED ->
                             {
                                 String disconnectedPlayer = (String) payload.get("playerName");
-                                if (disconnectedPlayer != null) {
+                                if (disconnectedPlayer != null)
+                                {
                                     lobbyPlayers.remove(disconnectedPlayer); // הסרת השחקן כדי שלא ייכנס למשחק
 
                                     // בנייה מחדש של תצוגת הרשימה
                                     playerList.setText("Players in room:\n");
-                                    for (String p : lobbyPlayers) {
-                                        if (p.equals(myName)) {
+                                    for (String p : lobbyPlayers)
+                                    {
+                                        if (p.equals(myName))
                                             playerList.appendText("- You (" + p + ")\n");
-                                        } else {
+                                        else
                                             playerList.appendText("- " + p + "\n");
-                                        }
+
                                     }
                                     playerList.appendText("\n⚠ " + disconnectedPlayer + " has left the room.\n");
                                 }
@@ -320,9 +334,11 @@ public class MainMenu extends StackPane {
             );
         }
 
-        private List<PlayerSetup> buildPlayerSetups(List<String> playerNames) {
+        private List<PlayerSetup> buildPlayerSetups(List<String> playerNames)
+        {
             List<PlayerSetup> players = new ArrayList<>();
-            for (int i = 0; i < playerNames.size(); i++) {
+            for (int i = 0; i < playerNames.size(); i++)
+            {
                 double hue = i * (360.0 / playerNames.size());
                 players.add(new PlayerSetup(playerNames.get(i), Color.hsb(hue, 0.85, 0.9), "Human"));
             }
@@ -330,14 +346,15 @@ public class MainMenu extends StackPane {
         }
     }
 
-    //  Inner class: PlayerRow — one row in the player configuration table
 
-    static class PlayerRow extends HBox {
+    static class PlayerRow extends HBox
+    {
         private final TextField   nameField;
         private final ColorPicker colorPicker;
         private final ComboBox<String> typeBox;
 
-        public PlayerRow(int playerNum, Color defaultColor) {
+        public PlayerRow(int playerNum, Color defaultColor)
+        {
             setSpacing(15);
             setAlignment(Pos.CENTER);
 

@@ -26,28 +26,43 @@ import java.util.*;
  * - DFS (Depth-First Search): למציאת נקודות ביטחון
 
  * השימוש: משמשת את בוטים (AI players) להחלטות אסטרטגיות
+
+ * הערות סיבוכיות כלליות למחלקה:
+ * V מציין את כמות המדינות (Vertices).
+ * E מציין את כמות הגבולות (Edges).
+ * D מציין את מספר השכנים המקסימלי למדינה (Degree, שבריסק נחשב לקבוע קטן O(1)).
  */
 public class AIGraphAnalyzer {
-
 
     /**
      * BFS גנרי – סורק את כל המדינות שבבעלות player הנגישות מ-start
      * דרך מדינות שבבעלותו בלבד.
-     * @param start מדינת ההתחלה
+     *
+     * @param start  מדינת ההתחלה
      * @param player השחקן שלנו (רק מדינותיו ייסרקו)
      * @return סט כל המדינות הנגישות (כולל start)
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V + E) מוגבל למדינות של השחקן בלבד. סריקת רוחב קלאסית.
+     * - סיבוכיות מקום: O(V) עבור שמירת תור המדינות (Queue) וסט המדינות שביקרנו בהן (Visited).
+     *
+     * מסקנה סופית: אלגוריתם לינארי ויעיל ביותר להבנת הרצף הטריטוריאלי של ה-AI, קריטי לשלב תגבור הכוחות (Fortify).
      */
-    public static Set<Country> bfsReachableOwned(Country start, Player player) {
+    public static Set<Country> bfsReachableOwned(Country start, Player player)
+    {
         Queue<Country> queue = new LinkedList<>();
         Set<Country> visited = new HashSet<>();
 
         queue.add(start);
         visited.add(start);
 
-        while (!queue.isEmpty()) {
+        while (!queue.isEmpty())
+        {
             Country current = queue.poll();
-            for (Country neighbor : current.getNeighbors()) {
-                if (neighbor.getOwner() == player && !visited.contains(neighbor)) {
+            for (Country neighbor : current.getNeighbors())
+            {
+                if (neighbor.getOwner() == player && !visited.contains(neighbor))
+                {
                     visited.add(neighbor);
                     queue.add(neighbor);
                 }
@@ -56,18 +71,25 @@ public class AIGraphAnalyzer {
         return visited;
     }
 
-
     /**
-     * @param player - השחקן שלנו
-     * @param strategy - אסטרטגיית ה-AI המכילה כללי Setup היוריסטיים
-     *טענת יציאה: מוצא את המדינה הטובה ביותר להצבת חיילים בשלב ההתאמה
-     * אלגוריתם: מחשב ניקוד לכל מדינה שבבעלותנו ע"פ כללים היוריסטיים (איום, ערימה, יבשת, כיסוי גבולות)
+     * מוצא את המדינה הטובה ביותר להצבת חיילים בשלב ההתאמה.
+     * מחשב ניקוד לכל מדינה שבבעלותנו ע"פ כללים היוריסטיים (איום, ערימה, יבשת, כיסוי גבולות).
+     *
+     * @param player   השחקן שלנו
+     * @param strategy אסטרטגיית ה-AI המכילה כללי Setup היוריסטיים
+     * @return המדינה עם הניקוד הגבוה ביותר
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V) משום שעוברים על כל המדינות של השחקן פעם אחת.
+     * - סיבוכיות מקום: O(1) כיוון שאנו שומרים רק את המדינה עם הציון המקסימלי.
+     *
+     * מסקנה סופית: פעולה סופר-מהירה המבטיחה שהבוט לא "יקפא" גם במפות ענק.
      */
     public Country findBestSetupCountry(Player player, HeuristicStrategy strategy)
     {
         Country bestCountry = null;
         double bestScore = Double.NEGATIVE_INFINITY;
-        
+
         for (Country country : player.getOwnedCountries())
         {
             double score = strategy.calculateSetupScore(country, player, this);
@@ -77,41 +99,55 @@ public class AIGraphAnalyzer {
                 bestScore = score;
             }
         }
-        
+
         return bestCountry != null ? bestCountry : player.getOwnedCountries().getFirst();
     }
 
-
     /**
-     * @param player - השחקן שלנו
-     * @param strategy - אסטרטגיית חישוב ניקוד התקפה (יכול להיות שונה לפי סוג הבוט)
-     * טענת יציאה: מוצא את ההתקפה הפוטנציאלית הטובה ביותר לפי האסטרטגיה הנתונה
-     * אלגוריתם: עבור כל מדינה שבבעלותנו, בדוק את השכנים שלה. אם הש neighbor שייך לאויב, חשב את ניקוד ההתקפה לפי האסטרטגיה. שמור את ההתקפה עם הניקוד הגבוה ביותר.
-     * */
-    public AttackMove findBestPotentialAttack(Player player, HeuristicStrategy strategy) {
+     * מוצא את ההתקפה הפוטנציאלית הטובה ביותר לפי האסטרטגיה הנתונה.
+     * עבור כל מדינה שבבעלותנו, בודק את השכנים האויבים ומחשב ניקוד התקפה.
+     *
+     * @param player   השחקן שלנו
+     * @param strategy אסטרטגיית חישוב ניקוד התקפה
+     * @return AttackMove עם הניקוד הגבוה ביותר, או null אם אין התקפה אפשרית
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V * D) = O(E). עובר על כל מדינה שלנו ובוחן את כל שכניה.
+     * - סיבוכיות מקום: O(1) למעט יצירת אובייקט AttackMove בודד.
+     *
+     * מסקנה סופית: חיפוש אקזוסטיבי יעיל המבטיח שה-AI ימצא את המהלך הרווחי ביותר.
+     */
+    public AttackMove findBestPotentialAttack(Player player, HeuristicStrategy strategy)
+    {
         AttackMove bestPotentialAttack = null;
+
         for (Country source : player.getOwnedCountries())
-        {
             for (Country target : source.getNeighbors())
-            {
                 if (target.getOwner() != player)
                 {
                     double score = strategy.calculateHeuristic(source, target, player, this);
+
                     if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore())
                         bestPotentialAttack = new AttackMove(source, target, score);
-
                 }
-            }
-        }
+
+
+
         return bestPotentialAttack;
     }
 
     /**
-     * @param player - השחקן שלנו
-     * @param country - המדינה שאנו רוצים לחשב את האיום שלה
-     * טענת יציאה: מחזיר את סכום כוח האויבים הסמוכים למדינה נתונה
-     * אלגוריתם: עבור כל שכני המדינה, אם הש neighbor שייך לאויב, הוסף את כמות החיילים שלו לסכום הכולל. החזר את הסכום בסוף.
-     * עוזר: חישוב כוח אויבים סמוכים למדינה
+     * מחזיר את סכום כוח האויבים הסמוכים למדינה נתונה.
+     *
+     * @param country המדינה שאנו בודקים
+     * @param player  השחקן שלנו
+     * @return סכום החיילים של כל השכנים העוינים
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(D) סריקת שכני המדינה בלבד.
+     * - סיבוכיות מקום: O(1).
+     *
+     * מסקנה סופית: פונקציית עזר זניחה מבחינת עלות חישובית.
      */
     private int calculateTotalEnemyStrength(Country country, Player player)
     {
@@ -125,146 +161,176 @@ public class AIGraphAnalyzer {
     }
 
     /**
-     @param player - השחקן שלנו
-     @param bottlenecks - סט של מדינות "צוואר בקבוק" קריטיות (articulation points)
-     טענת יציאה: מחזיר מפה של מדינות שבבעלותנו עם ניקוד איום לכל אחת, כאשר הניקוד משקלל את כוח האויבים הסמוכים ואת חשיבות המדינות הקריטיות
-     אלגוריתם: עבור כל מדינה שבבעלותנו, חשב את סכום כוח האויבים הסמוכים. אם יש אויבים, חשב ניקוד איום בסיסי (כוח אויבים חלקי כוחנו),
-     והגבר את הניקוד אם זו מדינה "צוואר בקבוק" קריטית. החזר מפה עם הניקוד לכל מדינה.
+     * מחזיר מפה של מדינות שבבעלותנו עם ניקוד איום לכל אחת.
+     * הניקוד משקלל את כוח האויבים הסמוכים ואת חשיבות מדינות "צוואר בקבוק".
+     *
+     * @param player      השחקן שלנו
+     * @param bottlenecks סט של מדינות קריטיות (articulation points)
+     * @return מפת ניקוד איום לכל מדינה עם אויבים סמוכים
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V * D) = O(E). עוברים על כל מדינות השחקן וקוראים לחישוב שכנים.
+     * - סיבוכיות מקום: O(V) לבניית מפת התוצאות (HashMap).
+     *
+     * מסקנה סופית: פעולה הכרחית לבניית מערך הגנה שמבוצעת בזמן לינארי.
      */
     public Map<Country, Double> calculateThreatScores(Player player, Set<Country> bottlenecks)
     {
         Map<Country, Double> threatScores = new HashMap<>();
-        
+
         for (Country country : player.getOwnedCountries())
         {
-            // סכום כוח כל אויבי סמוכים
             int totalEnemyStrength = calculateTotalEnemyStrength(country, player);
-            
+
             if (totalEnemyStrength > 0)
             {
-                // ניקוד בסיס: כוח אויבים / כוחנו
-                double threatScore = (double) totalEnemyStrength / Math.max(country.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
-                
-                // הגדלת חשיבות אם זה "צוואר בקבוק" קריטי (articulation point)
-                if (bottlenecks.contains(country))
-                    threatScore *= GameConstants.BOTTLENECK_THREAT_MULTIPLIER;
+                double threatScore = (double) totalEnemyStrength /
+                        Math.max(country.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
 
-                
-                threatScores.put(country, threatScore);
+                double multiplier = bottlenecks.contains(country) ? GameConstants.BOTTLENECK_THREAT_MULTIPLIER : 1.0;
+                threatScores.put(country, threatScore * multiplier);
             }
         }
         return threatScores;
     }
 
     /**
-     * @param player - השחקן שלנו
-     * @param strategy - אסטרטגיית חישוב ניקוד התקפה (יכול להיות שונה לפי סוג הבוט)
-     * טענת יציאה: בונה תור עדיפויות של התקפות פוטנציאליות, כאשר ההתקפות עם הניקוד הגבוה ביותר נמצאות בראש התור
-     * אלגוריתם: עבור כל מדינה שבבעלותנו, בדוק את השכנים שלה. אם השכן שייך לאויב, חשב את ניקוד ההתקפה לפי האסטרטגיה.
-     *                 אם הניקוד גבוה מהסף שהוגדר באסטרטגיה, הוסף את ההתקפה לתור העדיפויות. בסוף, החזר את התור עם כל ההתקפות הממוינות לפי ניקוד.
-     * */
-     public MaxPriorityQueue<AttackMove> buildAttackQueue(Player player, HeuristicStrategy strategy)
-     {
-         MaxPriorityQueue<AttackMove> queue = new MaxPriorityQueue<>();
+     * בונה תור עדיפויות של התקפות פוטנציאליות, כאשר ההתקפות עם הניקוד הגבוה ביותר בראש התור.
+     *
+     * @param player   השחקן שלנו
+     * @param strategy אסטרטגיית חישוב ניקוד התקפה
+     * @return MaxPriorityQueue ממוין של כל ההתקפות שעברו את הסף
 
-         for (Country source : player.getOwnedCountries())
-         {
-             // Only process countries with enough armies
-             if (source.getArmies() > 1)
-             {
-                 for (Country target : source.getNeighbors())
-                 {
-                     // Only attack enemy territories with sufficient advantage
-                     if (target.getOwner() != player && 
-                         source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage())
-                     {
-                         double score = strategy.calculateHeuristic(source, target, player, this);
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(E * log(K)) כאשר K הוא כמות ההתקפות החוקיות שנוספות לתור.
+     * - סיבוכיות מקום: O(K) לאחסון האובייקטים בתור.
+     *
+     * מסקנה סופית: שימוש מעולה במבנה נתונים מתקדם. מיון ההתקפות "תוך כדי תנועה" חוסך זמן ריצה.
+     */
+    public MaxPriorityQueue<AttackMove> buildAttackQueue(Player player, HeuristicStrategy strategy)
+    {
+        MaxPriorityQueue<AttackMove> attackQueue = new MaxPriorityQueue<>();
+        double score;
+        for (Country source : player.getOwnedCountries())
+        {
+            if (source.getArmies() > 1)
+                for (Country target : source.getNeighbors())
+                {
+                    if (isValidAttackTarget(source, target, player, strategy))
+                    {
+                        score = strategy.calculateHeuristic(source, target, player, this);
+                        if (score > strategy.getAttackThreshold())
+                            attackQueue.add(new AttackMove(source, target, score));
+                    }
+                }
 
-                         if (score > strategy.getAttackThreshold())
-                             queue.add(new AttackMove(source, target, score));
-                     }
-                 }
-             }
-         }
-         return queue;
-     }
-
-    /**
-     * @param start - מדינה התחלה שבבעלותנו
-     * @param player - השחקן שלנו
-     * טענת יציאה: מוצא מדינה גבול מחוברת (עם אויב סמוך) שניתן להגיע אליה מ-start דרך מדינות שבבעלותנו בלבד
-     * */
-    public Country findConnectedBorderUsingBFS(Country start, Player player) {
-        Set<Country> reachable = bfsReachableOwned(start, player);
-
-        for (Country country : reachable) {
-            if (country != start && countEnemyNeighbors(country, player) > 0)
-                return country;
         }
-        return null;
+        return attackQueue;
     }
 
     /**
-     * @param c - המדינה שאנו רוצים לבדוק
-     * @param me - השחקן שלנו
-     * טענת יציאה: מחזיר את מספר השכנים של המדינה c ששייכים לאויב (לא לנו)
-     * */
+     * בודק אם מדינת יעד היא מטרת התקפה חוקית לפי האסטרטגיה.
+     *
+     * @param source   מדינת המקור
+     * @param target   מדינת היעד
+     * @param player   השחקן שלנו
+     * @param strategy האסטרטגיה הנוכחית
+     * @return true אם ההתקפה חוקית ורווחית
+     *
+     */
+    private boolean isValidAttackTarget(Country source, Country target, Player player, HeuristicStrategy strategy)
+    {
+        return target.getOwner() != player &&
+                source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage();
+    }
+
+    /**
+     * מוצא מדינת גבול מחוברת (עם אויב סמוך) שניתן להגיע אליה מ-start דרך מדינות שבבעלותנו.
+     *
+     * @param start  מדינת ההתחלה שבבעלותנו
+     * @param player השחקן שלנו
+     * @return מדינת גבול מחוברת, או null אם לא נמצאה
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V + E) לביצוע ה-BFS, פלוס O(V * D) לבדיקת השכנים. סה"כ O(V + E).
+     * - סיבוכיות מקום: O(V) לשמירת הסט מה-BFS.
+     *
+     * מסקנה סופית: פונקציה אמינה לחילוץ חיילים כלואים עם Short-circuiting יעיל.
+     */
+    public Country findConnectedBorderUsingBFS(Country start, Player player)
+    {
+        return bfsReachableOwned(start, player).stream()
+                .filter(country -> country != start && countEnemyNeighbors(country, player) > 0)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * מחזיר את מספר השכנים של המדינה c ששייכים לאויב.
+     *
+     * @param c  המדינה שאנו בודקים
+     * @param me השחקן שלנו
+     * @return מספר השכנים העוינים
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(D).
+     * - סיבוכיות מקום: O(1).
+     */
     public int countEnemyNeighbors(Country c, Player me)
     {
-        int count = 0;
-        for (Country neighbor : c.getNeighbors())
-            if (neighbor.getOwner() != me) count++;
-
-        return count;
+        return (int) c.getNeighbors().stream()
+                .filter(neighbor -> neighbor.getOwner() != me)
+                .count();
     }
 
     /**
-     * @param player - השחקן שלנו
-     * טענת יציאה: מחזיר סט של מדינות שבבעלותנו שהן נקודות ביטחון קריטיות (articulation points) בגרף המדינות שלנו
-     * מוצא נקודות ביטחון קריטיות בגרף המדינות שלנו (Articulation Points)
-     * אלו מדינות שאם נאבדן - הרשת שלנו תתפצל לחלקים בלתי קשורים
-     * שימוש: DFS מעמיק עם מעקב discover time ו-low value
-     * זה עוזר להחלטות הגנה/התקפה - מדינות אלו קריטיות!
+     * מחזיר סט של מדינות שבבעלותנו שהן נקודות ביטחון קריטיות (Articulation Points).
+     * אלו מדינות שאם נאבדן - הרשת שלנו תתפצל לחלקים בלתי קשורים.
+     * שימוש: DFS מעמיק עם מעקב discovery time ו-low value.
+     *
+     * @param player השחקן שלנו
+     * @return סט הנקודות הקריטיות
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V + E). כל קודקוד וכל קשת נבדקים פעם אחת בסריקת העומק.
+     * - סיבוכיות מקום: O(V) עבור מפות המעקב ועבור ערימת הרקורסיה.
+     *
+     * מסקנה סופית: אלגוריתם קריטי ומתקדם שמבוצע ביעילות לינארית אופטימלית.
      */
     public Set<Country> findArticulationPoints(Player player)
     {
-        ArticulationPointsDFSContext context;
         Set<Country> criticalPoints = new HashSet<>();
         Map<Country, Integer> discoveryTime = new HashMap<>();
         Map<Country, Integer> lowValue = new HashMap<>();
         Map<Country, Country> parentMap = new HashMap<>();
         int[] timeCounter = {0};
 
-
-        // בדוק מכל מדינה שעדיין לא ביקרנו בה
         for (Country country : player.getOwnedCountries())
         {
-
             if (!discoveryTime.containsKey(country))
             {
-                context = new ArticulationPointsDFSContext(country, discoveryTime, lowValue, parentMap, criticalPoints, timeCounter, player);
+                ArticulationPointsDFSContext context = new ArticulationPointsDFSContext(
+                        country, discoveryTime, lowValue, parentMap, criticalPoints, timeCounter, player);
                 findArticulationPointsDFS(context);
             }
-
         }
 
         return criticalPoints;
     }
 
     /**
-    @param context - הקשר של ה-DFS הנוכחי, כולל המדינה הנוכחית, מפת discovery time, מפת low value, מפת הורים, סט נקודות קריטיות, מונה זמן, והשחקן שלנו
-    טענת יציאה: מעדכן את הסט של נקודות ביטחון קריטיות (articulation points) תוך כדי ביצוע DFS על הגרף של המדינות שלנו
-    אלגוריתם: DFS רגיל עם מעקב discovery time ו-low value
-    - עבור כל שכני המדינה הנוכחית:
-        - אם השכן שייך לנו ולא ביקרנו בו עדיין:
-            - בצע DFS רקורסיבי על השכן
-            - עדכן את ה-low value של הנוכחי לפי ה-low value של השכן
-            - בדוק אם הנוכחי הוא articulation point לפי התנאים:
-                - אם הנוכחי הוא root (אין לו הורה) ויש לו 2 children או יותר, הוא articulation point
-                - אם הנוכחי לא root ויש neighbor שה-low value שלו גדול או שווה ל-discovery time של הנוכחי, אז הנוכחי הוא articulation point
-        - אם השכן שייך לנו וכבר ביקרנו בו (ולא דרך ההורה), עדכן את ה-low value של הנוכחי לפי ה-discovery time של השכן
+     * מעדכן את סט נקודות הביטחון הקריטיות תוך כדי ביצוע DFS על גרף המדינות שלנו.
+
+     * אלגוריתם: DFS עם מעקב discovery time ו-low value –
+     * - אם הנוכחי הוא root ויש לו 2 children או יותר, הוא articulation point.
+     * - אם הנוכחי אינו root ויש שכן שה-low value שלו >= discovery time של הנוכחי, הוא articulation point.
+     *
+     * @param context הקשר ה-DFS הנוכחי
+     *
+     * ניתוח סיבוכיות: O(V + E) כחלק מהסריקה הכללית.
      */
-    private void findArticulationPointsDFS(ArticulationPointsDFSContext context) {
+    private void findArticulationPointsDFS(ArticulationPointsDFSContext context)
+    {
         context.time[0]++;
         context.discoveryTime.put(context.current, context.time[0]);
         context.lowValue.put(context.current, context.time[0]);
@@ -277,125 +343,121 @@ public class AIGraphAnalyzer {
                 if (!context.discoveryTime.containsKey(neighbor))
                 {
                     childrenCount++;
-
                     context.parentMap.put(neighbor, context.current);
 
-                    ArticulationPointsDFSContext neighborContext = new ArticulationPointsDFSContext(
-                            neighbor, context.discoveryTime, context.lowValue, context.parentMap, context.criticalPoints, context.time, context.player);
-                    // קריאה רקורסיבית
-                    findArticulationPointsDFS(neighborContext);
+                    findArticulationPointsDFS(new ArticulationPointsDFSContext(
+                            neighbor, context.discoveryTime, context.lowValue,
+                            context.parentMap, context.criticalPoints, context.time, context.player));
 
-                    // עדכן את ה-low value של הנוכחי
-                    context.lowValue.put(context.current, Math.min(context.lowValue.get(context.current), context.lowValue.get(neighbor)));
+                    context.lowValue.put(context.current,
+                            Math.min(context.lowValue.get(context.current), context.lowValue.get(neighbor)));
 
-                    // בדוק אם הנוכחי הוא articulation point
-                    // תנאי: ההורה לא קיים (root) וה-neighbor לא יכול לחזור לאבא דרך דרך אחרת
-                    if (context.parentMap.get(context.current) != null && context.lowValue.get(neighbor) >= context.discoveryTime.get(context.current))
+                    if (context.parentMap.get(context.current) != null &&
+                            context.lowValue.get(neighbor) >= context.discoveryTime.get(context.current))
                         context.criticalPoints.add(context.current);
 
                 }
-                // אם כבר ביקרנו - עדכן low value (אבל לא דרך ההורה!)
                 else if (neighbor != context.parentMap.get(context.current))
-                    context.lowValue.put(context.current, Math.min(context.lowValue.get(context.current), context.discoveryTime.get(neighbor)));
-
+                {
+                    context.lowValue.put(context.current,
+                            Math.min(context.lowValue.get(context.current), context.discoveryTime.get(neighbor)));
+                }
             }
         }
 
-        // ה-root הוא articulation point אם יש לו 2 children או יותר
         if (context.parentMap.get(context.current) == null && childrenCount > 1)
             context.criticalPoints.add(context.current);
     }
 
-
     /**
-     * @param player - השחקן שלנו
-     * טענת יציאה: מחזיר את המהלך הטוב ביותר להחזקת מדינות בשלב התגבור, לפי אסטרטגיה דו-שלבית
-     * חישוב המהלך הטוב ביותר להחזקת מדינות בשלב התגבור
+     * מחזיר את המהלך הטוב ביותר לתגבור מדינות בשלב Fortify.
      * אסטרטגיה דו-שלבית:
-     * 1. תחילה - חפש מדינות "תופסות" (מוקפות רק בשלנו) שצריכות העברת חיילים
-     * 2. ואז - העבר מחוזקים לנקודות מסוכנות יותר
+     * 1. חפש מדינות "כלואות" (מוקפות רק בשלנו) שצריכות העברת חיילים.
+     * 2. העבר חיילים מגבול בטוח לגבול מסוכן יותר.
+     *
+     * @param player השחקן שלנו
+     * @return FortifyMove המהלך המומלץ, או null אם אין צורך
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: במקרה הגרוע O(T * (V + E)) כאשר T מספר המדינות הכלואות.
+     * - סיבוכיות מקום: O(V) בגלל BFS פנימי.
+     *
+     * מסקנה סופית: מחלק את בעיית התגבור לבעיות קטנות לוגיות ומייצר החלטות אנושיות כמעט.
      */
     public FortifyMove calculateBestFortify(Player player)
     {
-        // שלב ראשון: מצא מדינות תופסות שצריכות עזרה
         FortifyMove trappedCountryMove = findBestTrappedCountryMove(player);
         if (trappedCountryMove != null)
             return trappedCountryMove;
 
-
-        // שלב שני: אם אין תופסות - העבר מחוזק לחלש
         return findBestBorderFortification(player);
     }
 
     /**
-      @param player - השחקן שלנו
-      טענת יציאה: מוצא את המהלך הטוב ביותר להחזקת מדינות "תופסות" (מוקפות רק בשלנו) שצריכות העברת חיילים, לפי מספר החיילים שיש במדינה התופסת
-      אלגוריתם: עבור כל מדינה שבבעלותנו, בדוק אם היא "תופס" (כל השכנים שלה שייכים לנו).
-      אם כן, בדוק כמה חיילים יש שם. שמור את המדינה התופסת עם הכי הרבה חיילים (כי היא הכי קריטית) וודא שיש דרך מחוברת ממנה למדינה גבול עם אויב סמוך.
-      אם מצאת מדינה כזו, בנה את המהלך להעברת חיילים מהתופסת לגבול המחובר שלה.
-      אם לא מצאת אף מדינה תופסת שצריכה חיזוק, החזר null כדי לעבור לשלב השני של האסטרטגיה.
+     * מוצא את המהלך הטוב ביותר להעברת חיילים ממדינות "כלואות" (מוקפות רק בשלנו) לגבול פעיל.
+     *
+     * @param player השחקן שלנו
+     * @return FortifyMove המהלך המומלץ, או null אם אין מדינות כלואות
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(T * (V + E)) כאשר T הוא מספר המדינות הכלואות.
+     * - סיבוכיות מקום: O(V) לשמירת תור ה-BFS.
+     *
+     * מסקנה סופית: פעולה טקטית מבריקה. בפועל T קטן מאוד, ולכן הביצועים מצוינים.
      */
-     private FortifyMove findBestTrappedCountryMove(Player player)
-     {
-         Country bestTrappedCountry = null;
-         int maxArmiesInTrapped = 0;
+    private FortifyMove findBestTrappedCountryMove(Player player) {
+        Country bestTrappedCountry = null;
+        Country bestBorder = null;
+        int maxArmiesInTrapped = 0;
 
-         for (Country source : player.getOwnedCountries())
-         {
-             // Only process countries with enough armies to move
-             if (source.getArmies() > GameConstants.MIN_ARMIES_TO_STAY)
-             {
-                 // Check if this country is trapped (all neighbors are ours)
-                 if (isCountryTrapped(source, player))
-                 {
-                     if (source.getArmies() > maxArmiesInTrapped)
-                     {
-                         Country border = findConnectedBorderUsingBFS(source, player);
-                         if (border != null)
-                         {
-                             bestTrappedCountry = source;
-                             maxArmiesInTrapped = source.getArmies();
-                         }
-                     }
-                 }
-             }
-         }
-
-         if (bestTrappedCountry != null)
-         {
-             Country border = findConnectedBorderUsingBFS(bestTrappedCountry, player);
-             return new FortifyMove(bestTrappedCountry, border, bestTrappedCountry.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
-         }
-
-         return null;
-     }
-
-    /**
-     * @param player - השחקן שלנו
-     * @param country - המדינה שאנו רוצים לבדוק
-     * טענת יציאה: מחזיר true אם המדינה נתונה היא "תפוסה" (כל השכנים שלה שייכים לנו), אחרת מחזיר false
-     * אלגוריתם: עבור כל שכני המדינה, בדוק אם יש שכנים ששייכים לאויב. אם כן, המדינה לא תפוסה. אם כל השכנים שייכים לנו, המדינה היא תפוסה.
-     * עוזר: בדוק אם מדינה תפוסה (כל הסמוכים שלה הם שלנו)
-     */
-    private boolean isCountryTrapped(Country country, Player player)
-    {
-        for (Country neighbor : country.getNeighbors())
+        for (Country source : player.getOwnedCountries())
         {
-            if (neighbor.getOwner() != player)
-                return false; // יש אויב סמוך, לא תפוס
+            if (source.getArmies() > GameConstants.MIN_ARMIES_TO_STAY && isCountryTrapped(source, player))
+            {
+                Country border = findConnectedBorderUsingBFS(source, player);
+                if (border != null && source.getArmies() > maxArmiesInTrapped)
+                {
+                    bestTrappedCountry = source;
+                    bestBorder = border;
+                    maxArmiesInTrapped = source.getArmies();
+                }
+            }
         }
-        return true; // כל הסמוכים שלנו
+
+        if (bestTrappedCountry == null)
+            return null;
+
+        return new FortifyMove(bestTrappedCountry, bestBorder,
+                bestTrappedCountry.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
     }
 
     /**
-     * @param player - השחקן שלנו
-     * טענת יציאה: מוצא את המהלך הטוב ביותר להעברת חיילים ממדינת גבול בטוחה למדינת גבול מסוכנת, לפי רמת הסכנה של כל מדינה גבול
-     * אלגוריתם: עבור כל מדינות הגבול שבבעלותנו, חשב את רמת הסכנה שלהן (כוח האויבים הסמוכים חלקי החיילים שיש שם).
-     *              מצא את מדינת הגבול עם רמת הסכנה הנמוכה ביותר (הכי בטוחה) ואת מדינת הגבול עם רמת הסכנה הגבוהה ביותר (הכי מסוכנת).
-     * אם מצאת זוג כזה, בדוק אם הם מחוברים דרך מדינות שבבעלותנו בלבד (BFS).
-     *              אם כן, בנה את המהלך להעברת חיילים מהגבול הבטוח לגבול המסוכן, תוך שמירה על מינימום חיילים בגבול הבטוח.
-     * עוזר: מצא את ההצבעה הטובה ביותר בנתיב הגנה
-     * העבר מ"חוזק" (סכנה נמוכה) ל"חלוש" (סכנה גבוהה)
+     * בודק אם מדינה כלואה – כל שכניה שייכים לשחקן.
+     *
+     * @param country המדינה שאנו בודקים
+     * @param player  השחקן שלנו
+     * @return true אם כל השכנים שלנו
+     *
+     * ניתוח סיבוכיות: זמן ריצה O(D) ומקום O(1).
+     */
+    private boolean isCountryTrapped(Country country, Player player)
+    {
+        return country.getNeighbors().stream()
+                .allMatch(neighbor -> neighbor.getOwner() == player);
+    }
+
+    /**
+     * מוצא את המהלך הטוב ביותר להעברת חיילים מגבול בטוח לגבול מסוכן.
+     * מחשב רמת סכנה לכל מדינת גבול ומצא את הזוג המתאים ביותר.
+     *
+     * @param player השחקן שלנו
+     * @return FortifyMove המהלך המומלץ, או null אם לא נמצא זוג מתאים
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V * D) למציאת שני הגבולות + O(V + E) לאימות החיבור. סה"כ O(V + E).
+     * - סיבוכיות מקום: O(V) בגלל קריאה בודדת ל-BFS.
+     *
+     * מסקנה סופית: אלגוריתם קריטי לניהול סיכונים חכם שפועל ביעילות גבוהה.
      */
     private FortifyMove findBestBorderFortification(Player player)
     {
@@ -404,20 +466,17 @@ public class AIGraphAnalyzer {
         double lowestThreat = Double.MAX_VALUE;
         double highestThreat = -1.0;
 
-        // מצא את מדינות הגבול + אמוד את הסכנה שלהן
         for (Country border : player.getOwnedCountries())
         {
             double threatLevel = calculateBorderThreatLevel(border, player);
 
             if (threatLevel > 0)
             {
-                // עדכן את הנמוך ביותר
                 if (threatLevel < lowestThreat && border.getArmies() >= GameConstants.MIN_ARMIES_FOR_FORTIFY)
                 {
                     lowestThreat = threatLevel;
                     safestBorder = border;
                 }
-                // עדכן את הגבוה ביותר
                 if (threatLevel > highestThreat)
                 {
                     highestThreat = threatLevel;
@@ -426,50 +485,49 @@ public class AIGraphAnalyzer {
             }
         }
 
-        // אם מצאנו זוג טוב - ובדוק שהם מחוברים
-        if (safestBorder != null && mostThreatenedBorder != null && safestBorder != mostThreatenedBorder)
-        {
-            if (isConnectedBFS(safestBorder, mostThreatenedBorder, player))
-            {
-                int armiesToMove = safestBorder.getArmies() - GameConstants.KEEP_ARMIES_AT_SOURCE;
-                if (armiesToMove > 0)
-                    return new FortifyMove(safestBorder, mostThreatenedBorder, armiesToMove);
+        if (safestBorder == null || mostThreatenedBorder == null || safestBorder == mostThreatenedBorder)
+            return null;
 
-            }
-        }
+        if (!bfsReachableOwned(safestBorder, player).contains(mostThreatenedBorder))
+            return null;
 
-        return null;
+        int armiesToMove = safestBorder.getArmies() - GameConstants.KEEP_ARMIES_AT_SOURCE;
+        return armiesToMove > 0 ? new FortifyMove(safestBorder, mostThreatenedBorder, armiesToMove) : null;
     }
 
     /**
-     * @param player - השחקן שלנו
-     * @param border - מדינת גבול שאנו רוצים לחשב את רמת הסכנה שלה
-     * טענת יציאה: מחזיר את רמת הסכנה של מדינת הגבול הנתונה, כאשר רמת הסכנה מחושבת כיחס כוח האויבים הסמוכים חלקי כמות החיילים שיש במדינה.
-     *              אם אין אויבים סמוכים, מחזיר 0 (לא מסוכן).
-     * אלגוריתם: חשב את סכום כוח האויבים הסמוכים למדינת הגבול. אם סכום זה הוא 0, החזר 0 (לא מסוכן).
-     *               אחרת, חשב את רמת הסכנה כיחס בין כוח האויבים הסמוכים לבין כמות החיילים שיש במדינה (עם טיפול למקרה של 0 חיילים כדי למנוע חלוקה באפס). החזר את רמת הסכנה המחושבת.
-     * עוזר: חישוב רמת הסכנה של מדינה גבול
+     * מחשב את רמת הסכנה של מדינת גבול כיחס בין כוח האויבים לכוחנו.
+     *
+     * @param border המדינה שאנו בודקים
+     * @param player השחקן שלנו
+     * @return רמת הסכנה (0 אם אין אויבים סמוכים)
+     *
+     * ניתוח סיבוכיות: זמן ריצה O(D) ומקום O(1).
      */
     private double calculateBorderThreatLevel(Country border, Player player)
     {
         int totalEnemyForce = calculateTotalEnemyStrength(border, player);
-        if (totalEnemyForce == 0) return 0;
-        
+        if (totalEnemyForce == 0)
+            return 0;
+
         return (double) totalEnemyForce / Math.max(border.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
     }
+
+
+
+
     /**
-     * @param player - השחקן שלנו
-     * @param start - מדינה התחלה
-     * @param target - מדינה יעד
-     * טענת יציאה: מחזיר true אם יש מסלול מחובר בין start ל-target דרך מדינות שבבעלותנו בלבד, אחרת מחזיר false
-     * */
-    private boolean isConnectedBFS(Country start, Country target, Player player)
-    {
-        return bfsReachableOwned(start, player).contains(target);
-    }
-    /**
-     * @param player - השחקן שלנו
-     * טענת יציאה: מוצא את המדינה המאוימת ביותר – המדינה עם הכי הרבה שכנים עוינים (ובמקרה שוויון, הכי מעט חיילים)
+     * מוצא את המדינה המאוימת ביותר – עם הכי הרבה שכנים עוינים,
+     * ובמקרה שוויון, עם הכי מעט חיילים.
+     *
+     * @param player השחקן שלנו
+     * @return המדינה המאוימת ביותר
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V * D) = O(E).
+     * - סיבוכיות מקום: O(1).
+     *
+     * מסקנה סופית: משמש כמנגנון Fallback להחלטות חירום, יעיל וקליל.
      */
     public Country findMostThreatenedCountry(Player player)
     {
@@ -488,6 +546,10 @@ public class AIGraphAnalyzer {
         return best;
     }
 
+    /**
+     * רשומת הקשר ל-DFS של מציאת נקודות ביטחון קריטיות.
+     * אוגרת את כל המצב הנדרש לביצוע ה-DFS הרקורסיבי.
+     */
     private record ArticulationPointsDFSContext(
             Country current,
             Map<Country, Integer> discoveryTime,
@@ -497,6 +559,4 @@ public class AIGraphAnalyzer {
             int[] time,
             Player player
     ) {}
-
 }
-

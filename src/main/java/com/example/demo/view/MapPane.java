@@ -7,6 +7,8 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.NumberBinding;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
@@ -34,7 +36,8 @@ import java.util.function.Consumer;
  * - סימנים למספר חיילים בכל מדינה
  * השימוש: המרכז הוויזואלי של משחק Risk
  */
-public class MapPane extends Pane {
+public class MapPane extends Pane
+{
     private final Board board;
     private final Group mapGroup = new Group();
 
@@ -55,8 +58,7 @@ public class MapPane extends Pane {
         setupBackground();
 
         // הוספת השכבות לפי הסדר: קודם מדינות, אז סמלים
-        Group continentsLayer = new Group();
-        mapGroup.getChildren().addAll(routesLayer, continentsLayer, shapesLayer, symbolsLayer);
+        mapGroup.getChildren().addAll(routesLayer, shapesLayer, symbolsLayer);
         getChildren().add(mapGroup);
 
         setupScaling();
@@ -160,10 +162,11 @@ public class MapPane extends Pane {
             cv.getNameText().setVisible(show);
 
     }
-    private void setupBackground() {
+    private void setupBackground()
+    {
         Stop[] stops = new Stop[]{new Stop(0, Color.rgb(50, 180, 225)), new Stop(1, Color.rgb(15, 125, 185))};
         LinearGradient oceanGradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
-        setBackground(new javafx.scene.layout.Background(new javafx.scene.layout.BackgroundFill(oceanGradient, null, null)));
+        setBackground(new Background(new BackgroundFill(oceanGradient, null, null)));
     }
 
     private void setupScaling()
@@ -203,27 +206,23 @@ public class MapPane extends Pane {
             CountryView view = entry.getValue();
 
             if (country.equals(selectedCountry))
-            {
                 // מדינה שנבחרה - הדגש חזק בצהוב
                 view.setHighlight(Color.YELLOW, GameConstants.BORDER_WIDTH_HIGHLIGHT);
-            }
+
             else
             {
                 // בדוק אם זו מדינת תפר (אסיה-אירופה)
                 boolean isBoundaryRegion = isContinentBoundary(country);
-                
                 if (isBoundaryRegion)
-                {
                     // מדינת תפר - גבול עבה וברור
                     view.setHighlight(Color.rgb(15, 15, 15, GameConstants.OVERLAY_OPACITY_HIGH), 
                                     GameConstants.BORDER_WIDTH_SPECIAL);
-                }
+
                 else
-                {
                     // מדינה רגילה - גבול דק וממוצע
                     view.setHighlight(Color.rgb(15, 15, 15, GameConstants.OVERLAY_OPACITY_LOW), 
                                     GameConstants.BORDER_WIDTH_NORMAL);
-                }
+
             }
         }
     }
@@ -251,9 +250,9 @@ public class MapPane extends Pane {
      {
          clearHighlights();
          for (Country c : validTargets)
-         {
-             if (countryViews.containsKey(c)) countryViews.get(c).setHighlight(Color.GREEN, GameConstants.BORDER_WIDTH_HIGHLIGHT);
-         }
+             if (countryViews.containsKey(c))
+                 countryViews.get(c).setHighlight(Color.GREEN, GameConstants.BORDER_WIDTH_HIGHLIGHT);
+
      }
 
     public void clearHighlights() { refreshMap(); }

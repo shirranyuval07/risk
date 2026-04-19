@@ -11,7 +11,8 @@ import com.example.demo.model.manager.Player;
  * כאן מעריכים מדינה בודדת שכבר בבעלותנו.
  */
 @FunctionalInterface
-public interface SetupHeuristicRule extends BaseRule<Country> {
+public interface SetupHeuristicRule extends BaseRule<Country>
+{
 
     /**
      * @param country  המדינה המוערכת להצבה
@@ -25,8 +26,10 @@ public interface SetupHeuristicRule extends BaseRule<Country> {
      * כלל: העדפת מדינות עם איום אויב גבוה בסביבתן.
      * ניקוד = סכום חיילי אויב בשכנים.
      */
-    static SetupHeuristicRule enemyThreatRule() {
-        return (country, player, analyzer) -> {
+    static SetupHeuristicRule enemyThreatRule()
+    {
+        return (country, player, analyzer) ->
+        {
             int totalEnemyStrength = 0;
             for (Country neighbor : country.getNeighbors()) {
                 if (neighbor.getOwner() != player)
@@ -38,10 +41,11 @@ public interface SetupHeuristicRule extends BaseRule<Country> {
 
     /**
      * כלל: העדפת ערימה – בונוס למדינות שכבר יש בהן חיילים שלנו.
-     * ניקוד = log(חיילים + 1) – תשואה פוחתת כדי למנוע ערימה אינסופית.
+     * ניקוד : log(חיילים + 1) – תשואה פוחתת כדי למנוע ערימה אינסופית.
      * אסטרטגיה הגנתית (משקל 20) עדיין תעדיף ערימה, אבל מאוזנת/התקפית יתפזרו.
      */
-    static SetupHeuristicRule stackingRule() {
+    static SetupHeuristicRule stackingRule()
+    {
         return (country, player, analyzer) -> Math.log(country.getArmies() + 1);
     }
 
@@ -49,28 +53,25 @@ public interface SetupHeuristicRule extends BaseRule<Country> {
      * כלל: התקדמות ביבשת – בונוס למדינות ביבשות שאנחנו מתקדמים בהן.
      * ניקוד = (אחוז השליטה ביבשת) × (ערך הבונוס של היבשת).
      */
-    static SetupHeuristicRule continentProgressRule() {
-        return (country, player, analyzer) -> {
-            Continent continent = country.getContinent();
-            if (continent == null) return 0;
-
-            int totalCountries = continent.getCountries().size();
-            int ownedCountries = 0;
-            for (Country c : continent.getCountries()) {
-                if (c.getOwner() == player)
-                    ownedCountries++;
-            }
-
-            double progressRatio = (double) ownedCountries / totalCountries;
-            return progressRatio * continent.getBonusValue();
-        };
+    static SetupHeuristicRule continentProgressRule(double enemyBreakMultiplier, double bonusFocus, double progressFocus, double resistanceAvoidance) {
+        return (country, player, analyzer) ->
+                BaseRule.calculateSharedContinentScore(
+                country.getContinent(),
+                player,
+                null,
+                1,
+                enemyBreakMultiplier,
+                bonusFocus,
+                progressFocus,
+                resistanceAvoidance);
     }
 
     /**
      * כלל: כיסוי גבולות – בונוס למדינות שגובלות עם הרבה אויבים שונים.
      * ניקוד = מספר שכנים עוינים.
      */
-    static SetupHeuristicRule borderCoverageRule() {
+    static SetupHeuristicRule borderCoverageRule()
+    {
         return (country, player, analyzer) ->
                 analyzer.countEnemyNeighbors(country, player);
     }
