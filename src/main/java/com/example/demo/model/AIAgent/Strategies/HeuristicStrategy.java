@@ -356,9 +356,13 @@ public interface HeuristicStrategy {
                 return (player, game, analyzer, strategy) ->
                 {
                     AttackMove best = analyzer.findBestPotentialAttack(player, strategy);
-                    if (best != null)
+
+                    if (best != null && best.heuristicScore() >= (strategy.getAttackThreshold() * GameConstants.ISOLATION_BONUS_MULTIPLIER))
                         while (player.getDraftArmies() > 0)
                             game.placeArmy(best.source());
+                    else
+                        defensive().execute(player, game, analyzer, strategy);
+
                 };
             }
 

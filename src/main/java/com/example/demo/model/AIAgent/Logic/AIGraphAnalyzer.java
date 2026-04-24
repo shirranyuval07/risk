@@ -121,18 +121,24 @@ public class AIGraphAnalyzer {
     {
         AttackMove bestPotentialAttack = null;
 
-        for (Country source : player.getOwnedCountries())
-            for (Country target : source.getNeighbors())
-                if (target.getOwner() != player)
+        for(Country source : player.getOwnedCountries())
+        {
+            for(Country target : source.getNeighbors())
+            {
+                if(target.getOwner() != player)
                 {
-                    double score = strategy.calculateHeuristic(source, target, player, this);
+                    boolean canAchieveAdvantage = (source.getArmies() + player.getDraftArmies()) - target.getArmies() >= strategy.getMinArmyAdvantage();
+                    if(canAchieveAdvantage)
+                    {
+                        double score = strategy.calculateHeuristic(source, target, player, this);
 
-                    if (bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore())
-                        bestPotentialAttack = new AttackMove(source, target, score);
+                        if(bestPotentialAttack == null || score > bestPotentialAttack.heuristicScore())
+                            bestPotentialAttack = new AttackMove(source, target, score);
+
+                    }
                 }
-
-
-
+            }
+        }
         return bestPotentialAttack;
     }
 
@@ -180,15 +186,11 @@ public class AIGraphAnalyzer {
 
         for (Country country : player.getOwnedCountries())
         {
-            int totalEnemyStrength = calculateTotalEnemyStrength(country, player);
-
-            if (totalEnemyStrength > 0)
+            double baseThreatScore = calculateBorderThreatLevel(country, player);
+            if (baseThreatScore > 0)
             {
-                double threatScore = (double) totalEnemyStrength /
-                        Math.max(country.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
-
                 double multiplier = bottlenecks.contains(country) ? GameConstants.BOTTLENECK_THREAT_MULTIPLIER : 1.0;
-                threatScores.put(country, threatScore * multiplier);
+                threatScores.put(country, baseThreatScore * multiplier);
             }
         }
         return threatScores;
