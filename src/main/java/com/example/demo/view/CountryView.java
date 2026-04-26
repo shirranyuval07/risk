@@ -19,30 +19,25 @@ public class CountryView
     private final SVGPath shape;
     @Getter private final Circle armyDisk;
     @Getter private final Text armyText;
-    @Getter private final Text nameText; // משתנה השם החדש
+    @Getter private final Text nameText;
 
     public CountryView(Country country, Group shapesLayer, Group symbolsLayer)
     {
         this.model = country;
 
-        // 1. Create Shape
         this.shape = country.getShape();
         setupShapeEffects();
         shapesLayer.getChildren().add(shape);
 
-        // 2. Create Disk & Text
         this.armyDisk = new Circle(country.getX(), country.getY(), 12);
         this.armyText = new Text(country.getX(), country.getY(), "0");
 
-        // יצירת טקסט השם - ממוקם 20 פיקסלים מעל מרכז המדינה (Y - 20)
         this.nameText = new Text(country.getX(), country.getY() - 20, country.getName());
 
         setupSymbolEffects();
 
-        // חשוב! כאן אנחנו מוסיפים גם את העיגול, גם את החיילים וגם את השם לשכבה העליונה
         symbolsLayer.getChildren().addAll(armyDisk, armyText, nameText);
 
-        // 3. Connect Data Bindings!
         setupBindings();
     }
 
@@ -80,17 +75,13 @@ public class CountryView
     {
         armyText.textProperty().bind(model.armiesProperty().asString());
 
-        armyText.textProperty().addListener((obs, oldVal, newVal) -> {
-            armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2);
-        });
+        armyText.textProperty().addListener((obs, oldVal, newVal) ->
+                armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2));
 
-        model.ownerProperty().addListener((obs, oldOwner, newOwner) -> {
-            updateColors();
-        });
+        model.ownerProperty().addListener((obs, oldOwner, newOwner) -> updateColors());
 
         updateColors();
         armyText.setX(model.getX() - armyText.getLayoutBounds().getWidth() / 2);
-
         nameText.setX(model.getX() - nameText.getLayoutBounds().getWidth() / 2);
     }
 

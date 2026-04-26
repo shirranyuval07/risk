@@ -82,7 +82,6 @@ public class RiskWebSocketClient implements WebSocket.Listener
 
     public void disconnect()
     {
-// קודם כל בודקים שבכלל יש חיבור פעיל כדי לא לקבל שגיאת NullPointer
         if (this.webSocket != null)
         {
             try
@@ -108,7 +107,6 @@ public class RiskWebSocketClient implements WebSocket.Listener
             if (webSocket == null)
             {
                 log.severe("⚠️ ERROR: Not connected to server! Cannot send action: " + type);
-                // כאן אפשר להוסיף הקפצת Alert אם רוצים
                 return;
             }
 

@@ -25,8 +25,6 @@ import java.util.*;
 @Slf4j
 public class Board {
     private final Map<Integer, Country> countries = new HashMap<>();
-    @Getter
-    private final List<Continent> continents = new ArrayList<>();
 
     // Helper map to quickly find continents by name when loading countries
     private final Map<String, Continent> continentMap = new HashMap<>();
@@ -98,7 +96,6 @@ public class Board {
                         cConfig.getName(),
                         cConfig.getBonusValue(),
                         Color.web(cConfig.getColorHex()));
-                continents.add(continent);
                 continentMap.put(continent.getName(), continent);
             }
 
@@ -231,7 +228,7 @@ public class Board {
     public int calculateContinentBonus(Player player)
     {
         int totalBonus = 0;
-        for (Continent continent : continents)
+        for (Continent continent : continentMap.values())
             if (continent.isOwnedBy(player))
                 totalBonus += continent.getBonusValue();
 

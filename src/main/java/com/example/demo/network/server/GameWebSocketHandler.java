@@ -3,6 +3,7 @@ package com.example.demo.network.server;
 import com.example.demo.network.shared.GameAction;
 import com.example.demo.network.shared.GameMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -14,7 +15,7 @@ import com.example.demo.model.Records.GameRecords.BattleResult;
 
 import java.util.*;
 
-import static com.example.demo.model.manager.Dice.rollBattle;
+import static com.example.demo.model.util.Dice.rollBattle;
 
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler
@@ -28,22 +29,24 @@ public class GameWebSocketHandler extends TextWebSocketHandler
     }
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception
-    {
+    public void afterConnectionEstablished(WebSocketSession session) {
         System.out.println("Connection opened: " + session.getId());
     }
     @Override
+    @NullMarked
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
     {
         roomManager.handleDisconnect(session);
     }
 
     @Override
+    @NullMarked
     public void handleTransportError(WebSocketSession session, Throwable exception)
     {
         roomManager.handleDisconnect(session);
     }
     @Override
+    @NullMarked
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception
     {
         String payload = message.getPayload();

@@ -18,7 +18,7 @@ class WinProbabilityCalculator
     private static final double CERTAIN_LOSS_RATIO = 0.80;
     private static final double HIGH_ADVANTAGE_RATIO = 1.5;
     private static final double MODERATE_ADVANTAGE_RATIO = 1.0;
-    private static final double EQUILIBRIUM_RATIO = 0.924; // Osborne's equilibrium point
+    public static final double EQUILIBRIUM_RATIO = 0.924; // Osborne's equilibrium point
 
     // Probability values for battle outcomes
     private static final double PROBABILITY_CERTAIN = 1.0;
@@ -64,7 +64,6 @@ class WinProbabilityCalculator
         int actualAttackers = attackerArmies - 1; // אחד חייב להישאר מאחורה.
 
         if (actualAttackers <= 0) return PROBABILITY_IMPOSSIBLE;
-        if (defenderArmies <= 0) return PROBABILITY_CERTAIN;
 
         if (canUseLookupTable(actualAttackers, defenderArmies)) {
             return MARKOV_PROBABILITIES[actualAttackers][defenderArmies];

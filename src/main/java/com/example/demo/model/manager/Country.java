@@ -108,11 +108,7 @@ public class Country
      */
     public int getArmies() { return armies.get(); }
     
-    /**
-     * קביעת מספר חיילים חדש
-     * @param amount מספר החיילים
-     */
-    public void setArmies(int amount) { armies.set(amount); }
+
     
     /**
      * קבלת תכונת החיילים לצורך binding ב-UI

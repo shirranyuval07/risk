@@ -1,4 +1,6 @@
-package com.example.demo.model.manager;
+package com.example.demo.model.util;
+
+import com.example.demo.model.manager.Player;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,41 +41,6 @@ public enum Card
     public static class Service
     {
         private static final int SET_SIZE = 3;
-        /**
-         * בדיקה וסחירה של סט חוקי כלשהו מקלפי השחקן
-
-         * סדר העדיפות:
-         * 1. קלף אחד מכל סוג (10 חיילים)
-         * 2. 3 תותחנים (8 חיילים)
-         * 3. 3 פרשים (6 חיילים)
-         * 4. 3 חיילים רגלים (4 חיילים)
-         * 
-         * @param player השחקן הקורא לסחירה
-         * @return מספר חיילים שהתקבלו, או 0 אם אין סט חוקי
-         */
-        public int tradeAnyValidSet(Player player)
-        {
-            List<Card> cards = player.getCards();
-            int inf = Collections.frequency(cards, Card.INFANTRY);
-            int cav = Collections.frequency(cards, Card.CAVALRY);
-            int art = Collections.frequency(cards, Card.ARTILLERY);
-
-            // One of each
-            if (inf > 0 && cav > 0 && art > 0) {
-                cards.remove(Card.INFANTRY);
-                cards.remove(Card.CAVALRY);
-                cards.remove(Card.ARTILLERY);
-                return 10;
-            }
-
-            // Three of the same
-            if (art >= SET_SIZE) return tradeMatchingCards(cards, Card.ARTILLERY, 8);
-            if (cav >= SET_SIZE) return tradeMatchingCards(cards, Card.CAVALRY, 6);
-            if (inf >= SET_SIZE) return tradeMatchingCards(cards, Card.INFANTRY, 4);
-
-            return 0; // No valid set
-        }
-        
         /**
          * בדיקה וסחירה של סט ספציפי שבחר השחקן
          * 

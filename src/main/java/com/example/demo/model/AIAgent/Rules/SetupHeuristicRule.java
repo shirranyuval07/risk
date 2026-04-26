@@ -29,20 +29,15 @@ public interface SetupHeuristicRule extends BaseRule<Country>
     static SetupHeuristicRule enemyThreatRule()
     {
         return (country, player, analyzer) ->
-        {
-            int totalEnemyStrength = 0;
-            for (Country neighbor : country.getNeighbors()) {
-                if (neighbor.getOwner() != player)
-                    totalEnemyStrength += neighbor.getArmies();
-            }
-            return totalEnemyStrength;
-        };
+                country.getNeighbors().stream()
+                        .filter(neighbor -> neighbor.getOwner() != player)
+                        .mapToInt(Country::getArmies)
+                        .sum();
     }
 
     /**
      * כלל: העדפת ערימה – בונוס למדינות שכבר יש בהן חיילים שלנו.
      * ניקוד : log(חיילים + 1) – תשואה פוחתת כדי למנוע ערימה אינסופית.
-     * אסטרטגיה הגנתית (משקל 20) עדיין תעדיף ערימה, אבל מאוזנת/התקפית יתפזרו.
      */
     static SetupHeuristicRule stackingRule()
     {
@@ -67,13 +62,13 @@ public interface SetupHeuristicRule extends BaseRule<Country>
     }
 
     /**
-     * כלל: כיסוי גבולות – בונוס למדינות שגובלות עם הרבה אויבים שונים.
+     * כלל: כיסוי גבולות – בונוס שלילי למדינות שגובלות עם הרבה אויבים שונים.
      * ניקוד = מספר שכנים עוינים.
      */
     static SetupHeuristicRule borderCoverageRule()
     {
         return (country, player, analyzer) ->
-                analyzer.countEnemyNeighbors(country, player);
+                analyzer.countEnemyNeighbors(country, player) * -1;
     }
 }
 

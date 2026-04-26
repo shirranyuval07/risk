@@ -2,7 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.view.dialog.DialogManager;
 
-import com.example.demo.model.manager.Card;
+import com.example.demo.model.util.Card;
 import com.example.demo.service.AIEngine;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.GameUpdateListener;
@@ -69,7 +69,7 @@ public class GameController {
             public void onStatsUpdated()
             {
                 // כשמגיעה קריאה מהמודל - מעדכנים את המסך!
-                javafx.application.Platform.runLater(() ->
+                Platform.runLater(() ->
                         gameView.getPlayerStatsPane().updateStats()
                 );
             }
@@ -78,7 +78,7 @@ public class GameController {
             public void onGameMessage(String message)
             {
                 // כשמגיעה הודעה מהמודל - מציגים אותה במסך!
-                javafx.application.Platform.runLater(() ->
+                Platform.runLater(() ->
                         gameView.getControlPane().setMessage(message)
                 );
             }
@@ -652,7 +652,8 @@ public class GameController {
      * טענת יציאה: פונקצית עזר בשביל לבנות דיליי של שנייה בכל שלב במשחק (חוץ מהשלב הראשון שרוצים שה AI יגיב מהר)
      * וברגע שנגמר בדיליי, אם המשחק לא נגמר מבקשים מה AI service לשחק את התור. לאחר מכן מנקים את הבחירות ובודקים אם זה שוב תור של AI.
      * */
-    private @NonNull PauseTransition buildAIPause() {
+    private @NonNull PauseTransition buildAIPause()
+    {
         Duration delay = (gameModel.getCurrentState() instanceof SetupState)
                 ? Duration.seconds(0.05)
                 : Duration.seconds(1);

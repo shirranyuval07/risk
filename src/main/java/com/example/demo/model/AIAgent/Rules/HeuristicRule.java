@@ -34,7 +34,7 @@ public interface HeuristicRule extends BaseRule<HeuristicRule.AttackContext> {
                     maxThreat = neighbor.getArmies();
 
             }
-            return (double) maxThreat / Math.max(ctx.source().getArmies(), 1);
+            return (double) maxThreat / Math.max(ctx.source().getArmies(), 1) * -1;
         };
     }
 

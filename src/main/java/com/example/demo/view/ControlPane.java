@@ -79,7 +79,6 @@ public class ControlPane extends HBox
             {
                 phaseLabel.setText("Phase: " + newState.getPhaseName());
 
-                // התיקון: כיבוי כפתור הקלפים אם אנחנו לא בשלב ה-DRAFT
                 btnCards.setDisable(!newState.getPhaseName().equals("DRAFT"));
             }
         });
@@ -97,10 +96,8 @@ public class ControlPane extends HBox
             btnCards.setDisable(!game.getCurrentState().getPhaseName().equals("DRAFT"));
         }
         else
-        {
-            // אם המשחק עדיין לא התחיל או שאין סטייט, נכבה את הכפתור ליתר ביטחון
             btnCards.setDisable(true);
-        }
+
     }
 
     private Label createStyledLabel(String text)

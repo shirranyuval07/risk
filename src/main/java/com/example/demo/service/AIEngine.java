@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.model.manager.Card;
+import com.example.demo.model.util.Card;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
 import com.example.demo.model.manager.RiskGame;
@@ -25,25 +25,12 @@ public class AIEngine {
             public void playTurn(Player aiPlayer, RiskGame game) {
                 if (!aiPlayer.isAI() || aiPlayer.getStrategy() == null)
                     return;
-
-
                 // Handle Setup phase
                 if (game.getCurrentState() instanceof GameState.SetupState) {
                     Country c = aiPlayer.getStrategy().findSetUpCountry(aiPlayer, game);
                     game.placeArmy(c);
                     return;
                 }
-
-                // Handle Card Trading before regular phases
-                int tradeResult;
-                do {
-                    tradeResult = cardService.tradeAnyValidSet(aiPlayer);
-                    if (tradeResult > 0) {
-                        aiPlayer.setDraftArmies(aiPlayer.getDraftArmies() + tradeResult);
-                        log.info("🤖 AI {} traded cards for {} extra armies!", aiPlayer.getName(), tradeResult);
-                    }
-                } while (tradeResult > 0);
-
                 // Execute regular game phases (Draft, Attack, Fortify)
                 aiPlayer.getStrategy().executeTurn(aiPlayer, game);
 

@@ -11,7 +11,18 @@ public interface BaseRule<C> {
     double evaluate(C context, Player player, AIGraphAnalyzer analyzer);
 
     /**
-     * Shared logic for calculating continent progress across all game phases.
+     * חישוב ציון היוריסטי ליבשת כדי להעריך עד כמה כדאי ל-AI להתמקד בה (לכיבוש, הצבה או הגנה).
+     * החישוב מתבסס על מודל "מדרגות דחיפות" - ככל שחסרות פחות מדינות להשלמת היבשת, הציון מזנק באגרסיביות.
+     *
+     * @param continent             היבשת שעבורה מחושב הציון.
+     * @param currentPlayer         השחקן (ה-AI) שמחשב את המהלך ומעריך את הלוח.
+     * @param targetOwner           השחקן שמחזיק במדינה שאותה שוקלים לתקוף, או null אם מדובר בהערכת מצב כללית (כמו שלב הצבת החיילים).
+     * @param availableArmies       מספר החיילים הפנויים שיש לשחקן הנוכחי לטובת ביצוע המהלך.
+     * @param enemyBreakMultiplier  משקולת (מכפיל) המתגמלת שבירת יבשת שלמה שנמצאת בשליטת אויב.
+     * @param bonusFocus            משקולת המייצגת את חשיבות בונוס החיילים הרשמי של היבשת.
+     * @param progressFocus         משקולת המייצגת את חשיבות ההתקדמות והשליטה ביבשת (לפי מדרגות הדחיפות).
+     * @param resistanceAvoidance   משקולת "עונש" הגורמת לבוט להימנע מיבשות שבהן לאויבים יש כוח צבאי גדול מדי.
+     * @return                      ציון (double) המייצג את רמת האטרקטיביות של היבשת. ציון גבוה יותר שווה עדיפות גבוהה יותר למהלך.
      */
     static double calculateSharedContinentScore(
             Continent continent,
@@ -23,31 +34,40 @@ public interface BaseRule<C> {
             double progressFocus,
             double resistanceAvoidance)
     {
-
         if (continent == null) return 0;
 
         int totalCountries = continent.getCountries().size();
-        int ownedCountries = 0;
-        int enemyArmiesInContinent = 0;
+
+
+
+        // 1. ספירת המדינות שלך
+        int ownedCountries = (int)continent.getCountries().stream()
+                .filter(c -> c.getOwner() == currentPlayer)
+                .count();
+
+    // 2. סיכום חיילי האויב
+        int enemyArmiesInContinent = continent.getCountries().stream()
+                .filter(c -> c.getOwner() != currentPlayer)
+                .mapToInt(Country::getArmies)
+                .sum();
+
         boolean isAttack = (targetOwner != null);
         if (isAttack)
             ownedCountries++;
+        // מדמים שכבשנו את המדינה הזו עכשיו
+        // חישוב כמה מדינות נשארו לנו כדי לסיים את היבשת.
+        // ה-Math.max(1, ...) מוודא שלעולם לא נחלק באפס במקרה שכבר השתלטנו על כולה.
+        int missingCountries = Math.max(1, totalCountries - ownedCountries);
 
-        for (Country c : continent.getCountries())
-        {
-            if (c.getOwner() == currentPlayer)
-                ownedCountries++;
-            else
-                enemyArmiesInContinent += c.getArmies();
+        // ככל שחסרות פחות מדינות, המכנה קטן, והתוצאה מזנקת למעלה באגרסיביות.
+        double urgencyStep = (double) ownedCountries / missingCountries;
 
-        }
+        double bonusScore = (continent.getBonusValue() * urgencyStep) * bonusFocus;
 
-
-        double progressRatio = (double) ownedCountries / Math.max(totalCountries, 1);
-        double bonusScore = continent.getBonusValue() * bonusFocus;
-        double progressScore = (progressRatio * GameConstants.EASY_WIN_ARMY_DIVISOR) * progressFocus;
+        double progressScore = urgencyStep * progressFocus;
 
         double strengthRatio = (double) enemyArmiesInContinent / Math.max(availableArmies, 1);
+
         double resistancePenalty = strengthRatio * resistanceAvoidance;
 
         double score = bonusScore + progressScore - resistancePenalty;
@@ -58,7 +78,6 @@ public interface BaseRule<C> {
                     .allMatch(c -> c.getOwner() == targetOwner);
             if (enemyOwnsContinent)
                 score += continent.getBonusValue() * enemyBreakMultiplier;
-
         }
 
         return score;

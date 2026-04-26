@@ -1,5 +1,6 @@
 package com.example.demo.model.manager;
 
+import com.example.demo.model.util.Dice;
 import lombok.extern.slf4j.Slf4j;
 
 

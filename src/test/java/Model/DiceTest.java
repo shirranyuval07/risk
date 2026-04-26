@@ -1,7 +1,7 @@
 package Model;
 
 import com.example.demo.config.GameConstants;
-import com.example.demo.model.manager.Dice;
+import com.example.demo.model.util.Dice;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

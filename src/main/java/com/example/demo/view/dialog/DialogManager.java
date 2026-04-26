@@ -1,6 +1,6 @@
 package com.example.demo.view.dialog;
 
-import com.example.demo.model.manager.Card;
+import com.example.demo.model.util.Card;
 import com.example.demo.model.manager.Player;
 import com.example.demo.model.Records.GameRecords.BattleResult;
 import javafx.scene.Node;

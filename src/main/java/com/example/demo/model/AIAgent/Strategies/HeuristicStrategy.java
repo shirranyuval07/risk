@@ -171,13 +171,21 @@ public interface HeuristicStrategy {
         }
 
         /**
-         @param attackerArmies - מספר החיילים התוקפים
-         @param defenderArmies - מספר החיילים המגנים
-         @return הערכת הפסדים צפויים עבור התוקף
+         * @param attackerArmies - מספר החיילים התוקפים (כולל זה שנשאר מאחור)
+         * @param defenderArmies - מספר החיילים המגנים
+         * @return הערכת הפסדים צפויים עבור התוקף, מנורמלת לטווח 0-1 (אחוז הצבא שיושמד)
          */
         private double estimateExpectedLoss(int defenderArmies, int attackerArmies)
         {
-            return ((double) defenderArmies / Math.max(attackerArmies, 1)) * weights.casualtiesMultiplier;
+            int actualAttackers = Math.max(attackerArmies - 1, 1);
+            double pWin = winCalculator.estimate(attackerArmies, defenderArmies);
+            double pLose = 1.0 - pWin;
+            double expectedLossIfWin = Math.min(defenderArmies * WinProbabilityCalculator.EQUILIBRIUM_RATIO, actualAttackers);
+
+            double trueExpectedCasualties = (pWin * expectedLossIfWin) + (pLose * (double) actualAttackers);
+
+            double normalizedLossRate = trueExpectedCasualties / actualAttackers;
+            return normalizedLossRate * weights.casualtiesMultiplier;
         }
 
         /**
@@ -384,7 +392,7 @@ public interface HeuristicStrategy {
                         return;
                     }
 
-                    for (Map.Entry<Country, Double> entry : threatScores.entrySet())
+                    for (var entry : threatScores.entrySet())
                     {
                         int armies = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
                         for (int i = 0; i < armies; i++)

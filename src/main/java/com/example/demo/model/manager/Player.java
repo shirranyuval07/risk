@@ -1,5 +1,6 @@
 package com.example.demo.model.manager;
 import com.example.demo.model.AIAgent.Logic.BotStrategy;
+import com.example.demo.model.util.Card;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import lombok.Getter;

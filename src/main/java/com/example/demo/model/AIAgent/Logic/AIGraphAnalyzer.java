@@ -142,29 +142,6 @@ public class AIGraphAnalyzer {
         return bestPotentialAttack;
     }
 
-    /**
-     * מחזיר את סכום כוח האויבים הסמוכים למדינה נתונה.
-     *
-     * @param country המדינה שאנו בודקים
-     * @param player  השחקן שלנו
-     * @return סכום החיילים של כל השכנים העוינים
-
-     * ניתוח סיבוכיות:
-     * - זמן ריצה: O(D) סריקת שכני המדינה בלבד.
-     * - סיבוכיות מקום: O(1).
-     *
-     * מסקנה סופית: פונקציית עזר זניחה מבחינת עלות חישובית.
-     */
-    private int calculateTotalEnemyStrength(Country country, Player player)
-    {
-        int totalStrength = 0;
-        for(Country neighbor : country.getNeighbors())
-        {
-            if(neighbor.getOwner() != player)
-                totalStrength += neighbor.getArmies();
-        }
-        return totalStrength;
-    }
 
     /**
      * מחזיר מפה של מדינות שבבעלותנו עם ניקוד איום לכל אחת.
@@ -207,7 +184,7 @@ public class AIGraphAnalyzer {
      * - זמן ריצה: O(E * log(K)) כאשר K הוא כמות ההתקפות החוקיות שנוספות לתור.
      * - סיבוכיות מקום: O(K) לאחסון האובייקטים בתור.
      *
-     * מסקנה סופית: שימוש מעולה במבנה נתונים מתקדם. מיון ההתקפות "תוך כדי תנועה" חוסך זמן ריצה.
+     * מסקנה סופית:  מיון ההתקפות "תוך כדי תנועה" חוסך זמן ריצה.
      */
     public MaxPriorityQueue<AttackMove> buildAttackQueue(Player player, HeuristicStrategy strategy)
     {
@@ -228,22 +205,6 @@ public class AIGraphAnalyzer {
 
         }
         return attackQueue;
-    }
-
-    /**
-     * בודק אם מדינת יעד היא מטרת התקפה חוקית לפי האסטרטגיה.
-     *
-     * @param source   מדינת המקור
-     * @param target   מדינת היעד
-     * @param player   השחקן שלנו
-     * @param strategy האסטרטגיה הנוכחית
-     * @return true אם ההתקפה חוקית ורווחית
-     *
-     */
-    private boolean isValidAttackTarget(Country source, Country target, Player player, HeuristicStrategy strategy)
-    {
-        return target.getOwner() != player &&
-                source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage();
     }
 
     /**
@@ -396,6 +357,35 @@ public class AIGraphAnalyzer {
     }
 
     /**
+     * מוצא את המדינה המאוימת ביותר – עם הכי הרבה שכנים עוינים,
+     * ובמקרה שוויון, עם הכי מעט חיילים.
+     *
+     * @param player השחקן שלנו
+     * @return המדינה המאוימת ביותר
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(V * D) = O(E).
+     * - סיבוכיות מקום: O(1).
+     *
+     * מסקנה סופית: משמש כמנגנון Fallback להחלטות חירום, יעיל וקליל.
+     */
+    public Country findMostThreatenedCountry(Player player)
+    {
+        Country best = null;
+        int maxEnemies = -1;
+
+        for (Country c : player.getOwnedCountries())
+        {
+            int enemies = countEnemyNeighbors(c, player);
+            if (enemies > maxEnemies || (enemies == maxEnemies && best != null && c.getArmies() < best.getArmies()))
+            {
+                maxEnemies = enemies;
+                best = c;
+            }
+        }
+        return best;
+    }
+    /**
      * מוצא את המהלך הטוב ביותר להעברת חיילים ממדינות "כלואות" (מוקפות רק בשלנו) לגבול פעיל.
      *
      * @param player השחקן שלנו
@@ -432,7 +422,6 @@ public class AIGraphAnalyzer {
         return new FortifyMove(bestTrappedCountry, bestBorder,
                 bestTrappedCountry.getArmies() - GameConstants.MIN_ARMIES_TO_STAY);
     }
-
     /**
      * בודק אם מדינה כלואה – כל שכניה שייכים לשחקן.
      *
@@ -448,6 +437,61 @@ public class AIGraphAnalyzer {
                 .allMatch(neighbor -> neighbor.getOwner() == player);
     }
 
+    /**
+     * מחזיר את סכום כוח האויבים הסמוכים למדינה נתונה.
+     *
+     * @param country המדינה שאנו בודקים
+     * @param player  השחקן שלנו
+     * @return סכום החיילים של כל השכנים העוינים
+
+     * ניתוח סיבוכיות:
+     * - זמן ריצה: O(D) סריקת שכני המדינה בלבד.
+     * - סיבוכיות מקום: O(1).
+     *
+     * מסקנה סופית: פונקציית עזר זניחה מבחינת עלות חישובית.
+     */
+    private int calculateTotalEnemyStrength(Country country, Player player)
+    {
+        int totalStrength = 0;
+        for(Country neighbor : country.getNeighbors())
+        {
+            if(neighbor.getOwner() != player)
+                totalStrength += neighbor.getArmies();
+        }
+        return totalStrength;
+    }
+    /**
+     * מחשב את רמת הסכנה של מדינת גבול כיחס בין כוח האויבים לכוחנו.
+     *
+     * @param border המדינה שאנו בודקים
+     * @param player השחקן שלנו
+     * @return רמת הסכנה (0 אם אין אויבים סמוכים)
+     *
+     * ניתוח סיבוכיות: זמן ריצה O(D) ומקום O(1).
+     */
+    private double calculateBorderThreatLevel(Country border, Player player)
+    {
+        int totalEnemyForce = calculateTotalEnemyStrength(border, player);
+        if (totalEnemyForce == 0)
+            return 0;
+
+        return (double) totalEnemyForce / Math.max(border.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
+    }
+    /**
+     * בודק אם מדינת יעד היא מטרת התקפה חוקית לפי האסטרטגיה.
+     *
+     * @param source   מדינת המקור
+     * @param target   מדינת היעד
+     * @param player   השחקן שלנו
+     * @param strategy האסטרטגיה הנוכחית
+     * @return true אם ההתקפה חוקית ורווחית
+     *
+     */
+    private boolean isValidAttackTarget(Country source, Country target, Player player, HeuristicStrategy strategy)
+    {
+        return target.getOwner() != player &&
+                source.getArmies() - target.getArmies() >= strategy.getMinArmyAdvantage();
+    }
     /**
      * מוצא את המהלך הטוב ביותר להעברת חיילים מגבול בטוח לגבול מסוכן.
      * מחשב רמת סכנה לכל מדינת גבול ומצא את הזוג המתאים ביותר.
@@ -496,58 +540,6 @@ public class AIGraphAnalyzer {
         int armiesToMove = safestBorder.getArmies() - GameConstants.KEEP_ARMIES_AT_SOURCE;
         return armiesToMove > 0 ? new FortifyMove(safestBorder, mostThreatenedBorder, armiesToMove) : null;
     }
-
-    /**
-     * מחשב את רמת הסכנה של מדינת גבול כיחס בין כוח האויבים לכוחנו.
-     *
-     * @param border המדינה שאנו בודקים
-     * @param player השחקן שלנו
-     * @return רמת הסכנה (0 אם אין אויבים סמוכים)
-     *
-     * ניתוח סיבוכיות: זמן ריצה O(D) ומקום O(1).
-     */
-    private double calculateBorderThreatLevel(Country border, Player player)
-    {
-        int totalEnemyForce = calculateTotalEnemyStrength(border, player);
-        if (totalEnemyForce == 0)
-            return 0;
-
-        return (double) totalEnemyForce / Math.max(border.getArmies(), GameConstants.MIN_ARMIES_FOR_DEFENSE_CHECK);
-    }
-
-
-
-
-    /**
-     * מוצא את המדינה המאוימת ביותר – עם הכי הרבה שכנים עוינים,
-     * ובמקרה שוויון, עם הכי מעט חיילים.
-     *
-     * @param player השחקן שלנו
-     * @return המדינה המאוימת ביותר
-
-     * ניתוח סיבוכיות:
-     * - זמן ריצה: O(V * D) = O(E).
-     * - סיבוכיות מקום: O(1).
-     *
-     * מסקנה סופית: משמש כמנגנון Fallback להחלטות חירום, יעיל וקליל.
-     */
-    public Country findMostThreatenedCountry(Player player)
-    {
-        Country best = null;
-        int maxEnemies = -1;
-
-        for (Country c : player.getOwnedCountries())
-        {
-            int enemies = countEnemyNeighbors(c, player);
-            if (enemies > maxEnemies || (enemies == maxEnemies && best != null && c.getArmies() < best.getArmies()))
-            {
-                maxEnemies = enemies;
-                best = c;
-            }
-        }
-        return best;
-    }
-
     /**
      * רשומת הקשר ל-DFS של מציאת נקודות ביטחון קריטיות.
      * אוגרת את כל המצב הנדרש לביצוע ה-DFS הרקורסיבי.

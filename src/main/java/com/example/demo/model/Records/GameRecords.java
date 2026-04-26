@@ -1,7 +1,6 @@
 package com.example.demo.model.Records;
 
 import com.example.demo.model.manager.Country;
-import lombok.ToString;
 
 public interface GameRecords
 {

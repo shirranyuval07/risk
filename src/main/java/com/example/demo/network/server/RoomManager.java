@@ -1,5 +1,7 @@
 package com.example.demo.network.server;
 
+import com.example.demo.network.shared.GameAction;
+import com.example.demo.network.shared.GameMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
@@ -7,10 +9,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -65,11 +64,11 @@ public class RoomManager {
                 try
                 {
                     ObjectMapper mapper = new ObjectMapper();
-                    Map<String, Object> content = new java.util.HashMap<>();
+                    Map<String, Object> content = new HashMap<>();
                     content.put("playerName", playerName);
 
-                    com.example.demo.network.shared.GameMessage noticeMsg = new com.example.demo.network.shared.GameMessage(
-                            com.example.demo.network.shared.GameAction.PLAYER_DISCONNECTED, roomId, "Server", content);
+                    GameMessage noticeMsg = new GameMessage(
+                            GameAction.PLAYER_DISCONNECTED, roomId, "Server", content);
 
                     String notice = mapper.writeValueAsString(noticeMsg);
 

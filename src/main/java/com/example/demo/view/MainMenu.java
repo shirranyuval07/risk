@@ -14,10 +14,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 public class MainMenu extends StackPane
@@ -265,7 +262,7 @@ public class MainMenu extends StackPane
             startBtn.setVisible(isHost);
             startBtn.setOnAction(e ->
             {
-                long seed = new java.util.Random().nextLong();
+                long seed = new Random().nextLong();
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("seed", seed);
                 payload.put("players", lobbyPlayers);
@@ -285,7 +282,7 @@ public class MainMenu extends StackPane
             getChildren().addAll(title, subtitle, playerList, startBtn,leaveBtn);
 
             networkClient.setOnMessageReceived(message ->
-                    javafx.application.Platform.runLater(() -> {
+                    Platform.runLater(() -> {
                         Map<String, Object> payload = message.content();
 
                         switch (message.type())

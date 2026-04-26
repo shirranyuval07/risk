@@ -182,7 +182,8 @@ public class MapPane extends Pane
 
     private void initializeCountries()
     {
-        for (Country c : board.getCountries()) {
+        for (Country c : board.getCountries())
+        {
             // יצירת המודול ושליחתו לשכבות הנכונות
             CountryView cv = new CountryView(c, shapesLayer, symbolsLayer);
 
@@ -200,7 +201,8 @@ public class MapPane extends Pane
      * רענון כל תצוגות המדינות בעדכון סגנון הדגשה
      * לוגיקה: בחור → צהוב | תפר יבשת → גבול עבה | רגילה → דק
      */
-    public void refreshMap() {
+    public void refreshMap()
+    {
         for (Map.Entry<Country, CountryView> entry : countryViews.entrySet()) {
             Country country = entry.getKey();
             CountryView view = entry.getValue();
