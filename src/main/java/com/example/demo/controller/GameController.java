@@ -139,9 +139,14 @@ public class GameController {
         });
 
         // Cards dialog
-        gameView.getControlPane().getBtnCards().setOnAction(e ->
-                DialogManager.showCardsDialog(gameModel.getCurrentPlayer(), this::handleCardTradeEvent)
-        );
+        gameView.getControlPane().getBtnCards().setOnAction(e -> {
+            if (isCurrentPlayerAI()) return;
+            if (isMultiplayer && !isMyTurn()) {
+                gameView.getControlPane().setMessage("It's not your turn!");
+                return;
+            }
+            DialogManager.showCardsDialog(gameModel.getCurrentPlayer(), this::handleCardTradeEvent);
+        });
         gameView.getControlPane().getBtnBackToMainMenu().setOnAction(e -> {
             if (networkClient != null)
                 networkClient.disconnect();
@@ -231,13 +236,18 @@ public class GameController {
                             String playerName = (String) payload.get("PLAYER_NAME");
                             int bonusArmies = (Integer) payload.get("BONUS_ARMIES");
 
-                            for (Player p : gameModel.getPlayers()) {
-                                if (p.getName().equals(playerName)) {
-                                    p.setDraftArmies(p.getDraftArmies() + bonusArmies);
-                                    break;
+                            if (!playerName.equals(networkClient.getPlayerName()))
+                            {
+                                for (Player p : gameModel.getPlayers())
+                                {
+                                    if (p.getName().equals(playerName))
+                                    {
+                                        p.setDraftArmies(p.getDraftArmies() + bonusArmies);
+                                        break;
+                                    }
                                 }
+                                gameView.getPlayerStatsPane().updateStats();
                             }
-                            gameView.getPlayerStatsPane().updateStats();
                         }
                         default ->
                         {
