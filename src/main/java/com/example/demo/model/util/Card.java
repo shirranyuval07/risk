@@ -41,9 +41,38 @@ public enum Card
     public static class Service
     {
         private static final int SET_SIZE = 3;
+
         /**
-         * בדיקה וסחירה של סט ספציפי שבחר השחקן
-         * 
+         * בדיקה וסחירה אוטומטית של כל סט חוקי (מיועד בעיקר ל-AI)
+         *
+         * @param player השחקן הקורא לסחירה
+         * @return מספר חיילים שהתקבלו, או 0 אם אין סט חוקי
+         */
+        public int tradeAnyValidSet(Player player) {
+            List<Card> cards = player.getCards();
+            int inf = Collections.frequency(cards, Card.INFANTRY);
+            int cav = Collections.frequency(cards, Card.CAVALRY);
+            int art = Collections.frequency(cards, Card.ARTILLERY);
+
+            // סדר עדיפויות 1: סט של אחד מכל סוג (התמורה הגבוהה ביותר - 10 חיילים)
+            if (inf > 0 && cav > 0 && art > 0) {
+                cards.remove(Card.INFANTRY);
+                cards.remove(Card.CAVALRY);
+                cards.remove(Card.ARTILLERY);
+                return 10;
+            }
+
+            // סדר עדיפויות 2: סטים מאותו סוג (מהגבוה לנמוך)
+            if (art >= SET_SIZE) return tradeMatchingCards(cards, Card.ARTILLERY, 8);
+            if (cav >= SET_SIZE) return tradeMatchingCards(cards, Card.CAVALRY, 6);
+            if (inf >= SET_SIZE) return tradeMatchingCards(cards, Card.INFANTRY, 4);
+
+            return 0; // אין אף סט חוקי
+        }
+
+        /**
+         * בדיקה וסחירה של סט ספציפי שבחר השחקן (מיועד לשחקן אנושי דרך ה-UI)
+         *
          * @param player השחקן הקורא לסחירה
          * @param selectedCards בדיוק 3 קלפים שבחר השחקן
          * @return מספר חיילים שהתקבלו, או 0 אם הסט אינו חוקי
@@ -68,10 +97,10 @@ public enum Card
 
             return 0;
         }
-        
+
         /**
          * עוזר: הסרת 3 קלפים זהים וחזרה של הגמול
-         * 
+         *
          * @param cards רשימת קלפי השחקן
          * @param type סוג הקלף להסרה
          * @param reward הגמול לחיילים

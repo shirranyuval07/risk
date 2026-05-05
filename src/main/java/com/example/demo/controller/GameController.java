@@ -21,6 +21,7 @@ import com.example.demo.network.client.RiskWebSocketClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
@@ -131,7 +132,7 @@ public class GameController {
         // Toggle country name labels on the map
         gameView.getControlPane().getBtnToggleNames().setOnAction(e ->
         {
-            javafx.scene.control.Button btn = gameView.getControlPane().getBtnToggleNames();
+            Button btn = gameView.getControlPane().getBtnToggleNames();
             boolean showNames = btn.getText().contains("Show");
             btn.setText(showNames ? "👁 Hide Names" : "👁 Show Names");
             gameView.getMapPane().toggleNames(showNames);
@@ -139,8 +140,7 @@ public class GameController {
 
         // Cards dialog
         gameView.getControlPane().getBtnCards().setOnAction(e ->
-                DialogManager.showCardsDialog(gameModel.getCurrentPlayer(), () ->
-                        gameView.getPlayerStatsPane().updateStats())
+                DialogManager.showCardsDialog(gameModel.getCurrentPlayer(), this::handleCardTradeEvent)
         );
         gameView.getControlPane().getBtnBackToMainMenu().setOnAction(e -> {
             if (networkClient != null)
@@ -475,7 +475,24 @@ public class GameController {
         clearSelection();
         checkAndExecuteAITurn();
     }
+    /**
+     * מטפל באירוע שבו השחקן האנושי המיר קלפים בהצלחה בדיאלוג
+     * מעדכן את התצוגה, ואם זה מולטיפלייר משדר את הפעולה לשרת.
+     */
+    private void handleCardTradeEvent(int bonusArmies)
+    {
+        // רענון התצוגה מקומית עם מספר החיילים החדש
+        gameView.getPlayerStatsPane().updateStats();
 
+        // דיווח הפעולה לרשת כדי למנוע יציאה מסנכרון
+        if (isMultiplayer) {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("PLAYER_NAME", gameModel.getCurrentPlayer().getName());
+            payload.put("BONUS_ARMIES", bonusArmies);
+
+            networkClient.sendAction(GameAction.CARD_TRADE, networkClient.getRoomId(), payload);
+        }
+    }
     /**
      * @param clickedCountry המדינה שהשחקן לחץ עליה בשלב האטאק
      *                       טענת יציאה: הפונקציה מטפלת בלחיצה על מדינה בשלב האטאק.

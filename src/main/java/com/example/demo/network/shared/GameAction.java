@@ -18,6 +18,7 @@ public enum GameAction {
     GAME_ACTION,         // סוג הודעה כללי לפעולות בתוך המשחק
     NEXT_PHASE,          // מעבר שלב (Setup -> Draft -> Attack וכו')
     NEXT_TURN,           // מעבר תור לשחקן הבא
+    CARD_TRADE,         // בקשה להחלפת קלפים
 
     // פעולות ספציפיות על הלוח (In-Game Actions)
 

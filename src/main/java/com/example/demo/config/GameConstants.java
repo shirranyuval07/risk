@@ -26,6 +26,10 @@ public final class GameConstants {
 
 
     // ==================== GAME MECHANICS CONSTANTS ====================
+    public static final int MIN_THRESHOLD_GENERAL = 0;
+
+    public static final int MAX_AMOUNT_OF_CARDS = 5;
+
     public static final int SETUP_ARMIES_PER_TURN = 1;
 
     /** Minimum number of armies required to move from a country (always leave 1 behind) */

@@ -9,6 +9,7 @@ import javafx.scene.effect.Bloom;
 import javafx.scene.layout.VBox;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class DialogManager {
 
@@ -55,7 +56,7 @@ public class DialogManager {
     }
 
 
-    public static void showCardsDialog(Player player, Runnable onTradeSuccessful)
+    public static void showCardsDialog(Player player, Consumer<Integer> onTradeSuccessful)
     {
         Dialog<List<Card>> dialog = new Dialog<>();
         dialog.setTitle("Your Cards");
@@ -79,7 +80,6 @@ public class DialogManager {
 
         if (player.getCards().isEmpty())
             vbox.getChildren().add(new Label("You don't have any cards yet."));
-
 
         dialog.getDialogPane().setContent(vbox);
 
@@ -122,7 +122,7 @@ public class DialogManager {
                 player.setDraftArmies(player.getDraftArmies() + bonusArmies);
                 Alert success = new Alert(Alert.AlertType.INFORMATION, "Success! You received " + bonusArmies + " armies!");
                 success.show();
-                onTradeSuccessful.run(); // רענון המסך
+                onTradeSuccessful.accept(bonusArmies);
             }
             else
             {

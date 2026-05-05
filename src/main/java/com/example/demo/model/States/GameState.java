@@ -1,5 +1,6 @@
 package com.example.demo.model.States;
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.Logic.AIGraphAnalyzer;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
@@ -58,7 +59,7 @@ public sealed interface GameState permits
             if (!tryPlaceArmy(country, game)) return false;
 
             boolean allArmiesPlaced = game.getPlayers().stream()
-                    .allMatch(p -> p.getDraftArmies() <= 0);
+                    .allMatch(p -> p.getDraftArmies() <= GameConstants.MIN_THRESHOLD_GENERAL);
 
             if (allArmiesPlaced)
                 game.setCurrentState(nextPhase());
@@ -98,9 +99,13 @@ public sealed interface GameState permits
         @Override
         public GameState nextPhase()
         {
-            if (game.getCurrentPlayer().getDraftArmies() > 0)
+            if (game.getCurrentPlayer().getDraftArmies() > GameConstants.MIN_THRESHOLD_GENERAL)
             {
                 log.warn("Cannot advance: You must place all draft armies.");
+                return null;
+            }
+            if (game.getCurrentPlayer().getCards().size() >= GameConstants.MAX_AMOUNT_OF_CARDS) {
+                log.warn("Cannot advance: You have 5 or more cards and MUST trade them.");
                 return null;
             }
             return new AttackState(game);

@@ -126,7 +126,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler
             }
 
             // כל שאר הפעולות פשוט מועברות (Broadcast) לשאר השחקנים כמו שהן
-            case SETUP_PLACE, DRAFT, FORTIFY, CONQUEST_MOVE, NEXT_PHASE, NEXT_TURN ->
+            case SETUP_PLACE, DRAFT, FORTIFY, CONQUEST_MOVE, NEXT_PHASE, NEXT_TURN, CARD_TRADE ->
                 roomManager.broadcastToRoom(gameMsg.roomId(), payload);
 
             case LEAVE_ROOM ->

@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.util.Card;
 import com.example.demo.model.manager.Country;
 import com.example.demo.model.manager.Player;
@@ -31,6 +32,17 @@ public class AIEngine {
                     game.placeArmy(c);
                     return;
                 }
+
+                int tradeResult;
+                do {
+                    tradeResult = cardService.tradeAnyValidSet(aiPlayer);
+                    if (tradeResult > GameConstants.MIN_THRESHOLD_GENERAL) {
+                        // עדכון כמות החיילים להצבה של הבוט
+                        aiPlayer.setDraftArmies(aiPlayer.getDraftArmies() + tradeResult);
+                        log.info("AI {} traded cards for {} extra armies!", aiPlayer.getName(), tradeResult);
+                    }
+                } while (tradeResult > GameConstants.MIN_THRESHOLD_GENERAL); // ממשיך להמיר כל עוד יש סטים חוקיים
+
                 // Execute regular game phases (Draft, Attack, Fortify)
                 aiPlayer.getStrategy().executeTurn(aiPlayer, game);
 
