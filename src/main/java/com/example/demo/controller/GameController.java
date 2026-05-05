@@ -226,7 +226,19 @@ public class GameController {
                                 log.error("Failed to parse BattleResult: {}", e.getMessage());
                             }
                         }
+                        case CARD_TRADE ->
+                        {
+                            String playerName = (String) payload.get("PLAYER_NAME");
+                            int bonusArmies = (Integer) payload.get("BONUS_ARMIES");
 
+                            for (Player p : gameModel.getPlayers()) {
+                                if (p.getName().equals(playerName)) {
+                                    p.setDraftArmies(p.getDraftArmies() + bonusArmies);
+                                    break;
+                                }
+                            }
+                            gameView.getPlayerStatsPane().updateStats();
+                        }
                         default ->
                         {
                             // מתעלם מסוגי הודעות אחרות שלא נוגעות למהלך המשחק הישיר כאן (כמו JOIN_ROOM)
