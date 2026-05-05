@@ -218,13 +218,13 @@ public class AIGraphAnalyzer {
      * - זמן ריצה: O(V + E) לביצוע ה-BFS, פלוס O(V * D) לבדיקת השכנים. סה"כ O(V + E).
      * - סיבוכיות מקום: O(V) לשמירת הסט מה-BFS.
      *
-     * מסקנה סופית: פונקציה אמינה לחילוץ חיילים כלואים עם Short-circuiting יעיל.
+     * מסקנה סופית: פונקציה אמינה לחילוץ חיילים כלואים
      */
     public Country findConnectedBorderUsingBFS(Country start, Player player)
     {
         return bfsReachableOwned(start, player).stream()
                 .filter(country -> country != start && countEnemyNeighbors(country, player) > 0)
-                .findFirst()
+                .max(Comparator.comparingDouble(c -> calculateBorderThreatLevel(c, player)))
                 .orElse(null);
     }
 

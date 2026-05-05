@@ -12,7 +12,7 @@ class WinProbabilityCalculator
 {
 
     private static final int MASSIVE_ARMY_THRESHOLD = 50;
-    
+
     // Ratio thresholds for probability estimation
     private static final double CERTAIN_WIN_RATIO = 0.95;
     private static final double CERTAIN_LOSS_RATIO = 0.80;
@@ -21,7 +21,6 @@ class WinProbabilityCalculator
     public static final double EQUILIBRIUM_RATIO = 0.924; // Osborne's equilibrium point
 
     // Probability values for battle outcomes
-    private static final double PROBABILITY_CERTAIN = 1.0;
     private static final double PROBABILITY_IMPOSSIBLE = 0.0;
     private static final double PROBABILITY_NEAR_CERTAIN = 0.99;
     private static final double PROBABILITY_NEAR_IMPOSSIBLE = 0.01;
@@ -29,11 +28,11 @@ class WinProbabilityCalculator
     private static final double PROBABILITY_MODERATE = 0.75;
     private static final double PROBABILITY_EVEN = 0.50;
     private static final double PROBABILITY_MINIMUM = 0.05;
-    
+
     // Calculation constants for massive battle transition zone
     private static final double TRANSITION_ZONE_CENTER = 0.85;
     private static final double TRANSITION_ZONE_MULTIPLIER = 5.0;
-    
+
     // Linear drop multiplier for below-equilibrium probability
     private static final double BELOW_EQUILIBRIUM_MULTIPLIER = 2.0;
 
@@ -83,8 +82,8 @@ class WinProbabilityCalculator
      *                       טענת יציאה: הפונקציה מחזירה אמת אם ניתן להשתמש בטבלת ההסתברויות של מרקוב, אחרת שקר.
      * */
     private boolean canUseLookupTable(int attackers, int defenders) {
-        return attackers < MARKOV_PROBABILITIES.length 
-            && defenders < MARKOV_PROBABILITIES[0].length;
+        return attackers < MARKOV_PROBABILITIES.length
+                && defenders < MARKOV_PROBABILITIES[0].length;
     }
     /**
      * @param attackers מספר התוקפים (כולל זה שנשאר מאחור)
