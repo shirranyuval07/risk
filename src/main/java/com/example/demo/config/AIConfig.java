@@ -18,7 +18,7 @@ public class AIConfig {
     @Bean
     public HeuristicStrategy.Configurable balancedStrategy() {
         return buildStrategy(props.getBalanced(),
-                (totalArmies, minMove, maxMove) -> Math.max(minMove, Math.min(maxMove, totalArmies - BALANCED_ARMY_RESERVE)),
+                null,
                 HeuristicStrategy.Configurable.DraftBehavior.defensive());
     }
 

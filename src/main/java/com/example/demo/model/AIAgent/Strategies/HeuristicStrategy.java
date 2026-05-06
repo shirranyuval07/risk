@@ -338,6 +338,9 @@ public interface HeuristicStrategy {
         @Override
         public int getTroopsToMoveAfterConquest(Country source, Country target, int minMove, int maxMove)
         {
+            if (movementBehavior == null)
+                return super.getTroopsToMoveAfterConquest(source, target, minMove, maxMove);
+
             return movementBehavior.calculate(source.getArmies(), minMove, maxMove);
         }
 
@@ -396,7 +399,8 @@ public interface HeuristicStrategy {
                     {
                         int armies = (int) Math.floor((entry.getValue() / totalThreat) * totalDraftArmies);
                         for (int i = 0; i < armies; i++)
-                            if (player.getDraftArmies() > 0) game.placeArmy(entry.getKey());
+                            if (player.getDraftArmies() > 0)
+                                game.placeArmy(entry.getKey());
                     }
 
                     Country mostThreatened = analyzer.findMostThreatenedCountry(player);
