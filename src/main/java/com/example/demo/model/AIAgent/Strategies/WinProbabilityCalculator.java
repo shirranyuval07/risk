@@ -1,5 +1,7 @@
 package com.example.demo.model.AIAgent.Strategies;
 
+import com.example.demo.config.GameConstants;
+
 /**
  * מחשבת הסתברות ניצחון לקרבות Risk באמצעות:
  * 1. הסתברויות שרשרת מרקוב מחושבות מראש לצבאות קטנים (≤10)
@@ -60,9 +62,9 @@ class WinProbabilityCalculator
      * */
     public double estimate(int attackerArmies, int defenderArmies)
     {
-        int actualAttackers = attackerArmies - 1; // אחד חייב להישאר מאחורה.
+        int actualAttackers = attackerArmies - GameConstants.MIN_ARMIES_TO_STAY; // אחד חייב להישאר מאחורה.
 
-        if (actualAttackers <= 0) return PROBABILITY_IMPOSSIBLE;
+        if (actualAttackers <= GameConstants.MIN_ARMIES_TO_STAY) return PROBABILITY_IMPOSSIBLE;
 
         if (canUseLookupTable(actualAttackers, defenderArmies)) {
             return MARKOV_PROBABILITIES[actualAttackers][defenderArmies];

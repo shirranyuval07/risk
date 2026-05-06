@@ -49,6 +49,14 @@ public final class GameConstants {
 
     /** Max Players in a game */
     public static final int MAX_PLAYERS = 6;
+
+    public static final int NUMBER_OF_CARDS_REWARD_INFANTRY = 4;
+
+    public static final int NUMBER_OF_CARDS_REWARD_CAVALRY = 6;
+
+    public static final int NUMBER_OF_CARDS_REWARD_ARTILLERY = 8;
+
+    public static final int NUMBER_OF_CARDS_REWARD_DIFF = 10;
     
     
     // ==================== MAP DISPLAY CONSTANTS ====================

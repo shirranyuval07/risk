@@ -5,7 +5,6 @@ import com.example.demo.config.ContinentConfig;
 import com.example.demo.config.CountryConfig;
 import com.example.demo.config.GameConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;

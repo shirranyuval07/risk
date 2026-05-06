@@ -127,12 +127,12 @@ public sealed interface GameState permits
         @Override
         public BattleResult attack(Country attacker, Country defender)
         {
-            if (attacker == null || defender == null) return null;
+            if (attacker == null || defender == null || !attacker.getNeighbors().contains(defender)
+                    || attacker.getArmies() <= GameConstants.MIN_ARMIES_TO_STAY)
+                return null;
             Player currentPlayer = game.getCurrentPlayer();
-            if (attacker.getOwner() != currentPlayer) return null;
-            if (defender.getOwner() == currentPlayer) return null;
-            if (!attacker.getNeighbors().contains(defender)) return null;
-            if (attacker.getArmies() <= 1) return null;
+            if (attacker.getOwner() != currentPlayer || defender.getOwner() == currentPlayer)
+                return null;
 
             return game.getCombatManager().resolveAttack(attacker, defender);
         }
@@ -166,7 +166,7 @@ public sealed interface GameState permits
         {
             Player currentPlayer = game.getCurrentPlayer();
             if (from.getOwner() != currentPlayer || to.getOwner() != currentPlayer) return "Must own both!";
-            if (from.getArmies() - amount < 1) return "Must leave at least 1 army behind!";
+            if (from.getArmies() - amount < GameConstants.MIN_ARMIES_TO_STAY || amount < 0) return "Must leave at least 1 army behind!";
 
             from.removeArmies(amount);
             to.addArmies(amount);

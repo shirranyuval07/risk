@@ -1,4 +1,5 @@
 package com.example.demo.model.manager;
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.AIAgent.Logic.BotStrategy;
 import com.example.demo.model.util.Card;
 import javafx.beans.property.IntegerProperty;
@@ -33,6 +34,13 @@ public class Player {
     // --- אסטרטגיה עבור שחקן מחשב ---
     @Getter
     private final boolean isAI;
+
+    /**
+     * אסטרטגיה לשחקן מעוצב (AI)
+     */
+    @Setter @Getter
+    private BotStrategy strategy;
+
     // --- ניהול מדינות ---
     @Getter
     private final List<Country> ownedCountries;
@@ -65,14 +73,10 @@ public class Player {
      * הקטנת מספר החיילים בהכנה ב-1 (כשהושם חייל)
      */
     public void decreaseDraftArmies() {
-        if (getDraftArmies() > 0) setDraftArmies(getDraftArmies() - 1);
+        if (getDraftArmies() > GameConstants.MIN_THRESHOLD_GENERAL) setDraftArmies(getDraftArmies() - 1);
     }
     
-    /**
-     * אסטרטגיה לשחקן מעוצב (AI)
-     */
-    @Setter @Getter
-    private BotStrategy strategy;
+
 
     /**
      * בנאי שחקן - יצירת שחקן חדש

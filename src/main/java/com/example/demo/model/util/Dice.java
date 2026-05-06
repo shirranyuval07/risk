@@ -81,8 +81,8 @@ public class Dice
             else aLoss++;
         }
 
-        boolean conquered = (defenderArmies - dLoss) <= 0;
-        int maxMove = attackerArmies - 1 - aLoss;
+        boolean conquered = (defenderArmies - dLoss) <= GameConstants.MIN_THRESHOLD_GENERAL;
+        int maxMove = attackerArmies - GameConstants.MIN_ARMIES_TO_STAY - aLoss;
 
         return new BattleResult(aRolls, dRolls, aLoss, dLoss, conquered, aDiceCount, maxMove);
     }

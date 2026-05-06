@@ -1,5 +1,6 @@
 package com.example.demo.model.util;
 
+import com.example.demo.config.GameConstants;
 import com.example.demo.model.manager.Player;
 
 import java.util.Collections;
@@ -59,13 +60,13 @@ public enum Card
                 cards.remove(Card.INFANTRY);
                 cards.remove(Card.CAVALRY);
                 cards.remove(Card.ARTILLERY);
-                return 10;
+                return GameConstants.NUMBER_OF_CARDS_REWARD_DIFF;
             }
 
             // סדר עדיפויות 2: סטים מאותו סוג (מהגבוה לנמוך)
-            if (art >= SET_SIZE) return tradeMatchingCards(cards, Card.ARTILLERY, 8);
-            if (cav >= SET_SIZE) return tradeMatchingCards(cards, Card.CAVALRY, 6);
-            if (inf >= SET_SIZE) return tradeMatchingCards(cards, Card.INFANTRY, 4);
+            if (art >= SET_SIZE) return tradeMatchingCards(cards, Card.ARTILLERY, GameConstants.NUMBER_OF_CARDS_REWARD_ARTILLERY);
+            if (cav >= SET_SIZE) return tradeMatchingCards(cards, Card.CAVALRY, GameConstants.NUMBER_OF_CARDS_REWARD_CAVALRY);
+            if (inf >= SET_SIZE) return tradeMatchingCards(cards, Card.INFANTRY, GameConstants.NUMBER_OF_CARDS_REWARD_INFANTRY);
 
             return 0; // אין אף סט חוקי
         }
@@ -89,11 +90,11 @@ public enum Card
                 tradeMatchingCards(player.getCards(), Card.INFANTRY, 0);
                 tradeMatchingCards(player.getCards(), Card.CAVALRY, 0);
                 tradeMatchingCards(player.getCards(), Card.ARTILLERY, 0);
-                return 10;
+                return GameConstants.NUMBER_OF_CARDS_REWARD_DIFF;
             }
-            if (art == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.ARTILLERY, 8);
-            if (cav == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.CAVALRY, 6);
-            if (inf == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.INFANTRY, 4);
+            if (art == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.ARTILLERY, GameConstants.NUMBER_OF_CARDS_REWARD_ARTILLERY);
+            if (cav == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.CAVALRY, GameConstants.NUMBER_OF_CARDS_REWARD_CAVALRY);
+            if (inf == SET_SIZE) return tradeMatchingCards(player.getCards(), Card.INFANTRY, GameConstants.NUMBER_OF_CARDS_REWARD_INFANTRY);
 
             return 0;
         }
